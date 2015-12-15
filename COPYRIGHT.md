@@ -32,7 +32,7 @@ information about our Licensing terms and our Usage and Attribution guidelines.
 
 ## Included Software and Libraries
 
-This program includes works distributed under the terms of another license(s) and other copyright notice(s).
+This program includes works distributed under the terms of other licenses and other copyright notices.
 
 *  __loopback-example-passport__<br />
     <(https://github.com/strongloop/loopback-example-passport)><br />
