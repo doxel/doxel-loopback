@@ -3,6 +3,10 @@ var boot = require('loopback-boot');
 
 var app = module.exports = loopback();
 
+// Make sure to also put this in `server/server.js`
+// var PassportConfigurator =
+require('loopback-component-passport').PassportConfigurator;
+
 app.start = function() {
   // start the web server
   return app.listen(function() {

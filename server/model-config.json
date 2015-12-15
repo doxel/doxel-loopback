@@ -4,7 +4,8 @@
       "loopback/common/models",
       "loopback/server/models",
       "../common/models",
-      "./models"
+      "./models",
+      "./node_modules/loopback-component-passport/lib/models"
     ],
     "mixins": [
       "loopback/common/mixins",
@@ -31,5 +32,33 @@
   "Role": {
     "dataSource": "db",
     "public": false
+  },
+  "UserCredential": {
+    "dataSource": "db",
+    "public": true
+  },
+  "UserIdentity": {
+    "dataSource": "db",
+    "public": true
+  },
+  "MysqlPictures": {
+    "dataSource": "MySQL",
+    "public": true
+  },
+  "MysqlUser": {
+    "dataSource": "MySQL",
+    "public": true
+  },
+  "Picture": {
+    "dataSource": "db",
+    "public": true
+  },
+  "Segment": {
+    "dataSource": "db",
+    "public": true
+  },
+  "Member": {
+    "dataSource": "db",
+    "public": true
   }
 }

@@ -12,19 +12,30 @@
       }
     }
   },
-  "session": {
-  },
-  "auth": {
-  },
-  "parse": {
-  },
-  "routes": {
-    "loopback#rest": {
-      "paths": ["${restApiRoot}"]
+  "session:before": {
+    "cookie-parser": {
+      "params": "oSl%aj/-X*'9su4?=Hnx02j"
     }
   },
-  "files": {
+  "session": {
+    "express-session": {
+      "params": {
+        "secret": "9kljaAxJAaç3AtD+++£€kj",
+        "saveUninitialized": true,
+        "resave": true
+      }
+    }
   },
+  "auth": {},
+  "parse": {},
+  "routes": {
+    "loopback#rest": {
+      "paths": [
+        "${restApiRoot}"
+      ]
+    }
+  },
+  "files": {},
   "final": {
     "loopback#urlNotFound": {}
   },

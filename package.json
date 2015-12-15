@@ -3,17 +3,27 @@
   "version": "1.0.0",
   "main": "server/server.js",
   "scripts": {
-    "start": "node .",
     "pretest": "jshint ."
   },
+  "license": "AGPL-3.0",
   "dependencies": {
     "compression": "^1.0.3",
+    "cookie-parser": "^1.4.0",
     "cors": "^2.5.2",
+    "express-plupload": "^0.2.2",
+    "express-session": "^1.12.1",
     "loopback": "^2.22.0",
     "loopback-boot": "^2.6.5",
     "loopback-component-explorer": "^2.1.0",
+    "loopback-component-passport": "^1.6.0",
+    "loopback-connector-mongodb": "^1.13.1",
+    "loopback-connector-mysql": "^2.2.0",
     "loopback-datasource-juggler": "^2.39.0",
-    "serve-favicon": "^2.0.1"
+    "passport-facebook": "^2.0.0",
+    "passport-twitter": "^1.0.3",
+    "q": "^1.4.1",
+    "serve-favicon": "^2.0.1",
+    "shelljs": "^0.5.3"
   },
   "devDependencies": {
     "jshint": "^2.5.6"
