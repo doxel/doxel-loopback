@@ -30,6 +30,6 @@ information about our Licensing terms and our Usage and Attribution guidelines.
  
 ## Included Software and Libraries
  
-This program includes works distributed under the terms of another license(s) and other copyright notice(s).
+This program includes works distributed under the terms of other licenses and other copyright notices.
  
 Read the [COPYRIGHT.md](https://github.com/doxel/doxel-loopback/blob/master/COPYRIGHT.md).
