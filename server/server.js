@@ -10,12 +10,6 @@ var app = module.exports = loopback();
 // var PassportConfigurator =
 require('loopback-component-passport').PassportConfigurator;
 
-app.use(loopback.session({
-    secret: 'secret session',
-    resave: true,
-    saveUninitialized: true
-}));
-
 app.use(loopback.compress());
 
 app.start = function(httpOnly) {

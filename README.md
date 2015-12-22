@@ -33,3 +33,21 @@ information about our Licensing terms and our Usage and Attribution guidelines.
 This program includes works distributed under the terms of other licenses and other copyright notices.
  
 Read the [COPYRIGHT.md](https://github.com/doxel/doxel-loopback/blob/master/COPYRIGHT.md).
+
+
+## installation
+
+```
+npm install -g strongloop
+
+npm install
+
+lb-ng server/server.js client/app/scripts/lb-services.js
+
+cd client
+
+npm install
+
+grunt
+
+```

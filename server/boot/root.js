@@ -1,6 +1,6 @@
-module.exports = function(server) {
+module.exports = function(app) {
   // Install a `/` route that returns server status
-  var router = server.loopback.Router();
-  router.get('/', server.loopback.status());
-  server.use(router);
+  var router = app.loopback.Router();
+  router.get('/status', app.loopback.status());
+  app.use(router);
 };

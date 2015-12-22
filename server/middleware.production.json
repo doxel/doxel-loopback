@@ -1,4 +1,10 @@
 {
+  "files": {
+      "loopback#static": {
+          "params": "$!../dist"
+      }
+  },
+
   "final:after": {
     "loopback#errorHandler": {
       "params": {

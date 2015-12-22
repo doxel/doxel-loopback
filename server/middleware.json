@@ -17,15 +17,6 @@
       "params": "oSl%aj/-X*'9su4?=Hnx02j"
     }
   },
-  "session": {
-    "express-session": {
-      "params": {
-        "secret": "9kljaAxJAaç3AtD+++£€kj",
-        "saveUninitialized": true,
-        "resave": true
-      }
-    }
-  },
   "auth": {},
   "parse": {},
   "routes": {

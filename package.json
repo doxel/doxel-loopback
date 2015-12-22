@@ -1,5 +1,6 @@
 {
   "name": "doxel-loopback",
+  "private": true,
   "version": "1.0.0",
   "main": "server/server.js",
   "scripts": {
@@ -8,10 +9,12 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "compression": "^1.0.3",
+    "connect-redis": "^3.0.1",
     "cookie-parser": "^1.4.0",
     "cors": "^2.5.2",
     "express-plupload": "^0.2.2",
     "express-session": "^1.12.1",
+    "gulp": "^3.9.0",
     "loopback": "^2.22.0",
     "loopback-boot": "^2.6.5",
     "loopback-component-explorer": "^2.1.0",
@@ -19,6 +22,7 @@
     "loopback-connector-mongodb": "^1.13.1",
     "loopback-connector-mysql": "^2.2.0",
     "loopback-datasource-juggler": "^2.39.0",
+    "loopback-sdk-angular": "^1.6.0",
     "passport-facebook": "^2.0.0",
     "passport-twitter": "^1.0.3",
     "q": "^1.4.1",
