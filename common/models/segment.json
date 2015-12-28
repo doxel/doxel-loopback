@@ -14,10 +14,10 @@
       "model": "Picture",
       "foreignKey": ""
     },
-    "member": {
+    "user": {
       "type": "belongsTo",
-      "model": "Member",
-      "foreignKey": ""
+      "model": "user",
+      "foreignKey": "userId"
     }
   },
   "acls": [

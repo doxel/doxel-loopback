@@ -2,7 +2,7 @@ var Q = require('q');
 
 module.exports = function(app) {
     var Role = app.models.Role;
-    var Member = app.models.Member;
+    var User = app.models.User;
     var RoleMapping = app.models.RoleMapping;
     var q = new Q();
 
@@ -39,7 +39,7 @@ module.exports = function(app) {
 
     }).then(function() {
         // add member "admin"
-        Member.findOrCreate({
+        User.findOrCreate({
             where: {
                 email: 'admin@doxel.org'
             }
@@ -52,11 +52,11 @@ module.exports = function(app) {
             fingerprint: 'dummy',
             ip: '127.0.0.1'
 
-        }, function(err, member) {
+        }, function(err, user) {
             if (err) {
                 throw err;
             }
-            console.log('Found or created member:', member.email);
+            console.log('Found or created user:', user.email);
 
             Role.findOne({
                 where: {
@@ -70,7 +70,7 @@ module.exports = function(app) {
 
                 role.principals.create({
                     principalType: RoleMapping.USER,
-                    principalId: member.id
+                    principalId: user.id
 
                 }, function(err, principal) {
                     if (err) {

@@ -1,28 +1,28 @@
-module.exports = function(Member) {
+module.exports = function(User) {
 
     var crypto=require('crypto');
 
-    Member.getToken=function getToken(options) {
+    User.getToken=function getToken(options) {
         crypto.randomBytes(options.bytes||16, function(ex, buf) {
             options.callback(buf.toString(options.type||'hex'));
         });
     }
 
-    Member._signup = function _member_signup(options) {
+    User._signup = function _user_signup(options) {
 
         var token;
 
         console.log('_signup');
 
         // generate unique email, and password
-        Member.getToken({
+        User.getToken({
             bytes: 32,
             callback: function getToken_callback(_token) {
                 var token=options.token || _token.substr(0,32);
                 var email=options.email || token+'@doxel.org';
                 var password=options.password || _token.substr(32);
 
-                var member_options={
+                var user_options={
                     username: options.username||'',
                     email: email,
                     password: password,
@@ -33,9 +33,9 @@ module.exports = function(Member) {
                     newInstance: true
                 };
 
-                console.log('find or create member',email,token);
+                console.log('find or create user',email,token);
                 // email must be unique
-                Member.findOrCreate({
+                User.findOrCreate({
                  where: {
                     or: [{
                       email: email
@@ -44,18 +44,18 @@ module.exports = function(Member) {
                     }]
                  }
                 },
-                member_options,
-                function(err, member) {
+                user_options,
+                function(err, user) {
                   console.log('here');
 
                     if (err) {
-                        console.trace('signup failed',member_options,err);
+                        console.trace('signup failed',user_options,err);
                         options.callback(err);
                         return;
                     }
 
                     if (options.migrate) {
-                        if (member) {
+                        if (user) {
                             throw "migrate: unexpected token collision";
 
                         } else {
@@ -64,32 +64,32 @@ module.exports = function(Member) {
                         }
                     }
 
-                    if (member) {
+                    if (user) {
 
-                        console.log('member',token,member.token);
+                        console.log('user',token,user.token);
 
-                        if (!member.newInstance) {
-                          if (email==member.email) {
+                        if (!user.newInstance) {
+                          if (email==user.email) {
                               // given email exists for another instance, abort
                               options.callback(null,{error: 'email address already registered'});
                               return;
                           }
 
-                          if (token==member.token) {
+                          if (token==user.token) {
                             // generated token already exists, retry
-                            _member_signup(options);
+                            _user_signup(options);
                             return;
                           }
 
                         } else {
-                          member.unsetAttribute('newInstance');
-                          member.save(function(err){
+                          user.unsetAttribute('newInstance');
+                          user.save(function(err){
                             if (err) {
                               console.trace(err);
                               options.callback(err);
 
                             } else {
-                              Member.login({
+                              User.login({
                                 email: email,
                                 password: password
 
@@ -121,10 +121,10 @@ module.exports = function(Member) {
         });
     }
 
-    Member.signup = function member_signup(options, req, callback) {
+    User.signup = function user_signup(options, req, callback) {
       console.log('signup');
       console.log(arguments);
-        Member._signup({
+        User._signup({
             username: options.username,
             email: options.email,
             password: options.password,
@@ -135,7 +135,7 @@ module.exports = function(Member) {
         });
     }
 
-    Member.remoteMethod(
+    User.remoteMethod(
       'signup',
       {
           accepts: [

@@ -6,13 +6,13 @@ if (!process.env['MIGRATE']) {
 
 module.exports=function(app){
     var MysqlUser=app.models.MysqlUser;
-    var Member=app.models.Member;
+    var User=app.models.user;
 
     MysqlUser.find({},function(err,users){
 
         function iter(user) {
 
-            Member._signup({
+            User._signup({
                 migrate: true,
                 token: user.pass,
                 fingerprint: user.fingerprint,

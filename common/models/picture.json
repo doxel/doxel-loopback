@@ -28,15 +28,15 @@
   },
   "validations": [],
   "relations": {
-    "member": {
+    "user": {
       "type": "belongsTo",
-      "model": "Member",
-      "foreignKey": ""
+      "model": "user",
+      "foreignKey": "userId"
     },
     "segment": {
       "type": "belongsTo",
       "model": "Segment",
-      "foreignKey": ""
+      "foreignKey": "segmentId"
     }
   },
   "acls": [
