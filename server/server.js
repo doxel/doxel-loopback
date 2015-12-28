@@ -12,6 +12,8 @@ require('loopback-component-passport').PassportConfigurator;
 
 app.use(loopback.compress());
 
+app.enable('trust proxy', '127.0.0.1');
+
 app.start = function(httpOnly) {
 
   if (httpOnly === undefined) {

@@ -1,7 +1,7 @@
 {
   "files": {
       "loopback#static": {
-          "params": "$!../dist"
+          "params": "$!../client/dist"
       }
   },
 

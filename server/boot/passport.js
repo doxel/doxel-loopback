@@ -14,6 +14,8 @@ module.exports = function(app) {
   });
   passportConfigurator.configureProvider('facebook-login',
     require('../providers.json')['facebook-login']);
+  passportConfigurator.configureProvider('twitter-login',
+    require('../providers.json')['twitter-login']);
 }
 
 

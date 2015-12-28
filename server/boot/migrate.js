@@ -1,4 +1,4 @@
-var Q=new require('q');
+var Q=require('q');
 
 if (!process.env['MIGRATE']) {
     return;
@@ -11,19 +11,15 @@ module.exports=function(app){
     MysqlUser.find({},function(err,users){
 
         function iter(user) {
-            Member.findOrCreate({
-                where: {
-                    email: user.pass+'@doxel.org'
-                }
-            },
-            {
-                password: user.pass,
-                email: user.pass+'@doxel.org',
+
+            Member._signup({
+                migrate: true,
+                token: user.pass,
                 fingerprint: user.fingerprint,
                 ip: user.ip,
-                forwardedFor: user.forwardedFor,
-                created: user.created
+                forwarded_for: user.forwardedFor
             },
+            null,
             function(err,obj){
                 if (err) {
                     throw err;
@@ -37,9 +33,8 @@ module.exports=function(app){
             console.log('migrating '+users.length+' users');
             var q=new Q();
             for(var i=0; i<users.length; ++i) {
-                console.log(i);
+                // without this useless q an error it thrown
                 q.then((function(i){
-                    console.log(i, users[i]);
                     iter(users[i]);
                 })(i));
             }

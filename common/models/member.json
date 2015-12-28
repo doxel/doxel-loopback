@@ -7,6 +7,10 @@
     "validateUpsert": true
   },
   "properties": {
+    "token": {
+      "type": "string",
+      "required": true
+    },
     "fingerprint": {
       "type": "string",
       "required": true
@@ -33,6 +37,18 @@
       "principalType": "ROLE",
       "principalId": "$everyone",
       "permission": "DENY"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$authenticated",
+      "permission": "ALLOW",
+      "method": "logout"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "signup"
     },
     {
       "accessType": "*",
