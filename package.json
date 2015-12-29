@@ -24,6 +24,7 @@
     "loopback-connector-mysql": "^2.2.0",
     "loopback-datasource-juggler": "^2.39.0",
     "loopback-sdk-angular": "^1.6.0",
+    "object-to-paths": "^1.0.3",
     "passport-facebook": "^2.0.0",
     "passport-twitter": "^1.0.3",
     "q": "^1.4.1",
