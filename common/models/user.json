@@ -72,6 +72,12 @@
       "property": "signup"
     },
     {
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "signin"
+    },
+    {
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "admin",
