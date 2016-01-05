@@ -1,5 +1,5 @@
 /*
- * migrate.js
+ * authentication.js
  *
  * Copyright (c) 2015 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.

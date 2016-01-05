@@ -113,7 +113,7 @@ module.exports = function(User) {
             if (!user.newInstance) {
               if (email==user.email) {
                 // given email exists for another instance, abort
-                options.callback(null,{error: 'email_exists'});
+                options.callback(null,{error: 'emailExists'});
                 return;
               }
 
@@ -125,7 +125,7 @@ module.exports = function(User) {
 
               if (username==user.username) {
                 // given username
-                options.callback(null,{error: 'username_exists'});
+                options.callback(null,{error: 'usernameExists'});
                 return;
               }
 
@@ -209,11 +209,11 @@ module.exports = function(User) {
     // need at least username or email, and password
     if (!options.email) {
       if (!options.username) {
-        callback(null,{error: 'no_username'});
+        callback(null,{error: 'noUsername'});
         return;
       }
       if (!options.password) {
-        callback(null,{error: 'no_password'});
+        callback(null,{error: 'noPassword'});
         return;
       }
     }
@@ -239,7 +239,7 @@ module.exports = function(User) {
           return;
         }
         if (!user) {
-          callback(null,{error: 'login_failed'});
+          callback(null,{error: 'loginFailed'});
           return;
         }
         options.email=user.email;
@@ -249,8 +249,8 @@ module.exports = function(User) {
 
       return q.promise;
 
-    }).then(function user_login(){
-      var q=Q.defer();
+      }).then(function user_login(){
+        var q=Q.defer();
 
       User.login({
         where: {
