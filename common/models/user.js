@@ -37,6 +37,7 @@
 module.exports = function(User) {
 
   var crypto=require('crypto');
+  var Q=require('q');
 
   User.getToken=function getToken(options) {
     crypto.randomBytes(options.bytes||16, function(ex, buf) {
@@ -206,25 +207,28 @@ module.exports = function(User) {
   User.signin=function user_signin(options,req,callback) {
     var where={};
 
-    // need at least username or email, and password
+    // need at least username or email
     if (!options.email) {
       if (!options.username) {
         callback(null,{error: 'noUsername'});
         return;
       }
-      if (!options.password) {
-        callback(null,{error: 'noPassword'});
-        return;
-      }
+    }
+
+    // and password
+    if (!options.password) {
+      callback(null,{error: 'noPassword'});
+      return;
     }
 
     var q=Q();
 
     q.then(function getEmailFromUsername(){
-      var q=Q.defer();
+      console.log('1');
+      var q2=Q.defer();
 
       if (options.email) {
-        q.resolve();
+        q2.resolve();
         return;
       }
 
@@ -235,40 +239,44 @@ module.exports = function(User) {
       },
       function(err,user) {
         if (err) {
-          q.reject(err);
-          return;
+          throw err;
         }
-        if (!user) {
+        if (user) {
+          options.email=user.email;
+          q2.resolve();
+        } else {
+
           callback(null,{error: 'loginFailed'});
-          return;
+          q2.reject();
         }
-        options.email=user.email;
-        q.resolve();
 
       });
 
-      return q.promise;
+      return q2.promise;
 
-      }).then(function user_login(){
-        var q=Q.defer();
+    }).then(function user_login(){
+      var q3=Q.defer();
+      console.log(options);
 
       User.login({
-        where: {
-          email: options.email,
-          password: options.password
-        },
-        function(err,user) {
-          console.log(user);
-          options.callback(err,user);
-          q.resolve();
+        email: options.email,
+        password: options.password
+      },
+      function(err,accessToken) {
+        console.log(3);
+        if (err) {
+          q3.reject(err);
         }
-      })
-      return q.promise;
+        console.log(accessToken);
+        callback(null,{session: accessToken});
+        q3.resolve();
+      });
 
     }).fail(function(err){
       console.trace(err);
       options.callback(err);
     });
+
   };
 
   User.remoteMethod(

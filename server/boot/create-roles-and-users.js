@@ -81,6 +81,7 @@ module.exports = function(app) {
 
         }, {
             email: 'admin@doxel.org',
+            username: 'admin',
             emailVerified: true,
             password:'admin',
             token: 'dummy',

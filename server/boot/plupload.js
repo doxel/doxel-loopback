@@ -33,7 +33,7 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
- console.dump=require('object-to-paths').dump;
+console.dump=require('object-to-paths').dump;
 
 module.exports=function(app) {
 
@@ -57,59 +57,87 @@ module.exports=function(app) {
   // Temp file age in seconds
   var maxFileAge = 5 * 3600;
 
-
   app.use('/sendfile', pluploadMiddleware);
   app.use('/sendfile', function(req, res, next){
-    console.log('yo');
 
     // already downloading ?
     if (!req.plupload.isNew) {
       req.once('end', function(){
-        res.sendStatus(201).send('{"jsonrpc": "2.0", "result": {}}');
+        res.status(201).end('{"jsonrpc": "2.0", "result": {}}');
       });
       return;
     }
 
-//    req.plupload.stream.maxBytes=10;
+//   req.plupload.stream.maxBytes=10;
 
     // check timestamp
     var timestamp=req.plupload.fields.timestamp;
     if (!timestamp.match(/^[0-9]{10}_[0-9]{6}$/)) {
-      res.sendStatus(500).send({"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid or missing timestamp."}, "id" : "id"});
+      res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid or missing timestamp."}, "id" : "id"}');
       return;
     }
-
     // check hash
     var sha256=req.plupload.fields.sha256;
     if (!sha256.match(/^[0-9a-z]{64}$/)) {
-      res.sendStatus(500).send('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Invalid hash."}, "id" : "id"}');
+      res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Invalid hash."}, "id" : "id"}');
       return;
     }
 
-    // get free space
-    df({
-      file: uploadDir
+    var q=Q();
 
-    }, function(err, reply) {
-      console.log(reply);
-      if (err) {
-        // error getting free space
-        res.sendStatus(500).send('{"jsonrpc" : "2.0", "error" : {"code": 906, "message": "Could not compute free space on '+uploadDir+'."}, "id" : "id"}');
+    q.then(function(){
 
-      } else if (Number(reply.used)/Number(reply.size) < maxDiskUsage) {
-        // disk full
-        res.sendStatus(500).send('{"jsonrpc" : "2.0", "error" : {"code": 907, "message": "Remote disk is full !"}, "id" : "id"}');
+      var q=Q.defer();
 
-      } else {
-        // receive file
-        var writePath = path.join(tmpDir, timestamp+'-'+sha256);
-        var writeStream = fs.createWriteStream(writePath);
-        req.once('end', function(){
-          res.sendStatus(201).send('{"jsonrpc": "2.0", "result": {}}');
-        });
+      // get free space
+      df({
+        file: uploadDir
+
+      }, function(err, reply) {
+        if (err) {
+          // error getting free space
+          q.reject('{"jsonrpc" : "2.0", "error" : {"code": 906, "message": "Could not compute free space on '+uploadDir+'."}, "id" : "id"}');
+
+        } else if (Number(reply.used)/Number(reply.size) < maxDiskUsage) {
+          // disk full
+          q.reject('{"jsonrpc" : "2.0", "error" : {"code": 907, "message": "Remote disk is full !"}, "id" : "id"}');
+
+        } else {
+          q.resolve();
+        }
+      });
+
+      return q.promise;
+
+    }).then(function(){
+
+      var q=Q.defer();
+
+      // receive file chunk
+      var writePath = path.join(tmpDir, timestamp+'-'+sha256);
+      var writeStream = fs.createWriteStream(writePath, {
+        start: req.plupload.completedOffset
+      });
+
+      req.once('end', function(){
+        res.status(201).end('{"jsonrpc": "2.0", "result": {}}');
+        q.resolve();
+      });
+
+      try {
         req.plupload.stream.pipe(writeStream);
+      } catch(e) {
+        q.reject('{"jsonrpc" : "2.0", "error" : {"code": 911, "message": "Upload failed !"}, "id" : "id"}');
       }
+
+      return q.promise;
+
+    }).fail(function(json){
+      console.log(json)
+      res.status(500).end(json);
+
     });
+
   });
 
 }
