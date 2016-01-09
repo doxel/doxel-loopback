@@ -59,14 +59,9 @@ module.exports=function(app) {
 
   app.use('/sendfile', pluploadMiddleware);
   app.use('/sendfile', function(req, res, next){
-
-    // already downloading ?
-    if (!req.plupload.isNew) {
-      req.once('end', function(){
-        res.status(201).end('{"jsonrpc": "2.0", "result": {}}');
-      });
-      return;
-    }
+    req.once('end', function(){
+      res.status(201).end('{"jsonrpc": "2.0", "result": {}}');
+    });
 
 //   req.plupload.stream.maxBytes=10;
 
@@ -113,19 +108,21 @@ module.exports=function(app) {
 
       var q=Q.defer();
 
+      // already downloading ?
+      if (!req.plupload.isNew) {
+        q.resolve();
+        return;
+      }
+
       // receive file chunk
       var writePath = path.join(tmpDir, timestamp+'-'+sha256);
       var writeStream = fs.createWriteStream(writePath, {
         start: req.plupload.completedOffset
       });
 
-      req.once('end', function(){
-        res.status(201).end('{"jsonrpc": "2.0", "result": {}}');
-        q.resolve();
-      });
-
       try {
         req.plupload.stream.pipe(writeStream);
+        q.resolve();
       } catch(e) {
         q.reject('{"jsonrpc" : "2.0", "error" : {"code": 911, "message": "Upload failed !"}, "id" : "id"}');
       }
