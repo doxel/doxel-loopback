@@ -43,6 +43,29 @@ var php=require('node-php');
 
 var app = module.exports = loopback();
 
+app.use(loopback.context());
+app.use(loopback.token());
+app.use(function setCurrentUser(req, res, next) {
+  if (!req.accessToken) {
+    return next();
+  }
+
+  app.models.user.findById(req.accessToken.userId, function(err, user) {
+    if (err) {
+      return next(err);
+    }
+    if (!user) {
+      return next(new Error('No user with this access token was found.'));
+    }
+    var loopbackContext = loopback.getCurrentContext();
+    if (loopbackContext) {
+      loopbackContext.set('currentUser', user);
+    }
+    next();
+  });
+});
+ 
+
 // Make sure to also put this in `server/server.js`
 // var PassportConfigurator =
 require('loopback-component-passport').PassportConfigurator;
@@ -51,7 +74,9 @@ app.use(loopback.compress());
 
 app.enable('trust proxy', '127.0.0.1');
 
+// TODO: avoid using php for this
 app.use('/doxel-webapp/', php.cgi('/var/www/doxel-webapp/'));
+app.use('/viewer/', php.cgi('/var/www/webglearth2/'));
 
 app.start = function(httpOnly) {
 

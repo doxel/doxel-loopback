@@ -56,7 +56,7 @@
   });
 
   app.get("/viewer", function(req,res,next) {
-    res.redirect('//localhost/webglearth2/deploy/index1.html');
+    res.redirect('//localhost/webglearth2/');
   });
 
   app.get("/upload", function(req,res,next) {

@@ -24,6 +24,7 @@
     "loopback-connector-mysql": "^2.2.0",
     "loopback-datasource-juggler": "^2.39.0",
     "loopback-sdk-angular": "^1.6.0",
+    "mmmagic": "^0.4.1",
     "node-df": "^0.1.1",
     "node-php": "0.0.1",
     "object-to-paths": "^1.0.3",

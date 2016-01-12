@@ -16,7 +16,7 @@
       "required": true
     },
     "timestamp": {
-      "type": "number",
+      "type": "string",
       "required": true
     },
     "lng": {
