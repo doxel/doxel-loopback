@@ -35,37 +35,56 @@
 
 module.exports=function(app) {
 
-  var path = require('path');
-  var fs = require('fs');
-  var df = require('node-df');
-  var Q = require('q');
+  var path=require('path');
+  var fs=require('fs');
+  var df=require('node-df');
+  var Q=require('q');
   console.dump=require('object-to-paths').dump;
   var express_plupload=require('express-plupload');
   var crypto=require('crypto');
-
-
-  var maxDiskUsage=95/100;
+  var shell=require('shelljs');
+  var upload=require(path.join('..','upload-config.json'));
+  var mmm=require('mmmagic');
 
   // upload directory
-  var uploadDir = path.join(__dirname, "..", "upload");
+  var uploadDir=path.join.apply(path,[__dirname].concat(upload.directory));
 
   // upload temporary directory
-  var tmpDir = path.join(uploadDir,'tmp');
+  var tmpDir=path.join(uploadDir,'tmp');
 
   // Remove old files
-  var cleanupTmpDir = true;
+  var cleanupTmpDir=upload.cleanupTmpDir;
 
   // Temp file age in seconds
-  var maxFileAge = 5 * 3600;
+  var maxFileAge=upload.maxFileAge;
 
   app.use('/sendfile', function(req, res, next){
 
     // assert content-length is not null
     var contentLength=Number(req.get('content-length'));
     if (isNaN(contentLength)||!contentLength) {
-      res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 105, "message": "File size exceed content-length !"}, "id" : "id"}');
+      res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 105, "message": "File size exceed content-length !"}, "id" : "id"}');
+      req._abort=true;
       return;
     }
+
+    req.fail=function fail(err) {
+      console.trace(err.message,err.stack);
+      try {
+        var obj=JSON.parse(err.message);
+        if (obj.jsonrpc) {
+          res.status(201).end(err.message);
+
+        } else {
+          res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": { "message": "'+err.message+'", "stack": "'+err.stack+'"}}, "id": "id"}');
+        }
+
+      } catch(e) {
+        res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": { "message": "'+err.message+'", "stack": "'+err.stack+'"}}, "id": "id"}');
+
+      }
+      req._abort=true;
+    };
 
     var q=Q();
 
@@ -84,14 +103,13 @@ module.exports=function(app) {
         }, function(err, accessToken) {
           if (err) {
             // user could not be authenticated
-            res.status(401).end();
+            // TODO: should return status 401
             q.reject(err);
-            return;
-
-          }
+          } else {
     //      console.log(accessToken);
-          req.accessToken=accessToken;
-          q.resolve();
+            req.accessToken=accessToken;
+            q.resolve();
+          }
         }
       );
       return q.promise;
@@ -106,18 +124,16 @@ module.exports=function(app) {
       }, function(err, reply) {
         if (err) {
           q.reject(err);
-          return;
-        }
-
-        if ((Number(reply.used)+contentLength)/Number(reply.size) < maxDiskUsage) {
-          // disk full
-          res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 907, "message": "Remote disk is full !"}, "id" : "id"}');
-          req._abort=true;
-          q.reject(new Error('disk full'));
 
         } else {
-          q.resolve();
+          if (reply[0].used / reply[0].size > upload.maxDiskUsage) {
+            q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 907, "message": "Remote disk is full !"}, "id" : "id"}'));
+
+          } else {
+            q.resolve();
+          }
         }
+
       });
       return q.promise;
 
@@ -125,9 +141,9 @@ module.exports=function(app) {
       // run express-plupload middleware
 
       // TODO: check for already validated, already received, or unknow fields
-//      req.validated=[];
+  //      req.validated=[];
       function validate(field,isValid){
-//        req.validated[field]=isValid;
+  //        req.validated[field]=isValid;
         if (!isValid) {
           req._abort=true;
           if (req.busboy.file) {
@@ -143,246 +159,351 @@ module.exports=function(app) {
           timestamp: function(req,res,next,timestamp) {
             if (!timestamp.match(/^[0-9]{10}_[0-9]{6}$/)) {
               validate('timestamp',false);
-              res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid or missing timestamp. ('+timestamp+')"}, "id" : "id"}');
+              res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 901, "message": "Invalid or missing timestamp. ('+timestamp+')"}, "id" : "id"}');
               return false;
             }
           },
           // validate hash
           sha256: function(req,res,next,sha256) {
             if (!validate('sha256',sha256.match(/^[0-9a-z]{64}$/))) {
-              res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Invalid hash. ('+sha256+')"}, "id" : "id"}');
+              res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Invalid hash. ('+sha256+')"}, "id" : "id"}');
               return false;
             }
           }
         }
       });
 
-    }).fail(function(err){
-      if (err) {
-        console.trace(err);
-        res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error."}, "id" : "id"}');
-        req._abort=true;
-    }
-
-    });
+    }).fail(req.fail);
 
   });
 
-  app.use('/sendfile', function(req,res,next) {
-    var tmpFile=path.join(tmpDir, req.plupload.fields.timestamp+'-'+req.plupload.fields.sha256);
+  app.use('/sendfile', function(req, res, next){
+      var tmpFile=path.join(tmpDir, req.plupload.fields.timestamp+'-'+req.plupload.fields.sha256);
 
-    // chunk received successfuly
-    req.once('end', function(){
-      var Picture=app.models.Picture;
-      var Segment=app.models.Segment;
+      // chunk received successfuly
+      req.once('end', function(){
+        var Picture=app.models.Picture;
+        var Segment=app.models.Segment;
 
-      var sha256=new Buffer(req.plupload.fields.sha256,'hex');
+        var sha256=new Buffer(req.plupload.fields.sha256,'hex');
 
-      // not the last chunk ?
-      if (Number(req.plupload.fields.chunk)+1 < Number(req.plupload.fields.chunks)) {
+        // not the last chunk ?
+        if (Number(req.plupload.fields.chunk)+1 < Number(req.plupload.fields.chunks)) {
 
-        // check for duplicate file
-        Picture.findOne({
-          where: {
-            sha256: sha256
-          }
-
-        }, function(err,picture) {
-          if (picture) {
-            res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 904, "message": "Duplicate file: '+req.plupload.fields.name+' ('+picture.id+')."}, "id" : "id"}');
-
-          } else {
-            res.status(201).end('{"jsonrpc": "2.0", "result": {}}');
-          }
-
-        });
-        return;
-      }
-
-      // last chunk received successfuly
-      Q().then(function(){
-        var q=Q.defer();
-        // compare specified hash with computed hash
-        var stream=fs.createReadStream(tmpFile,{
-          encoding: 'binary',
-          start: Number(req.plupload.fields.offset)
-        });
-        var hash=crypto.createHash('sha256');
-        hash.setEncoding('hex');
-
-        stream.on('end',function(){
-          hash.end();
-          var myhash=hash.read();
-          if (req.plupload.fields.sha256!=myhash) {
-            console.log (req.plupload.fields.sha256,myhash);
-
-            res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Invalid hash. ('+req.plupload.fields.sha256+')"}, "id" : "id"}');
-            q.reject(new Error('invalid hash'));
-
-          } else {
-            q.resolve();
-          }
-        })
-        stream.pipe(hash);
-        return q.promise;
-
-      }).then(function(){
-        var q=Q.defer();
-        // add picture to database
-        Picture.findOrCreate({
-          where: {
-            sha256: sha256
-          }
-
-        },{
-          sha256: sha256,
-          timestamp: req.plupload.fields.timestamp,
-          userId: req.accessToken.userId,
-          created: Date.now(),
-          isNew: true
-
-        },function(err,picture){
-          if (err) {
-            q.reject(err);
-            return;
-          }
-
-          if (picture) {
+          Q().then(function() {
+            var q=Q.defer();
             // check for duplicate file
-            if (!picture.isNew) {
-              res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 904, "message": "Duplicate file: '+req.plupload.fields.name+' ('+picture.id+')."}, "id" : "id"}');
-              q.reject(new Error('duplicate file'));
+            Picture.findOne({
+              where: {
+                sha256: sha256
+              }
+
+            }, function(err,picture) {
+              if (picture) {
+                q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 904, "message": "Duplicate file: '+req.plupload.fields.name+' ('+picture.id+')."}, "id" : "id"}'));
+
+              } else {
+                q.resolve();
+              }
+
+            });
+
+            return q.promise;
+
+          }).then(function(){
+            // check the mime type of the first chunk
+            // TODO: determine why upload hangs without FORCE=true or this then() block
+            var FORCE=true;
+            if (FORCE || Number(req.plupload.fields.chunk)==0) {
+              var q=Q.defer();
+          //  check the file type
+              var magic=new mmm.Magic(mmm.MAGIC_MIME_TYPE);
+              magic.detectFile(tmpFile,function(err,result){
+                if (err) {
+                  q.reject(err);
+
+                } else {
+                  if (result=="image/jpeg") {
+                    res.status(201).end('{"jsonrpc": "2.0", "result": {}, "id": "id"}');
+                    q.resolve()
+
+                  } else {
+                    console.log(result);
+                    q.reject(new Error('{"jsonrpc": "2.0", "error": {"code": 902, "message": "Not a jpeg image: '+req.plupload.fields.name+'"}, "id": "id"}'));
+                  }
+                }
+              })
+              return q.promise;
+            }
+
+          }).fail(req.fail);
+
+          // not the last chunk
+          return;
+        }
+
+        // last chunk received successfuly
+        Q().then(function(){
+          var q=Q.defer();
+
+          if (Number(req.plupload.fields.chunks)>1) {
+            // the file content mime type has already been checked
+            q.resolve();
+
+          } else {
+            //  check the file content mime type
+            var magic=new mmm.Magic(mmm.MAGIC_MIME_TYPE);
+            magic.detectFile(tmpFile,function(err,result){
+              if (err) {
+                q.reject(err);
+
+              } else {
+                if (result=="image/jpeg") {
+                  res.status(201).end('{"jsonrpc": "2.0", "result": {}, "id": "id"}');
+                  q.resolve();
+
+                } else {
+                  console.log(result);
+                  q.reject(new Error('{"jsonrpc": "2.0", "error": {"code": 902, "message": "Not a jpeg image: '+req.plupload.fields.name+'"}, "id": "id"}'));
+                }
+              }
+
+            });
+          }
+
+          return q.promise;
+
+        }).then(function(err){
+          var q=Q.defer();
+
+          // compare specified hash with computed hash
+          var hash=crypto.createHash('sha256');
+          hash.setEncoding('hex');
+
+          // validate jpeg data offset
+          // TODO: check offset against computed jpeg metadata length
+          var stats=fs.statSync(tmpFile);
+          if (req.plupload.fields.offset<=0 || req.plupload.fields.offset>=stats.size-8) {
+            q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 914, "message": "Invalid offset. ('+req.plupload.fields.offset+')"}, "id" : "id"}'));
+            return q.promise;
+          }
+
+          var stream=fs.createReadStream(tmpFile,{
+            encoding: 'binary',
+            // TODO: offset to jpeg data must be verified or computed on the server
+            start: Number(req.plupload.fields.offset)
+          });
+
+          stream.on('end',function(){
+            hash.end();
+            var myhash=hash.read();
+            if (req.plupload.fields.sha256!=myhash) {
+      //            console.log (req.plupload.fields.sha256,myhash);
+              q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Invalid hash. ('+req.plupload.fields.sha256+')"}, "id" : "id"}'));
+
+            } else {
+              q.resolve();
+
+            }
+          });
+
+          stream.pipe(hash);
+          return q.promise;
+
+        }).then(function(){
+          var q=Q.defer();
+          // add picture to database
+          Picture.findOrCreate({
+            where: {
+              sha256: sha256
+            }
+
+          },{
+            sha256: sha256,
+            timestamp: req.plupload.fields.timestamp,
+            userId: req.accessToken.userId,
+            created: Date.now(),
+            isNew: true
+
+          },function(err,picture){
+            if (err) {
+              q.reject(err);
               return;
             }
 
-            picture.isNew=null;
-            picture.unsetAttribute('isNew');
-            req.plupload.fields.lat && (picture.lat=req.plupload.fields.lat);
-            req.plupload.fields.lon && (picture.lng=req.plupload.fields.lon);
-
-            picture.save(function(err,obj){
-              if (err) {
-                q.reject(err);
-              } else {
-                q.resolve(picture);
+            if (picture) {
+              // check for duplicate file
+              if (!picture.isNew) {
+                q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 904, "message": "Duplicate file: '+req.plupload.fields.name+' ('+picture.id+')."}, "id" : "id"}'));
+                return;
               }
-            });
 
-          } else {
-            q.reject(new Error('no picture'));
-          }
-        });
-        return q.promise;
+              picture.isNew=null;
+              picture.unsetAttribute('isNew');
+              req.plupload.fields.lat && (picture.lat=req.plupload.fields.lat);
+              req.plupload.fields.lon && (picture.lng=req.plupload.fields.lon);
 
-      }).then(function(picture){
-        var q=Q.defer();
-
-        // check for user specified segment, if any
-        if (!req.plupload.fields.segmentId) {
-          q.resolve(picture);
-
-        } else {
-          Segment.findById(req.plupload.fields.segmentId, function(err,segment) {
-            if (err) {
-              q.reject(err);
-
-            } else if (segment.userId!=req.accessToken.userId){
-              q.reject(new Error('segment owner mismatch'));
-
-            } else {
-              q.resolve(picture, segment.id);
-            }
-
-          });
-        }
-        return q.promise;
-
-      }).then(function(picture,segmentId){
-        var q=Q.defer();
-        if (segmentId) {
-          // a valid segment was specified
-          q.resolve(picture,segmentId);
-
-        } else {
-          // search for an existing picture matching
-          // the "belongs to the same segment" condition
-          var seconds=picture.timestamp.split('_')[0];
-//          var user=req.accessToken.user;
-//          user.Pictures.findOne({
-          Picture.findOne({
-            where: {
-              and: [{
-                userId: req.accessToken.userId,
-              },{
-                timestamp: {lt: seconds+120}
-              }, {
-                timestamp: {gt: seconds-120}
-              }]
-            }
-
-          }, function(err,existing){
-            // use existing segment
-            if (existing) {
-              q.resolve(picture,existing.segmentId);
-
-            } else {
-              // create new segment
-              Segment.create({
-                userId: req.accessToken.userId
-
-              }, function(err,segment) {
+              picture.save(function(err,picture){
                 if (err) {
                   q.reject(err);
                 } else {
-                  q.resolve(picture,segment.segmentId);
+                  req.picture=picture;
+                  q.resolve();
                 }
               });
 
+            } else {
+              q.reject(new Error('No picture'));
+            }
+
+          });
+
+          return q.promise;
+
+        }).then(function(){
+          var q=Q.defer();
+
+          // check for user specified segment, if any
+          if (!req.plupload.fields.segmentId) {
+            q.resolve();
+
+          } else {
+            Segment.findById(req.plupload.fields.segmentId, function(err,segment) {
+              if (err) {
+                q.reject(err);
+
+              } else if (segment.userId!=req.accessToken.userId){
+                // TODO: maybe segments could be owned by a group
+                q.reject(new Error('segment owner mismatch'));
+
+              } else {
+                req.segment=segment;
+                q.resolve();
+              }
+
+            });
+          }
+          return q.promise;
+
+        }).then(function(){
+          var q=Q.defer();
+          if (req.segment) {
+            // a valid segment was specified
+            q.resolve();
+
+          } else {
+            // search for an existing picture matching
+            // the "belongs to the same segment" condition
+            var seconds=req.picture.timestamp.split('_')[0];
+      //          var user=req.accessToken.user;
+      //          user.Pictures.findOne({
+            Picture.findOne({
+              where: {
+                and: [{
+                  userId: req.accessToken.userId,
+                },{
+                  timestamp: {lt: seconds+120}
+                }, {
+                  timestamp: {gt: seconds-120}
+                }]
+              }
+
+            }, function(err,picture){
+              console.log('pict',picture)
+              if (picture) {
+                // retrieve existing segment
+                Segment.findById({
+                  id: picture.segmentId
+
+                },function(err,segment){
+                  console.log('seg',segment)
+                  if (err) {
+                    q.reject(err);
+                  } else {
+                    req.segment=segment;
+                    q.resolve();
+                  }
+
+                });
+
+              } else {
+                // create new segment
+                Segment.create({
+                  userId: req.accessToken.userId,
+                  timestamp: req.picture.timestamp
+
+                }, function(err,segment) {
+                  if (err) {
+                    q.reject(err);
+                  } else {
+                    req.segment=segment;
+                    q.resolve();
+                  }
+
+                });
+              }
+            });
+          }
+          return q.promise;
+
+        }).then(function(){
+          var q=Q.defer();
+
+          // add picture to segment
+          req.picture.segmentId=req.segment.id;
+          req.picture.save(function(err,picture){
+            if (err) {
+              q.reject(err);
+            } else {
+              req.picture=picture;
+              q.resolve();
             }
           });
-        }
-        return q.promise;
+          return q.promise;
 
-      }).then(function(picture,segmentId){
-        var q=Q.defer();
+        }).then(function(){
+          var q=Q.defer();
+          // move the temporary file to the segment directory
+          var destDir=req.segment.getPath(uploadDir,req.accessToken.user().token,upload.segmentDigits);
 
-        // add picture to segment
-        picture.segmentId=segmentId;
-        picture.save(function(err,picture){
-          if (err) {
-            q.reject(err);
+          shell.mkdir('-p', destDir);
+          var sherr=shell.error();
+          if (sherr) {
+            q.reject(new Error('Cannot create destination directory: '+sherr));
+
           } else {
-            q.resolve();
+            shell.mv(tmpFile, path.join(destDir,req.plupload.fields.timestamp+'.jpeg'));
+            sherr=shell.error();
+            if (sherr) {
+              q.reject(new Error('Cannot move file to destination directory: '+sherr))
+
+            } else {
+              res.status(201).end('{"jsonrpc": "2.0", "result": {}, "id": "id"}');
+              q.resolve();
+            }
           }
+
+          return q.promise;
+
+        }).fail(req.fail);
+
+      }); // req.once('end')
+
+      // not already downloading ?
+      if (req.plupload.isNew) {
+        // open temporary file in append mode
+        var writeStream=fs.createWriteStream(tmpFile, {
+          start: req.plupload.completedOffset
         });
-        return q.promise;
 
-      }).then(function(){
-        // move the temporary file to the segment directory
-        console.log('move file')
+        // pipe stream to temporary file
+        try {
+          req.plupload.stream.pipe(writeStream);
 
-      }).fail(function(err){
-        console.trace(err);
-      });
-
-    }); // app.use('/sendfile')
-
-    // not already downloading ?
-    if (req.plupload.isNew) {
-      // open temporary file in append mode
-      var writeStream = fs.createWriteStream(tmpFile, {
-        start: req.plupload.completedOffset
-      });
-
-      // pipe stream to temporary file
-      try {
-        req.plupload.stream.pipe(writeStream);
-
-      } catch(e) {
-        console.trace(e);
-        res.status(500).end('{"jsonrpc" : "2.0", "error" : {"code": 911, "message": "Upload failed !"}, "id" : "id"}');
+        } catch(e) {
+          req.fail(e);
+        }
       }
-    }
 
   });
 
