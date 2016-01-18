@@ -89,8 +89,6 @@ module.exports = function(User) {
         },
         user_options,
         function(err, user) {
-          console.log('here');
-
           if (err) {
             console.trace('signup failed',user_options,err);
             options.callback(err);
@@ -108,7 +106,6 @@ module.exports = function(User) {
           }
 
           if (user) {
-
             console.log('user',token,user.token);
 
             if (!user.newInstance) {
@@ -244,8 +241,8 @@ module.exports = function(User) {
         if (user) {
           options.email=user.email;
           q2.resolve();
-        } else {
 
+        } else {
           callback(null,{error: 'loginFailed'});
           q2.reject();
         }
