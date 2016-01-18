@@ -1,51 +1,121 @@
-module.exports = function(Picture) {
+/*
+ * picture.js
+ *
+ * Copyright (c) 2016 ALSENET SA - http://doxel.org
+ * Please read <http://doxel.org/license> for more information.
+ *
+ * Author(s):
+ *
+ *      Luc Deschenaux <luc.deschenaux@freesurf.ch>
+ *
+ * This file is part of the DOXEL project <http://doxel.org>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Additional Terms:
+ *
+ *      You are required to preserve legal notices and author attributions in
+ *      that material or in the Appropriate Legal Notices displayed by works
+ *      containing it.
+ *
+ *      You are required to attribute the work as explained in the "Usage and
+ *      Attribution" section of <http://doxel.org/license>.
+ */
+
+ module.exports = function(Picture) {
   var Q=require('q');
 
-  Picture.isHashUnique=function(options, req, res, callback) {
-/*    var q=Q.defer();
+  Picture.prototype.uniqueTimestamp=function() {
+    var picture=this;
+    var sec=picture.timestamp.substr(0,10);
+    var usc=parseInt(picture.timestamp.substr(11),10);
+    var q=Q.defer();
 
-    // authenticate user using cookie
-    // and fetch user info
-    var User=app.models.User;
-    User.relations.accessTokens.modelTo.findById(
-      req.signedCookies.access_token,/* {
-        include: {
-          relation: 'user'
-        }
+    function loop(timestamp, callback) {
+      var q=Q.defer();
 
-      },*/ /* function(err, accessToken) {
-        if (err) {
-          // user could not be authenticated
-          res.status(401).end('Unauthorized');
-          q.reject();
-
-        } else {
-          req.accessToken=accessToken;
-          q.resolve();
-        }
-      }
-    );
-
-    q.promise.then(function(){
-*/
       Picture.findOne({
         where: {
-          sha256: new Buffer(options.sha256, 'hex')
+          and: [
+            {timestamp: timestamp},
+            {userId: picture.userId},
+            {id: {neq: picture.id}}
+          ]
         }
-      }, function(err, picture){
+      }, function(err, _picture) {
         if (err) {
-          console.log(err.message,err.stack);
-          callback(err); //,{error: {code: 500, message: 'Internal server error', originalError: {message: err.message, stack: err.stack}}});
+          q.reject(err);
+
         } else {
-          callback(null,{unique: !picture});
+          if (_picture) {
+            // try again
+            q.resolve();
+
+          } else {
+            // use this timestamp
+            q.resolve(timestamp);
+          }
         }
       });
-/*
-    }).fail(function(err){
-      callback(err);
+
+      q.promise
+      .then(function(timestamp){
+        if (!timestamp) {
+          var nusc=String(++usc);
+          timestamp=sec+'_'+'000000'.substr(nusc.length)+nusc;
+          loop(timestamp, callback);
+
+        } else {
+          callback(null,timestamp)
+        }
+
+      })
+      .fail(function(err){
+        console.log(err);
+        callback(err);
+
+      });
+
+    } // loop
+
+    loop(picture.timestamp, function(err,timestamp){
+      if (err) {
+        q.reject(err);
+
+      } else {
+        picture.timestamp=timestamp;
+        q.resolve();
+      }
 
     });
-*/
+
+    return q.promise;
+  }
+
+  Picture.isHashUnique=function(options, req, res, callback) {
+    Picture.findOne({
+      where: {
+        sha256: new Buffer(options.sha256, 'hex')
+      }
+    }, function(err, picture){
+      if (err) {
+        console.log(err.message,err.stack);
+        callback(err); //,{error: {code: 500, message: 'Internal server error', originalError: {message: err.message, stack: err.stack}}});
+      } else {
+        callback(null,{unique: !picture});
+      }
+    });
   }
 
   Picture.remoteMethod(

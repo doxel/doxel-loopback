@@ -1,7 +1,7 @@
 /*
  * plupload.js
  *
- * Copyright (c) 2015 ALSENET SA - http://doxel.org
+ * Copyright (c) 2015-2016 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
  *
  * Author(s):
@@ -130,7 +130,7 @@ module.exports=function(app) {
 
     } // req.abort
 
-    function auhthenticate() {
+    function authenticate() {
       var q=Q.defer();
 
       // authenticate user using cookie
@@ -263,7 +263,7 @@ module.exports=function(app) {
           var q=Q.defer();
           // check the mime type of the first chunk
           // TODO: determine why upload hangs without FORCE=true or this then() block
-//            var FORCE=true;
+          var FORCE=false;
           if (FORCE || Number(req.plupload.fields.chunk)==0) {
         //  check the file type
             var magic=new mmm.Magic(mmm.MAGIC_MIME_TYPE);
@@ -313,7 +313,7 @@ module.exports=function(app) {
               hash.end();
               var myhash=hash.read();
               if (req.plupload.fields.sha256!=myhash) {
-                q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Hash mismatch. ('+req.plupload.fields.sha256+')"}, "id" : "id"}'));
+                q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Hash mismatch. ('+req.plupload.fields.sha256+' '+tmpFile+')"}, "id" : "id"}'));
 
               } else {
                 q.resolve();
@@ -367,7 +367,7 @@ module.exports=function(app) {
           } else {
             // search for an existing picture matching
             // the "belongs to the same segment" condition
-            var seconds=req.picture.timestamp.split('_')[0];
+            var seconds=req.plupload.fields.timestamp.split('_')[0];
       //          var user=req.accessToken.user;
       //          user.Pictures.findOne({
             Picture.findOne({
@@ -382,7 +382,7 @@ module.exports=function(app) {
               }
 
             }, function(err,picture){
-              if (picture) {
+              if (picture && picture.segmentId) {
                 // retrieve existing segment
                 Segment.findById(
                   picture.segmentId,
@@ -401,7 +401,7 @@ module.exports=function(app) {
                 // create new segment
                 Segment.create({
                   userId: req.accessToken.userId,
-                  timestamp: req.picture.timestamp
+                  timestamp: req.plupload.fields.timestamp.substr(0,10)
 
                 }, function(err,segment) {
                   if (err) {
@@ -476,6 +476,8 @@ module.exports=function(app) {
         } // addPictureToDatabase
 
         function movePictureToDestination() {
+          var q=Q.defer();
+
           // move the temporary file to the segment directory
           var destDir=req.segment.getPath(uploadDir,req.accessToken.user().token,upload.segmentDigits);
 
@@ -486,7 +488,7 @@ module.exports=function(app) {
 
           } else {
             try {
-              shell.mv(tmpFile, path.join(destDir,req.picture.timestamp+'.jpeg'));
+              shell.mv(tmpFile, path.join(destDir,'original_images',req.picture.timestamp+'.jpeg'));
               sherr=shell.error();
 
             } catch(e) {

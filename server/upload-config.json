@@ -1,0 +1,7 @@
+{
+  "maxDiskUsage": 0.95,
+  "directory": [ "..", "upload"],
+  "cleanupTmpDir": true,
+  "maxFileAge": 18000,
+  "segmentDigits": 8
+}
