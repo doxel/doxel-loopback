@@ -40,10 +40,51 @@ module.exports = function(User) {
   var Q=require('q');
 
   User.getToken=function getToken(options) {
+    var options=options||{};
     crypto.randomBytes(options.bytes||16, function(ex, buf) {
       options.callback(buf.toString(options.type||'hex'));
     });
   }
+
+  // create a unique token for users logged in with third party accounts
+  User.observe('before save', function setToken(ctx, next) {
+    var obj=ctx.instance||ctx.data;
+    if (obj.token) {
+      next();
+
+    } else {
+      function _gotToken(token) {
+        // check for token uniqueness
+        User.findOne({
+          where: {
+            token: token
+          }
+        }, function(err, user) {
+          if (err) {
+            throw err;
+          }
+
+          if (user) {
+            // token already owned
+            User.getToken({
+              callback: _gotToken
+            });
+
+          } else {
+            obj.token=token;
+            next();
+          }
+
+        });
+
+      } // _gotToken
+
+      User.getToken({
+        callback: _gotToken
+      });
+
+    }
+  });
 
   /**
   * @method User._signup
