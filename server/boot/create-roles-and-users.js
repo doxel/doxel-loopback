@@ -84,7 +84,6 @@ module.exports = function(app) {
             username: 'admin',
             emailVerified: true,
             password:'admin',
-            token: 'dummy',
             fingerprint: 'dummy',
             ip: '127.0.0.1'
 
