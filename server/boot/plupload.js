@@ -479,7 +479,10 @@ module.exports=function(app) {
           var q=Q.defer();
 
           // move the temporary file to the segment directory
-          var destDir=req.segment.getPath(uploadDir,req.accessToken.user().token,upload.segmentDigits);
+          var destDir=path.join(
+            req.segment.getPath(uploadDir,req.accessToken.user().token,upload.segmentDigits),
+            'original_images'
+          );
 
           shell.mkdir('-p', destDir);
           var sherr=shell.error();
@@ -488,7 +491,7 @@ module.exports=function(app) {
 
           } else {
             try {
-              shell.mv(tmpFile, path.join(destDir,'original_images',req.picture.timestamp+'.jpeg'));
+              shell.mv(tmpFile, path.join(destDir,req.picture.timestamp+'.jpeg'));
               sherr=shell.error();
 
             } catch(e) {
