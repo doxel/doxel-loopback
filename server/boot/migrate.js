@@ -42,36 +42,169 @@ if (!process.env['MIGRATE']) {
 module.exports=function(app){
     var MysqlUser=app.models.MysqlUser;
     var User=app.models.user;
+    var Segment=app.models.Segment;
+    var Picture=app.models.Picture;
+    var tSegmentId={};
 
-    MysqlUser.find({},function(err,users){
+    MysqlUser.find({include: "mysqlPictures"},function(err,users){
 
-        function iter(user) {
+        function iter_user(user) {
+            var q=Q.defer();
 
-            User._signup({
-                migrate: true,
-                token: user.pass,
-                fingerprint: user.fingerprint,
-                ip: user.ip,
-                forwarded_for: user.forwardedFor
-            },
-            null,
-            function(err,obj){
-                if (err) {
-                    throw err;
-                } else {
-                    console.log('added '+user.pass+'@doxel.org');
-                }
+            var pictures=user.mysqlPictures();
+            if (!pictures.length) {
+              console.log('no pictures, use skipped');
+              q.resolve(null);
+
+            } else {
+              User._signup({
+                  migrate: true,
+                  token: user.pass,
+                  fingerprint: user.fingerprint,
+                  ip: user.ip,
+                  forwarded_for: user.forwardedFor,
+                  callback: function(err,newUser){
+                    console.log('new user',arguments);
+                    if (err) {
+                        q.reject(err);
+                    } else {
+                        console.log('added '+user.pass+'@doxel.org');
+                        q.resolve({
+                          newUserId: newUser.id,
+                          pictures: user.mysqlPictures()
+                        });
+                    }
+                  }
+              });
+            }
+
+            return q.promise;
+
+        } // iter_user
+
+        function getSegment(newUserId,picture) {
+          var q=Q.defer();
+          var segmentId=tSegmentId[picture.segment];
+
+          if (segmentId) {
+            q.resolve(segmentId);
+            return q.promise;
+
+          } else {
+            Segment.create({
+              userId: newUserId,
+
+            }, function(err,segment){
+              if (err) {
+                q.reject(err);
+
+              } else {
+                tSegmentId[picture.segment]=segment.id;
+                q.resolve(segment.id);
+              }
             });
+
+            return q.promise;
+
+          }
         }
+
+        var prevSegment=0;
+        function iter_picture(newUserId,user,picture) {
+          var q=Q.defer();
+
+          getSegment(newUserId,picture)
+          .then(function(segmentId) {
+            if (segmentId!=prevSegment) {
+              console.log('segment :'+segmentId);
+              prevSegment=segmentId;
+            }
+            Picture.create({
+              sha256: picture.sha256,
+              created: picture.created,
+              timestamp: picture.timestamp,
+              lng: picture.lon,
+              lat: picture.lat,
+              userId: newUserId,
+              segment: segmentId
+
+            }, function(err,picture){
+              if (err) {
+                q.reject(err);
+
+              } else {
+                q.resolve();
+              }
+            });
+
+          }).fail(function(err){
+            q.reject(err);
+          });
+
+          return q.promise;
+        }
+
 
         setTimeout(function(){
             console.log('migrating '+users.length+' users');
-            var q=new Q();
-            for(var i=0; i<users.length; ++i) {
-                q.then((function(i){
-                    iter(users[i]);
-                })(i));
+            var i=0;
+
+            function user_loop() {
+              console.log('user '+i);
+
+              if (i<users.length) {
+                  (function(i){
+                      iter_user(users[i])
+                      .then(function(reply){
+                        var q=Q.defer();
+                        if (!reply) {
+                          // no pictures, skip user
+                          q.resolve();
+
+                        } else {
+                          var pictures=reply.pictures||{};
+                          var newUserId=reply.newUserId;
+                          var k=0;
+
+                          console.log('user id '+newUserId);
+                          console.log('migrating '+pictures.length+' pictures');
+
+                          function picture_loop() {
+                            if (k<pictures.length) {
+                              (function(newUserId,pictures,k){
+                                console.log(newUserId,'picture '+k);
+                                iter_picture(newUserId,users[i],pictures[k])
+                                .then(function(){
+                                  picture_loop();
+                                })
+                                .fail(function(err){
+                                  console.log(err.message,err.stack);
+                                  picture_loop();
+                                });
+
+                              })(newUserId,pictures,k++);
+
+                            } else {
+                              // next user
+                              q.resolve();
+                            }
+                          }
+
+                          picture_loop();
+                        }
+
+                        return q.promise;
+                      })
+                      .then(user_loop)
+                      .fail(function(err){
+                        console.log(err.message,err.stack);
+                        user_loop();
+                      });
+                  })(i++);
+              }
             }
+            user_loop();
+
         },1000);
 
     });

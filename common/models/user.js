@@ -85,7 +85,6 @@ module.exports = function(User) {
 
     }
   });
-
   /**
   * @method User._signup
   */
@@ -137,13 +136,8 @@ module.exports = function(User) {
           }
 
           if (options.migrate) {
-            if (user) {
-              throw "migrate: unexpected token collision";
-
-            } else {
-              options.callback();
+              options.callback(err,user);
               return;
-            }
           }
 
           if (user) {
