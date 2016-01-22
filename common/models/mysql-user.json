@@ -124,7 +124,13 @@
     }
   },
   "validations": [],
-  "relations": {},
+  "relations": {
+    "mysqlPictures": {
+      "type": "hasMany",
+      "model": "MysqlPictures",
+      "foreignKey": "user"
+    }
+  },
   "acls": [
     {
       "accessType": "*",
