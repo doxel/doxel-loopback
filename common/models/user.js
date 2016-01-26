@@ -137,11 +137,17 @@ module.exports = function(User) {
           }
 
           if (options.migrate) {
-            if (user) {
+            if (!user.newInstance) {
               throw "migrate: unexpected token collision";
 
             } else {
-              options.callback();
+              user.unsetAttribute('newInstance');
+              user.save(function(err){
+                if (err) {
+                  console.trace(err);
+                }
+                options.callback(err);
+              });
               return;
             }
           }
