@@ -39,6 +39,7 @@ var https = require('https');
 var http = require('http');
 var path = require('path');
 var sslConfig = require(path.join(__dirname,'ssl_config.js'));
+var config = require(path.join(__dirname,'config.json'));
 var php=require('node-php');
 
 var app = module.exports = loopback();
@@ -75,8 +76,8 @@ app.use(loopback.compress());
 app.enable('trust proxy', '127.0.0.1');
 
 // TODO: avoid using php for this
-app.use('/doxel-webapp/', php.cgi('/var/www/doxel-webapp/'));
-app.use('/viewer/', php.cgi('/var/www/webglearth2/'));
+app.use('/upload/', php.cgi('/var/www/doxel-uploader/'));
+app.use('/viewer/', php.cgi('/var/www/doxel-viewer/webglearth2/'));
 
 app.start = function(httpOnly) {
 
@@ -120,5 +121,5 @@ boot(app, __dirname, function(err) {
 
   // start the server if `$ node server.js`
   if (require.main === module)
-    app.start();
+    app.start(config.httpOnly);
 });
