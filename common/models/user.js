@@ -85,7 +85,6 @@ module.exports = function(User) {
 
     }
   });
-
   /**
   * @method User._signup
   */
@@ -148,8 +147,8 @@ module.exports = function(User) {
                 }
                 options.callback(err);
               });
-              return;
             }
+            return;
           }
 
           if (user) {
