@@ -6,7 +6,12 @@
   "options": {
     "validateUpsert": true
   },
-  "properties": {},
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "required": true
+    }
+  },
   "validations": [],
   "relations": {
     "pictures": {
