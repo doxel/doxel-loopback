@@ -49,6 +49,7 @@
       mm,
       dd,
       segment.timestamp.substr(0,segmentDirDigits),
+      segment.timestamp,
       token
     );
   }
