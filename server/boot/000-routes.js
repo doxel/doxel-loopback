@@ -34,6 +34,7 @@
  */
 
  module.exports = function(app) {
+  var options=require('../config.json');
   var loopback=require('loopback');
   var dump=require('object-to-paths').dump;
   app.get("/auth/callback", function(req,res,next) {
@@ -56,11 +57,11 @@
   });
 
   app.get("/viewer", function(req,res,next) {
-    res.redirect('//localhost/webglearth2/');
+    res.redirect('//'+options.serverIp+'/webglearth2/');
   });
 
   app.get("/upload", function(req,res,next) {
-    res.redirect('//localhost/doxel-webapp/');
+    res.redirect('//'+options.serverIp+'/upload/');
   });
 
 }
