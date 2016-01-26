@@ -110,6 +110,7 @@ module.exports=function(app) {
         req.fail(err);
       }
 
+ /**** works with firefox but not with chrome (status and error message are not received)
       try {
         req.socket.end();
       } catch(e) {
@@ -122,6 +123,7 @@ module.exports=function(app) {
         console.log(e.message,e.stack);
       }
 
+*/
       try {
         req.unpipe();
       } catch(e) {
