@@ -146,7 +146,8 @@ module.exports=function(app){
 
           return q.promise;
         }
-/*
+
+        // unused
         function getnewhash(newUserId,user,picture) {
           var q=Q.defer();
           var date=picture.segment;
@@ -189,7 +190,6 @@ module.exports=function(app){
           });
           return q.promise;
         }
-        */
 
         setTimeout(function(){
             console.log('migrating '+users.length+' users');
