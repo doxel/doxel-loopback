@@ -145,7 +145,7 @@ module.exports = function(User) {
                 if (err) {
                   console.trace(err);
                 }
-                options.callback(err);
+                options.callback(err,user);
               });
             }
             return;
