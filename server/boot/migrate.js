@@ -155,7 +155,11 @@ module.exports=function(app){
           var dd=date.getDate();
           if (date<10) dd='0'+dd;
 
-          var filepath='/upload/'+date.getFullYear()+'/'+mm+'/'+dd+'/'+(String(date.getTime()).substr(0,8))+'/'+user.pass+'/*/'+picture.timestamp+'.jpeg';
+          var timestamp=picture.timestamp.getTime();
+          timestamp=String(timestamp).substr(0,10)+'_'+String(timestamp).substr(10);
+          timestamp=timestamp+'0000000000_000000'.substr(timestamp.length);
+
+          var filepath='/upload/'+date.getFullYear()+'/'+mm+'/'+dd+'/'+(String(date.getTime()).substr(0,8))+'/'+user.pass+'/*/'+timestamp+'.jpeg';
 
           var result='';
           var stderr='';
