@@ -149,13 +149,13 @@ module.exports=function(app){
 
         function getnewhash(newUserId,user,picture) {
           var q=Q.defer();
-          var date=new Date(picture.segment.substr(0,10)+'000');
+          var date=picture.segment;
           var mm=date.getMonth()+1;
           if (mm<10) mm='0'+mm;
           var dd=date.getDate();
           if (date<10) dd='0'+dd;
 
-          var filepath='/upload/'+date.getFullYear()+'/'+mm+'/'+dd+'/'+picture.segment.substr(0,8)+'/'+user.pass+'/'+picture.segment+'/'+picture.timestamp;
+          var filepath='/upload/'+date.getFullYear()+'/'+mm+'/'+dd+'/'+(String(date.getTime()).substr(0,8))+'/'+user.pass+'/*/'+picture.timestamp+'.jpeg';
 
           var result='';
           var stderr='';
