@@ -41,10 +41,10 @@ module.exports=function(app) {
   var Q=require('q');
   console.dump=require('object-to-paths').dump;
   var express_plupload=require('express-plupload');
-  var crypto=require('crypto');
   var shell=require('shelljs');
   var upload=require(path.join('..','upload-config.json'));
   var mmm=require('mmmagic');
+  var spawn=require('child_process').spawn;
 
   // upload directory
   var uploadDir=path.join.apply(path,[__dirname].concat(upload.directory));
@@ -87,11 +87,11 @@ module.exports=function(app) {
           res.status(201).end(err.message);
 
         } else {
-          res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": { "message": "'+err.message+'", "stack": "'+err.stack+'"}}, "id": "id"}');
+          res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": '+JSON.stringify({ message: err.message, stack: err.stack})+'}, "id": "id"}');
         }
 
       } catch(e) {
-        res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": { "message": "'+err.message+'", "stack": "'+err.stack+'"}}, "id": "id"}');
+        res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": '+JSON.stringify({ message: err.message, stack: err.stack})+'}, "id": "id"}');
 
       }
 
@@ -291,40 +291,36 @@ module.exports=function(app) {
 
         } // checkMimeType
 
+        // compare specified hash with computed hash
         function checkReceivedHash() {
           var q=Q.defer();
+          var result='';
+          var stderr='';
 
-          // compare specified hash with computed hash
-          var hash=crypto.createHash('sha256');
-          hash.setEncoding('hex');
+          var jpeg_sha256=spawn('jpeg_sha256',[tmpFile]);
 
-          // validate jpeg data offset
-          // TODO: check offset against computed jpeg metadata length
-          var stats=fs.statSync(tmpFile);
-          if (req.plupload.fields.offset<=0 || req.plupload.fields.offset>=stats.size-8) {
-            q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 914, "message": "Invalid offset. ('+req.plupload.fields.offset+')"}, "id" : "id"}'));
+          jpeg_sha256.stdout.on('data', function(data) {
+            result+=data;
+          });
 
-          } else {
-            var stream=fs.createReadStream(tmpFile,{
-              encoding: 'binary',
-              // TODO: offset to jpeg data must be verified or computed on the server
-              start: Number(req.plupload.fields.offset)
-            });
+          jpeg_sha256.stderr.on('data', function(data) {
+            stderr+=data;
+            console.log('stderr: '+data);
+          });
 
-            stream.on('end',function(){
-              hash.end();
-              var myhash=hash.read();
-              if (req.plupload.fields.sha256!=myhash) {
-                q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Hash mismatch. ('+req.plupload.fields.sha256+' '+tmpFile+')"}, "id" : "id"}'));
+          jpeg_sha256.on('close', function(code){
+            if (code!=0) {
+              q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": '+JSON.stringify({ message: stderr })+'}, "id": "id"}'));
 
-              } else {
+            } else {
+              if (req.plupload.fields.sha256==result.split(' ')[0]) {
                 q.resolve();
 
+              } else {
+                q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 913, "message": "Hash mismatch. ('+tmpFile+')"}, "id" : "id"}'));
               }
-            });
-
-            stream.pipe(hash);
-          }
+            }
+          });
 
           return q.promise;
 
