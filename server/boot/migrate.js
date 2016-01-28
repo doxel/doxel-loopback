@@ -110,7 +110,10 @@ module.exports=function(app){
         }
 
         var prevSegment=0;
-        function iter_picture(newUserId,user,picture) {
+        function iter_picture(args) {
+          var newUserId=args[0];
+          var user=args[1];
+          var picture=args[2];
           var q=Q.defer();
 
           getSegment(newUserId,picture)
@@ -144,6 +147,44 @@ module.exports=function(app){
           return q.promise;
         }
 
+        function getnewhash(newUserId,user,picture) {
+          var q=Q.defer();
+          var date=new Date(picture.segment.substr(0,10)+'000');
+          var mm=date.getMonth()+1;
+          if (mm<10) mm='0'+mm;
+          var dd=date.getDate();
+          if (date<10) dd='0'+dd;
+
+          var filepath='/upload/'+date.getFullYear()+'/'+mm+'/'+dd+'/'+picture.segment.substr(0,8)+'/'+user.pass+'/'+picture.segment+'/'+picture.timestamp;
+
+          var result='';
+          var stderr='';
+
+          var spawn=require('child_process').spawn;
+
+          var jpeg_sha256=spawn('jpeg_sha256',[filepath]);
+
+          jpeg_sha256.stdout.on('data', function(data) {
+            result+=data;
+          });
+
+          jpeg_sha256.stderr.on('data', function(data) {
+            stderr+=data;
+            console.log('stderr: '+data);
+          });
+
+          jpeg_sha256.on('close', function(code){
+            if (code!=0) {
+              q.reject(new Error('could not get new hash'));
+
+            } else {
+              picture.sha256=result.split(' ')[0];
+              console.log('new hash: '+picture.sha256);
+              q.resolve([newUserId,user,picture]);
+            }
+          });
+          return q.promise;
+        }
 
         setTimeout(function(){
             console.log('migrating '+users.length+' users');
@@ -173,7 +214,8 @@ module.exports=function(app){
                             if (k<pictures.length) {
                               (function(newUserId,pictures,k){
                                 console.log(newUserId,'picture '+k);
-                                iter_picture(newUserId,users[i],pictures[k])
+                                getnewhash(newUserId,users[i],pictures[k])
+                                .then(iter_picture)
                                 .then(function(){
                                   picture_loop();
                                 })
