@@ -144,12 +144,16 @@ module.exports=function(app){
 
         var prevSegment=0;
         function iter_picture(args) {
+          var q=Q.defer();
+          if (!args) {
+            q.resolve(null);
+            return q.promise;
+          }
           var newUserId=args[0];
           var user=args[1];
           var filepath=args[2];
           var picture=args[3];
           var sha256=args[4]
-          var q=Q.defer();
 
           var filepath_elem=filepath.substr(1).split('/');
           var timestamp=filepath_elem[8].split('.')[0];
@@ -161,13 +165,13 @@ module.exports=function(app){
               prevSegment=segmentId;
             }
             Picture.create({
-              sha256: sha256,
+              sha256: new Buffer(sha256,'hex'),
               created: picture.created.getTime(),
               timestamp: timestamp,
               lng: picture.lon,
               lat: picture.lat,
               userId: newUserId,
-              segment: segmentId
+              segmentId: segmentId
 
             }, function(err,picture){
               if (err) {
@@ -219,8 +223,8 @@ module.exports=function(app){
                 }
               }
               if (!picture) {
-                console.log('no matching picture in database !');
-                q.reject();
+                console.log(filepath+': no matching picture in database !');
+                q.resolve(null);
 
               } else {
                 q.resolve([newUserId,user,filepath,picture]);
@@ -234,12 +238,17 @@ module.exports=function(app){
         }
 
         function getnewhash(args) {
+          var q=Q.defer();
+
+          if (!args) {
+            q.resolve(null);
+            return q.promise;
+          }
+
           var newUserId=args[0];
           var user=args[1];
           var filepath=args[2];
           var picture=args[3];
-
-          var q=Q.defer();
 
           var result='';
           var stderr='';
