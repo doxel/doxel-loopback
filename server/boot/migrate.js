@@ -54,7 +54,7 @@ module.exports=function(app){
             var result='';
             var stderr='';
 
-            console.log('find /upload/*/*/*/*/'+user.pass+'/*/original_images/*.jpeg');
+            console.log('find -maxdepth 1 /upload/*/*/*/*/'+user.pass+'/*/original_images/*.jpeg');
             var cmd='find /upload/*/*/*/*/'+user.pass+'/*/original_images/*.jpeg';
             var find=spawn('bash',['-c',cmd]);
 
@@ -81,10 +81,10 @@ module.exports=function(app){
 
         function iter_user(args) {
             var user=args[0];
-            var pictures=args[1];
+            var pathlist=args[1];
             var q=Q.defer();
 
-            if (!pictures.length) {
+            if (!pathlist.length) {
               console.log('no pictures, use skipped');
               q.resolve(null);
 
@@ -103,7 +103,7 @@ module.exports=function(app){
                         console.log('added '+user.pass+'@doxel.org');
                         q.resolve({
                           newUserId: newUser.id,
-                          pictures: pictures
+                          pathlist: pathlist
                         });
                     }
                   }
@@ -114,9 +114,9 @@ module.exports=function(app){
 
         } // iter_user
 
-        function getSegment(newUserId,picture) {
+        function getSegment(newUserId,picture_segment) {
           var q=Q.defer();
-          var segmentId=tSegmentId[newUserId+'_'+picture.segment];
+          var segmentId=tSegmentId[newUserId+'_'+picture_segment];
 
           if (segmentId) {
             q.resolve(segmentId);
@@ -125,14 +125,14 @@ module.exports=function(app){
           } else {
             Segment.create({
               userId: newUserId,
-              timestamp: picture.timestamp
+              timestamp: picture_segment
 
             }, function(err,segment){
               if (err) {
                 q.reject(err);
 
               } else {
-                tSegmentId[newUserId+'_'+picture.segment]=segment.id;
+                tSegmentId[newUserId+'_'+picture_segment]=segment.id;
                 q.resolve(segment.id);
               }
             });
@@ -146,22 +146,24 @@ module.exports=function(app){
         function iter_picture(args) {
           var newUserId=args[0];
           var user=args[1];
-          var picture=args[2];
+          var filepath=args[2];
+          var picture=args[3];
+          var sha256=args[4]
           var q=Q.defer();
 
-          picture.pathElement=picture.substr(1).split('/');
-          picture.timestamp=picture.pathElement[8].split('.')[0];
-          picture.segment=picture.pathElement[6];
-          getSegment(newUserId,picture)
+          var filepath_elem=filepath.substr(1).split('/');
+          var timestamp=filepath_elem[8].split('.')[0];
+          var segment=filepath_elem[6];
+          getSegment(newUserId,segment)
           .then(function(segmentId) {
             if (segmentId!=prevSegment) {
               console.log('segment :'+segmentId);
               prevSegment=segmentId;
             }
             Picture.create({
-              sha256: picture.sha256,
-              created: picture.created,
-              timestamp: picture.timestamp,
+              sha256: sha256,
+              created: picture.created.getTime(),
+              timestamp: timestamp,
               lng: picture.lon,
               lat: picture.lat,
               userId: newUserId,
@@ -183,20 +185,61 @@ module.exports=function(app){
           return q.promise;
         }
 
-        // unused
-        function getnewhash(newUserId,user,picture) {
+        function getPictureDetails(newUserId,user,filepath) {
           var q=Q.defer();
-          var date=picture.segment;
-          var mm=date.getMonth()+1;
-          if (mm<10) mm='0'+mm;
-          var dd=date.getDate();
-          if (date<10) dd='0'+dd;
 
-          var timestamp=picture.timestamp.getTime();
-          timestamp=String(timestamp).substr(0,10)+'_'+String(timestamp).substr(10);
-          timestamp=timestamp+'0000000000_000000'.substr(timestamp.length);
+          var result='';
+          var stderr='';
 
-          var filepath='/upload/'+date.getFullYear()+'/'+mm+'/'+dd+'/'+(String(date.getTime()).substr(0,8))+'/'+user.pass+'/*/'+timestamp+'.jpeg';
+          var sha256sum=spawn('sha256sum',[filepath]);
+
+          sha256sum.stdout.on('data', function(data) {
+            result+=data;
+          });
+
+          sha256sum.stderr.on('data', function(data) {
+            stderr+=data;
+            console.log('stderr: '+data);
+          });
+
+          sha256sum.on('close', function(code){
+            if (code!=0) {
+              q.reject(new Error('could not get old hash'));
+
+            } else {
+              var oldhash=result.substr(0,64);
+              console.log('old hash: '+oldhash);
+              var picture;
+              var pictures=user.mysqlPictures();
+              console.log(pictures.length+' mysql pictures');
+              for (var i=0; i<pictures.length; ++i) {
+                if (pictures[i].sha256.toString('hex')==oldhash) {
+                  picture=pictures[i];
+                  break;
+                }
+              }
+              if (!picture) {
+                console.log('no matching picture in database !');
+                q.reject();
+
+              } else {
+                q.resolve([newUserId,user,filepath,picture]);
+              }
+
+            }
+          });
+
+          return q.promise;
+
+        }
+
+        function getnewhash(args) {
+          var newUserId=args[0];
+          var user=args[1];
+          var filepath=args[2];
+          var picture=args[3];
+
+          var q=Q.defer();
 
           var result='';
           var stderr='';
@@ -217,9 +260,9 @@ module.exports=function(app){
               q.reject(new Error('could not get new hash'));
 
             } else {
-              picture.sha256=result.split(' ')[0];
-              console.log('new hash: '+picture.sha256);
-              q.resolve([newUserId,user,picture]);
+              var newhash=result.substr(0,64);
+              console.log('new hash: '+newhash);
+              q.resolve([newUserId,user,filepath,picture,newhash]);
             }
           });
           return q.promise;
@@ -237,25 +280,27 @@ module.exports=function(app){
                       find_pictures(users[i])
                       .then(iter_user)
                       .then(function(reply){
+                        // iter pictures
                         var q=Q.defer();
                         if (!reply) {
                           // no pictures, skip user
                           q.resolve();
 
                         } else {
-                          var pictures=reply.pictures||{};
+                          var pathlist=reply.pathlist||[];
                           var newUserId=reply.newUserId;
                           var k=0;
 
                           console.log('user id '+newUserId);
-                          console.log('migrating '+pictures.length+' pictures');
+                          console.log('migrating '+(pathlist.length-1)+' pictures');
 
                           function picture_loop() {
-                            if (k<pictures.length) {
-                              (function(newUserId,pictures,k){
-                                console.log(newUserId,'picture '+k);
-                                getnewhash(newUserId,users[i],pictures[k])
-                                iter_picture([newUserId,users[i],pictures[k]])
+                            if (k<pathlist.length-1) {
+                              (function(newUserId,pathlist,k){
+                                console.log(newUserId,'picture '+k,pathlist[k]);
+                                getPictureDetails(newUserId,users[i],pathlist[k])
+                                .then(getnewhash)
+                                .then(iter_picture)
                                 .then(function(){
                                   picture_loop();
                                 })
@@ -264,7 +309,7 @@ module.exports=function(app){
                                   picture_loop();
                                 });
 
-                              })(newUserId,pictures,k++);
+                              })(newUserId,pathlist,k++);
 
                             } else {
                               // next user
