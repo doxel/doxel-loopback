@@ -27,7 +27,7 @@
       "_selectable": false
     },
     "sha256": {
-      "type": "String",
+      "type": "Buffer",
       "required": true,
       "length": 32,
       "precision": null,
