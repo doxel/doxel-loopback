@@ -55,7 +55,8 @@ module.exports=function(app){
             var stderr='';
 
             console.log('find /upload/*/*/*/*/'+user.pass+'/*/original_images/*.jpeg');
-            var find=spawn('find',['/upload/*/*/*/*/'+user.pass+'/*/original_images/*.jpeg']);
+            var cmd='find /upload/*/*/*/*/'+user.pass+'/*/original_images/*.jpeg';
+            var find=spawn('bash',['-c',cmd]);
 
             find.stdout.on('data', function(data) {
               result+=data;
