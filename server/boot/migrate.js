@@ -33,13 +33,14 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
-var Q=require('q');
 
 if (!process.env['MIGRATE']) {
     return;
 }
 
 module.exports=function(app){
+    var Q=require('q');
+    var spawn=require('child_process').spawn;
     var MysqlUser=app.models.MysqlUser;
     var User=app.models.user;
     var Segment=app.models.Segment;
@@ -48,10 +49,40 @@ module.exports=function(app){
 
     MysqlUser.find({include: "mysqlPictures"},function(err,users){
 
-        function iter_user(user) {
+        function find_pictures(user) {
+            var q=Q.defer();
+            var result='';
+            var stderr='';
+
+            console.log('find /upload/*/*/*/*/'+user.pass+'/*/original_images/*.jpeg');
+            var find=spawn('find',['/upload/*/*/*/*/'+user.pass+'/*/original_images/*.jpeg']);
+
+            find.stdout.on('data', function(data) {
+              result+=data;
+            });
+
+            find.stderr.on('data', function(data){
+              stderr+=data;
+              console.log('find: stderr: '+data);
+            });
+
+            find.on('close', function(code) {
+              if (code!=0) {
+                q.reject(new Error('find: error'));
+
+              } else {
+                q.resolve([user,result.split('\n')]);
+              }
+            });
+
+            return q.promise;
+        }
+
+        function iter_user(args) {
+            var user=args[0];
+            var pictures=args[1];
             var q=Q.defer();
 
-            var pictures=user.mysqlPictures();
             if (!pictures.length) {
               console.log('no pictures, use skipped');
               q.resolve(null);
@@ -84,7 +115,7 @@ module.exports=function(app){
 
         function getSegment(newUserId,picture) {
           var q=Q.defer();
-          var segmentId=tSegmentId[picture.segment];
+          var segmentId=tSegmentId[newUserId+'_'+picture.segment];
 
           if (segmentId) {
             q.resolve(segmentId);
@@ -93,13 +124,14 @@ module.exports=function(app){
           } else {
             Segment.create({
               userId: newUserId,
+              timestamp: picture.timestamp
 
             }, function(err,segment){
               if (err) {
                 q.reject(err);
 
               } else {
-                tSegmentId[picture.segment]=segment.id;
+                tSegmentId[newUserId+'_'+picture.segment]=segment.id;
                 q.resolve(segment.id);
               }
             });
@@ -165,8 +197,6 @@ module.exports=function(app){
           var result='';
           var stderr='';
 
-          var spawn=require('child_process').spawn;
-
           var jpeg_sha256=spawn('jpeg_sha256',[filepath]);
 
           jpeg_sha256.stdout.on('data', function(data) {
@@ -200,7 +230,8 @@ module.exports=function(app){
 
               if (i<users.length) {
                   (function(i){
-                      iter_user(users[i])
+                      find_pictures(users[i])
+                      .then(iter_user)
                       .then(function(reply){
                         var q=Q.defer();
                         if (!reply) {
@@ -219,7 +250,7 @@ module.exports=function(app){
                             if (k<pictures.length) {
                               (function(newUserId,pictures,k){
                                 console.log(newUserId,'picture '+k);
-//                                getnewhash(newUserId,users[i],pictures[k])
+                                getnewhash(newUserId,users[i],pictures[k])
                                 iter_picture([newUserId,users[i],pictures[k]])
                                 .then(function(){
                                   picture_loop();
