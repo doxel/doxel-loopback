@@ -102,7 +102,7 @@ module.exports=function(app){
                         console.log('added '+user.pass+'@doxel.org');
                         q.resolve({
                           newUserId: newUser.id,
-                          pictures: user.mysqlPictures()
+                          pictures: pictures
                         });
                     }
                   }
@@ -148,6 +148,9 @@ module.exports=function(app){
           var picture=args[2];
           var q=Q.defer();
 
+          picture.pathElement=picture.substr(1).split('/');
+          picture.timestamp=picture.pathElement[8].split('.')[0];
+          picture.segment=picture.pathElement[6];
           getSegment(newUserId,picture)
           .then(function(segmentId) {
             if (segmentId!=prevSegment) {
