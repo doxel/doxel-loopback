@@ -46,7 +46,31 @@ module.exports=function(app){
     var Segment=app.models.Segment;
     var Picture=app.models.Picture;
     var tSegmentId={};
+    var tokenToUserId={};
     var piexif=require('piexifjs');
+
+    function getExifLngLat(filepath,data) {
+      var jpeg=fs.readFileSync(filepath);
+      var jpeg_data=jpeg.toString('binary');
+      var exif=piexif.load(jpeg_data);
+      if (exif.GPS) {
+        var lat=exif.GPS[piexif.GPSIFD.GPSLatitude];
+        lat=(lat[0][0]/lat[0][1])+(lat[1][0]/lat[1][1])/60+(lat[2][0]/lat[2][1])/3600;
+        if (exif.GPS[piexif.GPSIFD.GPSLatitudeRef]=='S') {
+          lat=-Math.abs(lat);
+        }
+
+        var lng=exif.GPS[piexif.GPSIFD.GPSLongitude];
+        lng=(lng[0][0]/lng[0][1])+(lng[1][0]/lng[1][1])/60+(lng[2][0]/lng[2][1])/3600;
+        if (exif.GPS[piexif.GPSIFD.GPSLongitudeRef]=='W') {
+          lng=-Math.abs(lng);
+        }
+
+        data.lat=lat;
+        data.lng=lng;
+
+      }
+    }
 
     MysqlUser.find({include: "mysqlPictures"},function(err,mysqlUsers){
 
@@ -111,7 +135,7 @@ module.exports=function(app){
          *
          * @param args {Object}
          * @param args.mysqlUser {Object} mysqlUser instance
-         * @param args.pathlist {Array}
+         * @param args.filelist {Array}
          *
          * @return defer {Promise}
          *
@@ -120,10 +144,9 @@ module.exports=function(app){
          */
         function migrateMysqluser(args) {
             var mysqlUser=args.mysqlUser;
-            var pathlist=args.pathlist;
             var q=Q.defer();
 
-            if (!pathlist.length) {
+            if (!args.mysqlPictures.length && (!args.filelist || !args.filelist.length)) {
               console.log('no pictures, use skipped');
               q.resolve(null);
 
@@ -222,9 +245,15 @@ module.exports=function(app){
               userId: args.newUserId,
               segmentId: segmentId
             }
-            if (mysqlPicture && mysqlPicture.lon!==undefined) {
-              data.lng=mysqlPicture.lon;
-              data.lat=mysqlPicture.lat;
+
+            if (mysqlPicture) {
+              if (mysqlPicture.lon!==undefined) {
+                data.lng=mysqlPicture.lon;
+                data.lat=mysqlPicture.lat;
+               }
+
+            } else {
+              getExifLngLat(args.filepath,data);
             }
 
             Picture.create(data, function(err,picture){
@@ -361,7 +390,8 @@ module.exports=function(app){
         /**
          * @function importPicturesFromMysqluser
          * @param args {Object}
-         * @param args.pathlist {Array} picture path list
+         * @param args.filelist {Array} picture path list
+         * @param args.mysqlUser {Object} mysqlUser instance
          * @param args.newUserId {String}
          * @return defer {Promise}
          * @resolve null
@@ -375,22 +405,24 @@ module.exports=function(app){
             q.resolve();
 
           } else {
-            var pathlist=args.pathlist||[];
+            var filelist=args.filelist||[];
             var newUserId=args.newUserId;
+            var mysqlUser=args.mysqlUser;
+            var mysqlPictures=args.mysqlPictures;
             var k=0;
 
             console.log('user id '+newUserId);
-            console.log('migrating '+(pathlist.length-1)+' pictures');
+            console.log('migrating '+(filelist.length-1)+' pictures');
 
             function mysqlPicture_loop() {
-              if (k<pathlist.length-1) {
-                (function(newUserId,pathlist,k){
-                  console.log(newUserId,'picture '+k,pathlist[k]);
+              if (k<filelist.length-1) {
+                (function(k){
+                  console.log(newUserId,'picture '+k,filelist[k]);
                   getMysqlpicture({
                     newUserId: newUserId,
-                    mysqlUser: mysqlUsers[i],
-                    mysqlPictures: args.mysqlPictures,
-                    filepath: pathlist[k]
+                    mysqlUser: mysqlUser,
+                    mysqlPictures: mysqlPictures,
+                    filepath: filelist[k]
                   })
                   .then(getJpegSha256)
                   .then(migrateMysqlpicture)
@@ -400,7 +432,7 @@ module.exports=function(app){
                     mysqlPicture_loop();
                   });
 
-                })(newUserId,pathlist,k++);
+                })(k++);
 
               } else {
                 // next user
@@ -418,6 +450,8 @@ module.exports=function(app){
         setTimeout(function(){
             console.log('migrating '+mysqlUsers.length+' mysqlUsers');
             var i=0;
+
+            var q=Q.defer();
 
             function mysqlUser_loop() {
               console.log('user '+i);
@@ -440,195 +474,181 @@ module.exports=function(app){
                       });
 
                   })(i++);
+
+              } else {
+                q.resolve();
               }
 
             } // mysqlUser_loop
 
             mysqlUser_loop();
 
+            q.promise.then(function(){
 
-            // add pictures with no matching user in database
-            var tokenToUserId={};
-            findPicturesOnDisk({})
-            .then(function(args){
-              /**
-               * @function findOrAddUser
-               *
-               * Find or add user using token from filepath
-               *
-               * @param args {Object}
-               * @param args.filepath_elem {Array}
-               *
-               * @return promise {Promise} deferred promise
-               *
-               * @resolve args {Object} same as input parameter
-               * @resolve args.userId {String}
-               */
-              function findOrAddUser(args /*filepath_elem*/) {
-                var q=Q.defer();
+              // add pictures with no matching user in database
+              findPicturesOnDisk({})
+              .then(function(args){
+                /**
+                 * @function findOrAddUser
+                 *
+                 * Find or add user using token from filepath
+                 *
+                 * @param args {Object}
+                 * @param args.filepath_elem {Array}
+                 *
+                 * @return promise {Promise} deferred promise
+                 *
+                 * @resolve args {Object} same as input parameter
+                 * @resolve args.userId {String}
+                 */
+                function findOrAddUser(args /*filepath_elem*/) {
+                  var q=Q.defer();
 
-                var token=args.filepath_elem[5];
-                var userId=tokenToUserId[token];
-                if (userId) {
-                  args.userId=userId;
-                  q.resolve(args);
+                  var token=args.filepath_elem[5];
+                  var userId=tokenToUserId[token];
+                  if (userId) {
+                    args.userId=userId;
+                    q.resolve(args);
 
-                } else {
-                  User._signup({
-                    migrate: true,
-                    token: token,
-                    callback: function(err, user){
-                      console.log('add user',arguments);
+                  } else {
+                    User._signup({
+                      migrate: true,
+                      token: token,
+                      callback: function(err, user){
+                        console.log('add user',arguments);
+                        if (err) {
+                          q.reject(err);
+
+                        } else {
+                            console.log('added '+user.email);
+                            tokenToUserId[token]=user.id;
+                            args.userId=user.id;
+                            q.resolve(args);
+                        }
+                      }
+
+                    });
+                  }
+
+                  return q.promise;
+
+                } // findOrAddUser
+
+                /**
+                 * @function findOrCreateSegment
+                 *
+                 * @param args {Object}
+                 * @param args.filepath_elem {Array} the splitted filepath
+                 * @param args.userId {String} the segment owner
+                 *
+                 * @return promise {Promise} deferred promise
+                 *
+                 * @resolve args {Object} same as input parameter
+                 * @resolve args.segmentId {String}
+                 */
+                function findOrCreateSegment(args) {
+                  var q=Q.defer();
+
+                  var picture_segment=args.filepath_elem[6];
+                  var segmentId=tSegmentId[args.userId+'_'+picture_segment];
+                  if (segmentId) {
+                    args.segmentId=segmentId;
+                    q.resolve(args);
+
+                  } else {
+                    Segment.create({
+                      userId: args.userId,
+                      timestamp: picture_segment
+
+                    }, function(err,segment){
                       if (err) {
                         q.reject(err);
 
                       } else {
-                          console.log('added '+user.email);
-                          tokenToUserId[token]=user.id;
-                          args.userId=user.id;
-                          q.resolve(args);
+                        tSegmentId[args.userId+'_'+picture_segment]=segment.id;
+                        args.segmentId=segment.id;
+                        q.resolve(args);
                       }
-                    }
 
-                  });
-                }
+                    });
+                  }
 
-                return q.promise;
+                  return q.promise;
 
-              } // findOrAddUser
+                } // findOrCreateSegment
 
-              /**
-               * @function findOrCreateSegment
-               *
-               * @param args {Object}
-               * @param args.filepath_elem {Array} the splitted filepath
-               * @param args.userId {String} the segment owner
-               *
-               * @return promise {Promise} deferred promise
-               *
-               * @resolve args {Object} same as input parameter
-               * @resolve args.segmentId {String}
-               */
-              function findOrCreateSegment(args) {
-                var q=Q.defer();
+                /**
+                 * @function createPicture
+                 *
+                 * @param args {Object}
+                 * @param args.filepath {String} the jpeg file path
+                 * @param args.filepath_elem {Array} the splitted path
+                 * @param args.userId {String}
+                 * @param args.segmentId {String}
+                 * @param args.sha256 {String}
+                 *
+                 * @return promise {Promise} deferred promise
+                 *
+                 * @resolve args {Object} same as input
+                 * @resolve args.picture {Object}
+                 */
+                function createPicture(args) {
+                  var q=Q.defer();
 
-                var picture_segment=args.filepath_elem[6];
-                var segmentId=tSegmentId[args.userId+'_'+picture_segment];
-                if (segmentId) {
-                  args.segmentId=segmentId;
-                  q.resolve(args);
-
-                } else {
-                  Segment.create({
+                  var data={
                     userId: args.userId,
-                    timestamp: picture_segment
+                    segmentId: args.segmentId,
+                    timestamp: args.filepath_elem[8].split('.')[0],
+                    sha256: args.sha256,
+                    created: Date.now()
+                  }
 
-                  }, function(err,segment){
+                  getExifLngLat(args.filepath,data);
+
+                  Picture.create(data, function(err, picture){
                     if (err) {
                       q.reject(err);
 
                     } else {
-                      tSegmentId[args.userId+'_'+picture_segment]=segment.id;
-                      args.segmentId=segment.id;
+                      args.picture=picture;
                       q.resolve(args);
                     }
 
                   });
-                }
 
-                return q.promise;
+                  return q.promise;
 
-              } // findOrCreateSegment
+                } // createPicture
 
-              /**
-               * @function createPicture
-               *
-               * @param args {Object}
-               * @param args.filepath {String} the jpeg file path
-               * @param args.filepath_elem {Array} the splitted path
-               * @param args.userId {String}
-               * @param args.segmentId {String}
-               * @param args.sha256 {String}
-               *
-               * @return promise {Promise} deferred promise
-               *
-               * @resolve args {Object} same as input
-               * @resolve args.picture {Object}
-               */
-              function createPicture(args) {
-                var q=Q.defer();
+                var i=0;
+                function filelist_loop() {
+                  if (i<args.filelist.length-1) {
+                    (function(filepath){
+                      var filepath_elem=filepath.substr(1).split('/');
+                      var token=filepath_elem[5];
+                      // user has not been migrated
+                      findOrAddUser({
+                        filepath: filepath,
+                        filepath_elem: filepath_elem
+                      })
+                      .then(findOrCreateSegment)
+                      .then(getJpegSha256)
+                      .then(createPicture)
+                      .then(filelist_loop)
+                      .fail(function(err){
+                        console.log(err.message,err.stack);
+                        filelist_loop();
+                      })
 
-                var data={
-                  userId: args.userId,
-                  segmentId: args.segmentId,
-                  timestamp: args.filepath_elem[8].split('.')[0],
-                  sha256: args.sha256,
-                  created: Date.now()
-                }
-
-                var jpeg=fs.readFileSync(args.filepath);
-                var jpeg_data=jpeg.toString('binary');
-                var exif=piexif.load(jpeg_data);
-                if (exif.GPS) {
-                  var lat=exif.GPS[piexif.GPSIFD.GPSLatitude];
-                  lat=(lat[0][0]/lat[0][1])+(lat[1][0]/lat[1][1])/60+(lat[2][0]/lat[2][1])/3600;
-                  if (exif.GPS[piexif.GPSIFD.GPSLatitudeRef]=='S') {
-                    lat=-Math.abs(lat);
+                    })(args.filelist[i++])
                   }
+                } // filelist_loop
 
-                  var lng=exif.GPS[piexif.GPSIFD.GPSLongitude];
-                  lng=(lng[0][0]/lng[0][1])+(lng[1][0]/lng[1][1])/60+(lng[2][0]/lng[2][1])/3600;
-                  if (exif.GPS[piexif.GPSIFD.GPSLongitudeRef]=='W') {
-                    lng=-Math.abs(lng);
-                  }
-
-                  data.lat=lat;
-                  data.lng=lng;
-
-                }
-
-                Picture.create(data, function(err, picture){
-                  if (err) {
-                    q.reject(err);
-
-                  } else {
-                    args.picture=picture;
-                    q.resolve(args);
-                  }
-
-                });
-
-                return q.promise;
-
-              } // createPicture
-
-              var i=0;
-              function filelist_loop() {
-                if (i<args.filelist.length-1) {
-                  (function(filepath){
-                    var filepath_elem=filepath.substr(1).split('/');
-                    var token=filepath_elem[5];
-                    // user has not been migrated
-                    findOrAddUser({
-                      filepath: filepath,
-                      filepath_elem: filepath_elem
-                    })
-                    .then(findOrCreateSegment)
-                    .then(getJpegSha256)
-                    .then(createPicture)
-                    .then(filelist_loop)
-                    .fail(function(err){
-                      console.log(err.message,err.stack);
-                      filelist_loop();
-                    })
-
-                  })(args.filelist[i++])
-                }
-              } // filelist_loop
-
-              filelist_loop();
+                filelist_loop();
 
             });
+
+          });
 
         },1000);
 
