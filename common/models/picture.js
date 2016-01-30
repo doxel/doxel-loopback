@@ -104,9 +104,10 @@
   }
 
   Picture.isHashUnique=function(options, req, res, callback) {
+    console.log('isHashUnique',options);
     Picture.findOne({
       where: {
-        sha256: new Buffer(options.sha256, 'hex')
+        sha256: options.sha256
       }
     }, function(err, picture){
       if (err) {
