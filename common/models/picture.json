@@ -8,7 +8,7 @@
   },
   "properties": {
     "sha256": {
-      "type": "buffer",
+      "type": "string",
       "required": true
     },
     "created": {
