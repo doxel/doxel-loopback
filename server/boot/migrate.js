@@ -48,6 +48,7 @@ module.exports=function(app){
     var tSegmentId={};
     var tokenToUserId={};
     var piexif=require('piexifjs');
+    var fs=require('fs');
 
     function getExifLngLat(filepath,data) {
       var jpeg=fs.readFileSync(filepath);
@@ -55,12 +56,19 @@ module.exports=function(app){
       var exif=piexif.load(jpeg_data);
       if (exif.GPS) {
         var lat=exif.GPS[piexif.GPSIFD.GPSLatitude];
+        if (lat===undefined) {
+          return;
+        }
+
         lat=(lat[0][0]/lat[0][1])+(lat[1][0]/lat[1][1])/60+(lat[2][0]/lat[2][1])/3600;
         if (exif.GPS[piexif.GPSIFD.GPSLatitudeRef]=='S') {
           lat=-Math.abs(lat);
         }
 
         var lng=exif.GPS[piexif.GPSIFD.GPSLongitude];
+        if (lng===undefined) {
+          return;
+        }
         lng=(lng[0][0]/lng[0][1])+(lng[1][0]/lng[1][1])/60+(lng[2][0]/lng[2][1])/3600;
         if (exif.GPS[piexif.GPSIFD.GPSLongitudeRef]=='W') {
           lng=-Math.abs(lng);
