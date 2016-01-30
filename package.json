@@ -33,6 +33,7 @@
     "passport-google-oauth": "^0.2.0",
     "passport-twitter": "^1.0.3",
     "php-cgi": "^0.2.0",
+    "piexifjs": "^1.0.0",
     "q": "^1.4.1",
     "serve-favicon": "^2.0.1",
     "shelljs": "^0.5.3"
