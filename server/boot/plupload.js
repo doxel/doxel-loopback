@@ -237,7 +237,7 @@ module.exports=function(app) {
         var Picture=app.models.Picture;
         var Segment=app.models.Segment;
 
-        var sha256=new Buffer(req.plupload.fields.sha256,'hex');
+        var sha256=req.plupload.fields.sha256;
 
         function checkForDuplicateFile() {
           var q=Q.defer();
@@ -313,7 +313,7 @@ module.exports=function(app) {
               q.reject(new Error('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": '+JSON.stringify({ message: stderr })+'}, "id": "id"}'));
 
             } else {
-              if (req.plupload.fields.sha256==result.split(' ')[0]) {
+              if (req.plupload.fields.sha256==result.substr(0,64)) {
                 q.resolve();
 
               } else {
