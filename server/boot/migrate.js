@@ -274,9 +274,11 @@ module.exports=function(app){
               }
             });
 
-          }).fail(function(err){
+          })
+          .fail(function(err){
             q.reject(err);
-          });
+          })
+          .done();
 
           return q.promise;
 
@@ -438,7 +440,8 @@ module.exports=function(app){
                   .fail(function(err){
                     console.log(err.message,err.stack);
                     mysqlPicture_loop();
-                  });
+                  })
+                  .done();
 
                 })(k++);
 
@@ -479,7 +482,8 @@ module.exports=function(app){
                       .fail(function(err){
                         console.log(err.message,err.stack);
                         mysqlUser_loop();
-                      });
+                      })
+                      .done();
 
                   })(i++);
 
@@ -647,6 +651,7 @@ module.exports=function(app){
                         console.log(err.message,err.stack);
                         filelist_loop();
                       })
+                      .done();
 
                     })(args.filelist[i++])
                   }
@@ -654,7 +659,7 @@ module.exports=function(app){
 
                 filelist_loop();
 
-            });
+            }).done();
 
           });
 
