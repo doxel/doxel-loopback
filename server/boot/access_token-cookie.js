@@ -34,10 +34,11 @@
  */
 
 var cookieParser = require('cookie-parser');
+var config = require("../config.json");
 
 module.exports = function(app) {
 
-    var secret='saGG3=(&%as[ü!232+"+*4q}°<sd3';
+    var secret=config.cookieSecret||"this is a secret";
     app.use(cookieParser(secret));
 
     app.use(function(req, res, next) {

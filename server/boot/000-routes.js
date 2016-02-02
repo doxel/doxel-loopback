@@ -42,17 +42,17 @@
 //
     res.cookie('pp-access_token', req.signedCookies.access_token);
     res.cookie('pp-userId', req.signedCookies.userId);
-    res.redirect((process.env.NODE_ENV=="production"?'':'/app')+'/#/login');
+    res.redirect(config.documentRoot+'#/login');
 
   });
 
   app.get("/login", function(req,res,next) {
-    res.redirect((process.env.NODE_ENV=="production"?'':'/app')+'/#/login');
+    res.redirect(config.documentRoot+'#/login');
 
   });
 
   app.get("/logout", function(req,res,next) {
-    res.redirect((process.env.NODE_ENV=="production"?'':'/app')+'/#/logout');
+    res.redirect(config.documentRoot+'#/logout');
 
   });
 

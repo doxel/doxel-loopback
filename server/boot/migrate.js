@@ -120,12 +120,11 @@ module.exports=function(app){
 
             find.stderr.on('data', function(data){
               stderr+=data;
-              console.log('find: stderr: '+data);
             });
 
             find.on('close', function(code) {
               if (code!=0) {
-                q.reject(new Error('find: error'));
+                q.reject(new Error('find: error: '+stderr));
 
               } else {
                 args.filelist=result.split('\n');
@@ -155,7 +154,7 @@ module.exports=function(app){
             var q=Q.defer();
 
             if (!args.mysqlPictures.length && (!args.filelist || !args.filelist.length)) {
-              console.log('no pictures, use skipped');
+              console.log('no pictures, user skipped');
               q.resolve(null);
 
             } else {

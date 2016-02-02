@@ -25,5 +25,8 @@
   },
   "legacyExplorer": false,
   "serverIp": "127.0.0.1",
-  "httpOnly": true
+  "httpOnly": true,
+  "cookieSecret": "5d^!£öe{iaIçW3&+*y*+°S0@2*",
+  "migrateAuthCookie": true,
+  "documentRoot": "/app/"
 }

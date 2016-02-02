@@ -37,43 +37,40 @@ var config=require("../config.json");
 
 if (config.migrateAuthCookie) {
 
-module.exports = function(app) {
+  module.exports = function(app) {
     var User=app.models.user;
 
     app.use(function(req, res, next) {
         console.log(req.cookies);
 
-        var access_token = req.cookies.access_token;
+        if (req.cookies.access_token) {
+          next();
 
-        if (!access_token) {
-
-          // authenticat with old cookies
+        } else {
+          // authenticate with old cookies
           if (req.cookies.token && req.cookies.fingerprint) {
             User.login({
               email: req.cookies.token+'@doxel.org',
               password: req.cookies.token
 
             }, function(err,token) {
-              if (err) {
-                next();
-
-              } else {
+              if (!err) {
                 console.log(token);
                 res.cookie('access_token', token, {signed: true});
-
               }
+              next();
 
             });
+
+            // remove old cookies
+            res.clearCookie('token');
+            res.clearCookie('fingerprint');
+
+          } else {
+            next();
           }
-
-          // remove old cookies
-          res.clearCookie('token');
-          res.clearCookie('fingerprint');
         }
-
-        next();
     });
-
-};
+  };
 
 }
