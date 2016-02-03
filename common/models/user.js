@@ -39,6 +39,69 @@ module.exports = function(User) {
   var crypto=require('crypto');
   var Q=require('q');
 
+  /**
+  * @method User.prototype.authenticate
+  * @param args {Object}
+  * @param args.access_token {String} access token to validate
+  * @return defer {Promise}
+  * @resolve args {Object} same as input
+  * @resolve args.accessToken {Object} the accessToken instance
+  */
+  User.prototype.authenticate=function authenticate(args) {
+    var q=Q.defer();
+
+    // authenticate user using args.access_token
+    // and fetch user info
+    User.relations.accessTokens.modelTo.findById(
+      args.access_token, {
+        include: {
+          relation: 'user'
+        }
+
+      }, function(err, accessToken) {
+        if (err) {
+          args.accessToken=null;
+          q.reject(err);
+
+        } else {
+          accessToken.validate(function(err,isValid){
+            if (err) {
+              q.reject(err);
+
+            } else {
+              args.accessToken=accessToken;
+              q.resolve(args);
+
+            }
+          });
+        }
+      }
+    );
+    return q.promise;
+
+  } // authenticate
+
+  //send password reset link when password reset requested
+  User.on('resetPasswordRequest', function(info) {
+    var url = 'http' + (config.httpOnly? '' : 's') + '://' + config.host + ':' + config.port + config.documentRoot + 'reset-password';
+    var html = 'Click <a href="' + url + '?access_token=' +
+        info.accessToken.id + '">here</a> to reset your password';
+
+    app.models.Email.send({
+      to: info.email,
+      from: info.email,
+      subject: 'Password reset',
+      html: html
+
+    }, function(err) {
+      if (err) {
+        return console.log('> error sending password reset email');
+      }
+      console.log('> sending password reset email to:', info.email);
+
+    });
+  });
+
   User.getToken=function getToken(options) {
     var options=options||{};
     crypto.randomBytes(options.bytes||16, function(ex, buf) {
@@ -318,9 +381,10 @@ module.exports = function(User) {
     }).fail(function(err){
       console.trace(err);
       options.callback(err);
-    });
 
-  };
+    }).done();
+
+  }; // User.signin
 
   User.remoteMethod(
     'signin',
@@ -331,6 +395,63 @@ module.exports = function(User) {
       ],
       returns: {arg: 'result', type: 'object'}
     }
+  });
+
+  /**
+  * @method User.addThirdPartyAccount
+  * bind the specified thirdparty account to the current user
+  * @param options.access_token {String} the thirdparty account access_token
+  */
+
+  User.addThirdPartyAccount=function user_addThirdPartyAccount(options,req,callback){
+    User.prototype.authenticate({
+      access_token: options.access_token
+
+    }).then(function(args){
+      var thirdPartyUser=args.accessToken.user();
+      thirdPartyUser.updateAttribute('parent',req.accessToken.userId,function(err,instance){
+        if (err) {
+          callback(err);
+        } else {
+          callback(null);
+        }
+
+      });
+    });
+
+  } // User.addThirdPartyAccount
+
+  User.remoteMethod(
+    'addThirdPartyAccount',
+    {
+      accepts: [
+        {arg: 'options', type: 'object', 'http': {source: 'body'}},
+        {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      ],
+      returns: {arg: 'result', type: 'object'}
+    }
   );
+
+  User.getParent=function user_getParent(req,callback) {
+    User.findById(req.accessToken.userId, function(err, user) {
+      if (err) {
+        callback(err);
+
+      } else {
+        user.parent(callback);
+      }
+    });
+  };
+
+  User.remoteMethod({
+    'getParent',
+    {
+      accepts: [
+        {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      ],
+      returns: {arg: 'result', type: 'object'}
+    }
+  );
+);
 
 };

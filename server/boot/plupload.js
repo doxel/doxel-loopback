@@ -45,6 +45,7 @@ module.exports=function(app) {
   var upload=require(path.join('..','upload-config.json'));
   var mmm=require('mmmagic');
   var spawn=require('child_process').spawn;
+  var User=app.models.User;
 
   // upload directory
   var uploadDir=path.join.apply(path,[__dirname].concat(upload.directory));
@@ -132,6 +133,7 @@ module.exports=function(app) {
 
     } // req.abort
 
+/*
     function authenticate() {
       var q=Q.defer();
 
@@ -160,7 +162,7 @@ module.exports=function(app) {
       return q.promise;
 
     } // authenticate
-
+*/
     function checkFreeSpace() {
       var q=Q.defer();
 
@@ -188,7 +190,8 @@ module.exports=function(app) {
 
     } // checkFreeSpace
 
-    authenticate()
+    req.access_token=req.signedCookies.access_token;
+    User.prototype.authenticate(req)
     .then(checkFreeSpace)
     .then(function(){
 
@@ -220,7 +223,8 @@ module.exports=function(app) {
         }
       });
 
-    }).fail(req.fail);
+    }).fail(req.abort)
+    .done();
 
   });
 

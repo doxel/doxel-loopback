@@ -20,7 +20,12 @@
       "required": false
     },
     "forwarded_for": {
-      "type": "string"
+      "type": "string",
+      "required": false
+    },
+    "parent": {
+      "type": "string",
+      "required": false
     }
   },
   "validations": [],
@@ -44,6 +49,16 @@
       "type": "hasMany",
       "model": "Segment",
       "foreignKey": "userId"
+    },
+    "children": {
+      "type": "hasMany",
+      "model": "user",
+      "foreignKey": "parentId"
+    },
+    "parent": {
+      "type": "hasOne",
+      "model": "user",
+      "foreignKey": "Id"
     }
   },
   "acls": [
@@ -58,6 +73,18 @@
       "principalId": "$authenticated",
       "permission": "ALLOW",
       "property": "logout"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$owner",
+      "permission": "ALLOW",
+      "property": "addThirdPartyAccount"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$owner",
+      "permission": "ALLOW",
+      "property": "getParent"
     },
     {
       "principalType": "ROLE",

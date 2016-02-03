@@ -73,8 +73,8 @@ app.use(loopback.compress());
 app.enable('trust proxy', '127.0.0.1');
 
 // TODO: avoid using php for this
-app.use('/upload/', php.cgi('/var/www/doxel-uploader/'));
-app.use('/viewer/', php.cgi('/var/www/doxel-viewer/webglearth2/'));
+app.use('/upload', php.cgi('/var/www/doxel-uploader/'));
+app.use('/viewer', php.cgi('/var/www/doxel-viewer/webglearth2/'));
 
 app.start = function(httpOnly) {
 

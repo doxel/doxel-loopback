@@ -34,14 +34,14 @@
  */
 
  module.exports = function(app) {
-  var options=require('../config.json');
+  var config=require('../config.json');
   var loopback=require('loopback');
   var dump=require('object-to-paths').dump;
   app.get("/auth/callback", function(req,res,next) {
     dump(req);
 //
-    res.cookie('pp-access_token', req.signedCookies.access_token);
-    res.cookie('pp-userId', req.signedCookies.userId);
+    res.cookie('pp-access_token', req.signedCookies.access_token, {path: '/'});
+    res.cookie('pp-userId', req.signedCookies.userId, {path: '/'});
     res.redirect(config.documentRoot+'#/login');
 
   });
@@ -57,11 +57,12 @@
   });
 
   app.get("/viewer", function(req,res,next) {
-    res.redirect('//'+options.serverIp+'/webglearth2/');
+    res.redirect('//'+config.host+'/webglearth2/');
   });
 
   app.get("/upload", function(req,res,next) {
-    res.redirect('//'+options.serverIp+'/upload/');
+    dump(req);
+    res.redirect('//'+config.host+'/upload/');
   });
 
 }
