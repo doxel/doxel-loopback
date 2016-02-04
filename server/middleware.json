@@ -14,7 +14,7 @@
   },
   "session:before": {
     "cookie-parser": {
-      "params": "oSl%aj/-X*'9su4?=Hnx02j"
+      "params": "override me in middleware.local.json"
     }
   },
   "auth": {},

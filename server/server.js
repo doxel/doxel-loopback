@@ -38,8 +38,8 @@ var boot = require('loopback-boot');
 var https = require('https');
 var http = require('http');
 var path = require('path');
-var sslConfig = require(path.join(__dirname,'ssl_config.js'));
-var config = require(path.join(__dirname,'config.json'));
+var sslConfig = require(path.join(__dirname,'ssl-config.js'));
+
 var php=require('node-php');
 
 var app = module.exports = loopback();
@@ -65,26 +65,27 @@ app.use(function setCurrentUser(req, res, next) {
  
 
 // Make sure to also put this in `server/server.js`
-// var PassportConfigurator =
-require('loopback-component-passport').PassportConfigurator;
+var PassportConfigurator=require('loopback-component-passport').PassportConfigurator;
 
 app.use(loopback.compress());
 
 app.enable('trust proxy', '127.0.0.1');
 
-// TODO: avoid using php for this
-app.use('/upload', php.cgi('/var/www/doxel-uploader/'));
-app.use('/viewer', php.cgi('/var/www/doxel-viewer/webglearth2/'));
 
-app.start = function(httpOnly) {
+app.start = function(enableSSL) {
 
-  if (httpOnly === undefined) {
-    httpOnly = process.env.HTTP;
+  // TODO: avoid using php for this
+  app.use('/upload', php.cgi(app.get('uploaderPath')));
+  app.use('/viewer/', php.cgi(app.get('viewerPath')));
+
+
+  if (enableSSL === undefined) {
+    enableSSL = process.env.enableSSL;
   }
 
   var server=null;
 
-  if(httpOnly) {
+  if(!enableSSL) {
     server = http.createServer(app);
 
   } else {
@@ -98,7 +99,7 @@ app.start = function(httpOnly) {
 
   // start the web server
   server.listen(app.get('port'),function() {
-    var baseUrl = (httpOnly? 'http://' : 'https://') + app.get('host') + ':' + app.get('port');
+    var baseUrl = (enableSSL? 'https://' : 'http://') + app.get('host') + ':' + app.get('port');
     app.emit('started', baseUrl);
     console.log('Web server listening at: %s/', baseUrl);
     if (app.get('loopback-component-explorer')) {
@@ -118,5 +119,6 @@ boot(app, __dirname, function(err) {
 
   // start the server if `$ node server.js`
   if (require.main === module)
-    app.start(config.httpOnly);
+    app.start(app.get('enableSSL'));
+
 });

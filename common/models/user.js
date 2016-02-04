@@ -391,11 +391,11 @@ module.exports = function(User) {
     {
       accepts: [
         {arg: 'options', type: 'object', 'http': {source: 'body'}},
-        {arg: 'req', type: 'object', 'http': {source: 'req'}},
+        {arg: 'req', type: 'object', 'http': {source: 'req'}}
       ],
       returns: {arg: 'result', type: 'object'}
     }
-  });
+  );
 
   /**
   * @method User.addThirdPartyAccount
@@ -443,7 +443,7 @@ module.exports = function(User) {
     });
   };
 
-  User.remoteMethod({
+  User.remoteMethod(
     'getParent',
     {
       accepts: [
@@ -452,6 +452,5 @@ module.exports = function(User) {
       returns: {arg: 'result', type: 'object'}
     }
   );
-);
 
 };

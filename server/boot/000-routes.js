@@ -34,11 +34,15 @@
  */
 
  module.exports = function(app) {
-  var config=require('../config.json');
   var loopback=require('loopback');
   var dump=require('object-to-paths').dump;
+  var config={
+    documentRoot: app.get('documentRoot'),
+    host: app.get('host')
+  }
+
   app.get("/auth/callback", function(req,res,next) {
-    dump(req);
+//    dump(req);
 //
     res.cookie('pp-access_token', req.signedCookies.access_token, {path: '/'});
     res.cookie('pp-userId', req.signedCookies.userId, {path: '/'});
@@ -61,7 +65,7 @@
   });
 
   app.get("/upload", function(req,res,next) {
-    dump(req);
+ //   dump(req);
     res.redirect('//'+config.host+'/upload/');
   });
 

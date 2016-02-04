@@ -24,8 +24,17 @@
     }
   },
   "legacyExplorer": false,
-  "httpOnly": true,
-  "cookieSecret": "5d^!£öe{iaIçW3&+*y*+°S0@2*",
+  "enableSSL": false,
+  "cookieSecret": "override me in config.local.json",
   "migrateAuthCookie": true,
-  "documentRoot": "/app/"
+  "documentRoot": "/app/",
+  "upload": {
+    "maxDiskUsage": 0.95,
+    "directory": [ "..", "upload_dev"],
+    "cleanupTmpDir": true,
+    "maxFileAge": 18000,
+    "segmentDigits": 8
+  },
+  "uploaderPath": "/var/www/doxel-uploader",
+  "viewerPath": "/var/www/webglearth2"
 }

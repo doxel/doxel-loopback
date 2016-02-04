@@ -34,11 +34,10 @@
  */
 
 var cookieParser = require('cookie-parser');
-var config = require("../config.json");
 
 module.exports = function(app) {
 
-    var secret=config.cookieSecret||"this is a secret";
+    var secret=app.get('cookieSecret');
     app.use(cookieParser(secret));
 
     app.use(function(req, res, next) {

@@ -33,11 +33,8 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
-var config=require("../config.json");
-
-if (config.migrateAuthCookie) {
-
-  module.exports = function(app) {
+module.exports = function(app) {
+  if (app.get('migrateAuthCookie')) {
     var User=app.models.user;
 
     app.use(function(req, res, next) {
@@ -71,6 +68,5 @@ if (config.migrateAuthCookie) {
           }
         }
     });
-  };
-
-}
+  }
+};

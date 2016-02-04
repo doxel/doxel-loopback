@@ -1,5 +1,5 @@
 /*
- * ssl_config.js
+ * ssl-config.js
  *
  * Copyright (c) 2015-2016 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
@@ -33,7 +33,7 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
- var path = require('path'),
-    fs = require("fs");
+var path = require('path');
+var fs = require("fs");
 exports.privateKey = fs.readFileSync(path.join(__dirname, './private/privatekey.pem')).toString();
 exports.certificate = fs.readFileSync(path.join(__dirname, './private/certificate.pem')).toString();
