@@ -22,10 +22,6 @@
     "forwarded_for": {
       "type": "string",
       "required": false
-    },
-    "parent": {
-      "type": "string",
-      "required": false
     }
   },
   "validations": [],
@@ -56,9 +52,9 @@
       "foreignKey": "parentId"
     },
     "parent": {
-      "type": "hasOne",
+      "type": "belongsTo",
       "model": "user",
-      "foreignKey": "Id"
+      "foreignKey": "parentId"
     }
   },
   "acls": [
@@ -82,7 +78,7 @@
     },
     {
       "principalType": "ROLE",
-      "principalId": "$owner",
+      "principalId": "$authenticated",
       "permission": "ALLOW",
       "property": "getParent"
     },

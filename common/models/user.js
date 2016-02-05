@@ -409,7 +409,7 @@ module.exports = function(User) {
 
     }).then(function(args){
       var thirdPartyUser=args.accessToken.user();
-      thirdPartyUser.updateAttribute('parent',req.accessToken.userId,function(err,instance){
+      thirdPartyUser.updateAttribute('parentId',req.accessToken.userId,function(err,instance){
         if (err) {
           callback(err);
         } else {
@@ -433,12 +433,26 @@ module.exports = function(User) {
   );
 
   User.getParent=function user_getParent(req,callback) {
-    User.findById(req.accessToken.userId, function(err, user) {
+    console.log('access_token',req.accessToken);
+    User.findById(req.accessToken.userId, {include: {parent: accessTokens}}, function(err, user) {
       if (err) {
         callback(err);
 
       } else {
-        user.parent(callback);
+        console.log('user',user);
+        // create an access token for the parent user
+        user.parent.accessTokens.create({
+          created: new Date(),
+          ttl: Math.min(user.constructor.settings.ttl, user.constructor.settings.maxTTL)
+
+        }, function(err, accessToken) {
+          console.log('accessToken.create',err,accessToken);
+          callback(err, {
+            username: user.parent.username,
+            email: user.parent.email,
+            accessToken: accessToken
+          });
+        });
       }
     });
   };
@@ -449,7 +463,7 @@ module.exports = function(User) {
       accepts: [
         {arg: 'req', type: 'object', 'http': {source: 'req'}},
       ],
-      returns: {arg: 'result', type: 'object'}
+      returns: {arg: 'user', type: 'object'}
     }
   );
 
