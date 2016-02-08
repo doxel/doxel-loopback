@@ -369,9 +369,7 @@ module.exports=function(app) {
           } else {
             // search for an existing picture matching
             // the "belongs to the same segment" condition
-            var seconds=req.plupload.fields.timestamp.split('_')[0];
-      //          var user=req.accessToken.user;
-      //          user.Pictures.findOne({
+            var seconds=Number(req.plupload.fields.timestamp.split('_')[0]);
             Picture.findOne({
               where: {
                 and: [{
@@ -431,6 +429,7 @@ module.exports=function(app) {
 
           },{
             sha256: sha256,
+            segment: req.segment,
             timestamp: req.plupload.fields.timestamp,
             userId: req.accessToken.userId,
             created: Date.now(),
