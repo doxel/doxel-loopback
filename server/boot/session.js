@@ -42,6 +42,6 @@ module.exports = function(app) {
 //    "store": store,
     "saveUninitialized": true,
     "resave": true,
-    "secret": "keyboard cat"
+    "secret": app.get('sessionSecret')
   }));
 }
