@@ -26,6 +26,7 @@
   "legacyExplorer": false,
   "enableSSL": false,
   "cookieSecret": "override me in config.local.json",
+  "sessionSecret": "override me in config.local.json",
   "migrateAuthCookie": true,
   "documentRoot": "/app/",
   "upload": {
