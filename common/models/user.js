@@ -345,14 +345,13 @@ module.exports = function(User) {
       },
       function(err,user) {
         if (err) {
-          throw err;
+          q2.reject(err);
         }
         if (user) {
           options.email=user.email;
           q2.resolve();
 
         } else {
-          callback(null,{error: 'loginFailed'});
           q2.reject();
         }
 
@@ -380,7 +379,7 @@ module.exports = function(User) {
 
     }).fail(function(err){
       console.trace(err);
-      options.callback(err);
+      callback(null,{error: 'loginFailed'});
 
     }).done();
 
