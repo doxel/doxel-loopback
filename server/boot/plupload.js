@@ -48,7 +48,7 @@ module.exports=function(app) {
   var User=app.models.User;
 
   // upload directory
-  var uploadDir=path.join.apply(path,[__dirname].concat(upload.directory));
+  var uploadDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
 
   // upload temporary directory
   var tmpDir=path.join(uploadDir,'tmp');
@@ -58,6 +58,7 @@ module.exports=function(app) {
 
   // Temp file age in seconds
   var maxFileAge=upload.maxFileAge;
+
 
   app.use('/sendfile', function(req, res, next){
 
@@ -133,36 +134,6 @@ module.exports=function(app) {
 
     } // req.abort
 
-/*
-    function authenticate() {
-      var q=Q.defer();
-
-      // authenticate user using cookie
-      // and fetch user info
-      var User=app.models.User;
-      User.relations.accessTokens.modelTo.findById(
-        req.signedCookies.access_token, {
-          include: {
-            relation: 'user'
-          }
-
-        }, function(err, accessToken) {
-          if (err) {
-            // user could not be authenticated
-            // TODO: should return status 401
-            req.abort(err);
-            q.reject();
-          } else {
-    //      console.log(accessToken);
-            req.accessToken=accessToken;
-            q.resolve();
-          }
-        }
-      );
-      return q.promise;
-
-    } // authenticate
-*/
     function checkFreeSpace() {
       var q=Q.defer();
 
@@ -191,7 +162,7 @@ module.exports=function(app) {
     } // checkFreeSpace
 
     req.access_token=req.signedCookies.access_token;
-    User.prototype.authenticate(req)
+    User.authenticate(req)
     .then(checkFreeSpace)
     .then(function(){
 
@@ -369,15 +340,16 @@ module.exports=function(app) {
           } else {
             // search for an existing picture matching
             // the "belongs to the same segment" condition
-            var seconds=Number(req.plupload.fields.timestamp.split('_')[0]);
+            var timestamp=req.plupload.fields.timestamp;
+            var unixTimestamp=Number(timestamp.substr(0,10)+timestamp.substr(11,3));
             Picture.findOne({
               where: {
                 and: [{
                   userId: req.accessToken.userId,
                 },{
-                  timestamp: {lt: seconds+120}
+                  timestamp: {lt: unixTimestamp+120000}
                 }, {
-                  timestamp: {gt: seconds-120}
+                  timestamp: {gt: unixTimestamp-120000}
                 }]
               }
 
@@ -401,7 +373,7 @@ module.exports=function(app) {
                 // create new segment
                 Segment.create({
                   userId: req.accessToken.userId,
-                  timestamp: req.plupload.fields.timestamp.substr(0,10)
+                  timestamp: timestamp
 
                 }, function(err,segment) {
                   if (err) {
