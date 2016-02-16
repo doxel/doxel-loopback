@@ -31,7 +31,12 @@
   "documentRoot": "/app/",
   "upload": {
     "maxDiskUsage": 0.95,
-    "directory": [ "..", "upload_dev"],
+    "directory": [
+      "server",
+      "upload_dev"
+    ],
+    "imagesDir": "original_images",
+    "imageExtension": "jpeg",
     "cleanupTmpDir": true,
     "maxFileAge": 18000,
     "segmentDigits": 8
