@@ -24,6 +24,10 @@
     },
     "lat": {
       "type": "number"
+    },
+    "public": {
+      "type": "boolean",
+      "required": false
     }
   },
   "validations": [],
@@ -37,6 +41,15 @@
       "type": "belongsTo",
       "model": "Segment",
       "foreignKey": "segmentId"
+    },
+    "POIs": {
+      "type": "hasAndBelongsToMany",
+      "model": "POI"
+    },
+    "instanceAcls": {
+      "type": "hasMany",
+      "model": "InstanceAcl",
+      "foreignKey": "InstanceAclId"
     }
   },
   "acls": [
@@ -65,12 +78,23 @@
       "permission": "ALLOW"
     },
     {
+      "accessType": "READ",
+      "principalType": "ROLE",
+      "principalId": "authorized",
+      "permission": "ALLOW"
+    },
+    {
       "principalType": "ROLE",
       "principalId": "$authenticated",
       "permission": "ALLOW",
       "property": "isHashUnique"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "download"
     }
-
   ],
   "methods": {}
 }

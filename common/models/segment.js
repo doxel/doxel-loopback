@@ -36,9 +36,13 @@
  module.exports = function(Segment) {
   var path=require('path');
 
+  Segment.prototype.getUnixTimestamp=function(){
+    return Number(this.timestamp.substr(0,10)+this.timestamp.substr(11,3));
+  }
+
   Segment.prototype.getPath=function segment_getPath(baseDirectory,token,segmentDirDigits) {
     var segment=this;
-    var date=new Date(Number(segment.timestamp+'000'));
+    var date=new Date(segment.getUnixTimestamp());
     var mm=String(date.getMonth()+1);
     var dd=String(date.getDate());
     if (mm.length==1) mm='0'+mm;
@@ -49,8 +53,8 @@
       mm,
       dd,
       segment.timestamp.substr(0,segmentDirDigits),
-      segment.timestamp,
-      token
+      token,
+      segment.timestamp
     );
   }
 

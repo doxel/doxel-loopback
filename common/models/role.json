@@ -1,0 +1,20 @@
+{
+  "name": "role",
+  "plural": "roles",
+  "base": "Role",
+  "idInjection": true,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {},
+  "validations": [],
+  "relations": {
+    "principals": {
+      "type": "hasMany",
+      "model": "roleMapping",
+      "foreignKey": "roleId"
+    }
+  },
+  "acls": [],
+  "methods": {}
+}

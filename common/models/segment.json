@@ -10,6 +10,10 @@
     "timestamp": {
       "type": "string",
       "required": true
+    },
+    "public": {
+      "type": "boolean",
+      "required": false
     }
   },
   "validations": [],
@@ -17,12 +21,21 @@
     "pictures": {
       "type": "hasMany",
       "model": "Picture",
-      "foreignKey": ""
+      "foreignKey": "pictureId"
     },
     "user": {
       "type": "belongsTo",
       "model": "user",
       "foreignKey": "userId"
+    },
+    "pictures": {
+      "type": "hasMany",
+      "model": "POI",
+      "foreignKey": "poiId"
+    },
+    "POIs": {
+      "type": "hasAndBelongsToMany",
+      "model": "POI"
     }
   },
   "acls": [
@@ -37,6 +50,12 @@
       "principalType": "ROLE",
       "principalId": "$everyone",
       "permission": "DENY"
+    },
+    {
+      "accessType": "READ",
+      "principalType": "ROLE",
+      "principalId": "authorized",
+      "permission": "ALLOW"
     },
     {
       "accessType": "READ",

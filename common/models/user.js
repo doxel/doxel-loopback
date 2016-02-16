@@ -39,16 +39,47 @@ module.exports = function(User) {
   var crypto=require('crypto');
   var Q=require('q');
 
+  User.prototype.getRoles=function(callback){
+    var user=this;
+    var Role=User.app.models.role;
+    var RoleMapping=User.app.models.roleMapping;
+
+    Role.getRoles({
+      principalType: RoleMapping.USER,
+      principalId: user.id
+
+    }, function(err, roles){
+      if (err) {
+        return callback(err);
+      }
+      if (!roles) {
+        return callback(null,null);
+      }
+      var result=[];
+      roles.forEach(function(role){
+        if (!result[role]) {
+          result.push(role);
+        }
+      });
+      callback(null,result);
+    });
+  }
+
   /**
-  * @method User.prototype.authenticate
+  * @method User.authenticate
   * @param args {Object}
   * @param args.access_token {String} access token to validate
   * @return defer {Promise}
   * @resolve args {Object} same as input
   * @resolve args.accessToken {Object} the accessToken instance
   */
-  User.prototype.authenticate=function authenticate(args) {
+  User.authenticate=function authenticate(args) {
     var q=Q.defer();
+
+    if (!args.access_token) {
+      q.reject(new Error('authentication failed'));
+      return q.promise;
+    }
 
     // authenticate user using args.access_token
     // and fetch user info
@@ -161,9 +192,22 @@ module.exports = function(User) {
     User.getToken({
       bytes: 32,
       callback: function getToken_callback(_token) {
-        var token=options.token || _token.substr(0,32);
-        var email=options.email || token+'@doxel.org';
-        var username=options.username || email;
+        var token=options.token || _token.substr(0,32)
+        var username=options.username;
+        var email;
+
+        if (options.email) {
+          email=options.email;
+
+        } else {
+          if (username) {
+            email=username.match(/@/) ? username : username+'@doxel.org';
+
+          } else {
+            email=token+'@doxel.org';
+          }
+        }
+        username=username || email.split('@')[0];
         var password=options.password || _token.substr(32);
 
         var user_options={
@@ -368,17 +412,20 @@ module.exports = function(User) {
         password: options.password
       },
       function(err,accessToken) {
-        console.log(3);
         if (err) {
+          console.log(options.email+': password mismatch');
           q3.reject(err);
+          return;
         }
         console.log(accessToken);
         callback(null,{session: accessToken});
         q3.resolve();
       });
 
+      return q3.promise;
+
     }).fail(function(err){
-      console.trace(err);
+      console.log(err.stack, err.message);
       callback(null,{error: 'loginFailed'});
 
     }).done();
@@ -396,14 +443,58 @@ module.exports = function(User) {
     }
   );
 
+  User.signout=function(options,req,callback){
+
+    function failed(err){
+      console.log(err.stack, err.message)
+      callback(null,{error: 'logoutFailed'});
+    }
+
+    User.authenticate(req)
+    .then(function(req){
+      if (options.all) {
+        User.app.models.AccessToken.destroyAll({
+          where: {userId: req.accessToken.userId}
+        }, function(err){
+          if (err) {
+            return failed(err);
+          }
+          callback();
+        });
+
+      } else {
+        req.accessToken.destroy(function(err){
+          if (err) {
+            return failed(err);
+          }
+          callback();
+        });
+      }
+    })
+    .fail(failed)
+    .done();
+
+  } // User.signout
+
+  User.remoteMethod(
+    'signout',
+    {
+      accepts: [
+        {arg: 'options', type: 'object', 'http': {source: 'body'}},
+        {arg: 'req', type: 'object', 'http': {source: 'req'}}
+      ],
+      returns: {arg: 'result', type: 'object'}
+    }
+  );
+
   /**
   * @method User.addThirdPartyAccount
   * bind the specified thirdparty account to the current user
   * @param options.access_token {String} the thirdparty account access_token
   */
-
+/*
   User.addThirdPartyAccount=function user_addThirdPartyAccount(options,req,callback){
-    User.prototype.authenticate({
+    User.authenticate({
       access_token: options.access_token
 
     }).then(function(args){
@@ -465,5 +556,6 @@ module.exports = function(User) {
       returns: {arg: 'user', type: 'object'}
     }
   );
+  */
 
 };
