@@ -1,0 +1,97 @@
+{
+  "facebook-login": {
+    "provider": "facebook",
+    "module": "passport-facebook",
+    "clientID": "{facebook-client-id-1}",
+    "clientSecret": "{facebook-client-secret-1}",
+    "callbackURL": "/auth/facebook/callback",
+    "authPath": "/auth/facebook",
+    "callbackPath": "/auth/facebook/callback",
+    "successRedirect": "/auth/callback",
+    "failureRedirect": "/login",
+    "failureMessage": true,
+    "scope": ["public_profile","email"],
+    "profileFields": "first_name,gender,last_name,link,locale,name,timezone,verified,email,updated_time"
+  },
+
+  "facebook-link": {
+    "provider": "facebook",
+    "link" : true,
+    "module": "passport-facebook",
+    "clientID": "{facebook-client-id-2}",
+    "clientSecret": "facebook-client-secret-2}",
+    "callbackURL": "/link/facebook/callback",
+    "authPath": "/link/facebook",
+    "callbackPath": "/link/facebook/callback",
+    "successRedirect": "/auth/callback",
+    "failureRedirect": "/failure",
+    "failureMessge": true,
+    "scope": ["public_profile","email"],
+    "profileFields": "first_name,gender,last_name,link,locale,name,timezone,verified,email,updated_time"
+  },
+
+  "twitter-login": {
+    "provider": "twitter",
+    "authScheme": "oauth",
+    "module": "passport-twitter",
+    "callbackURL": "/auth/twitter/callback",
+    "authPath": "/auth/twitter",
+    "callbackPath": "/auth/twitter/callback",
+    "successRedirect": "/auth/callback",
+    "failureRedirect": "/login",
+    "consumerKey": "{twitter-consumer-key-1}",
+    "consumerSecret": "{twitter-consumer-secret-1}",
+    "failureMessage": true,
+    "scope" : ["email"]
+  },
+
+  "twitter-link": {
+    "provider": "twitter",
+    "link": true,
+    "authScheme": "oauth",
+    "module": "passport-twitter",
+    "callbackURL": "/link/twitter/callback",
+    "authPath": "/link/twitter",
+    "callbackPath": "/link/twitter/callback",
+    "successRedirect": "/auth/callback",
+    "failureRedirect": "/failure",
+    "consumerKey": "{twitter-consumer-key-2}",
+    "consumerSecret": "{twitter-consumer-secret-2}",
+    "failureMessage": true,
+    "scope" : ["email"]
+  },
+
+  "google-login": {
+    "provider": "google",
+    "module": "passport-google-oauth",
+    "strategy": "OAuth2Strategy",
+    "clientID": "{google-client-id-1}",
+    "clientSecret": "{google-client-secret-1}",
+    "callbackURL": "/auth/google/callback",
+    "authPath": "/auth/google",
+    "callbackPath": "/auth/google/callback",
+    "successRedirect": "/auth/callback",
+    "failureRedirect": "/login",
+    "failureMessage": true,
+    "scope": ["email", "profile"]
+
+  },
+
+  "google-link": {
+    "provider": "google",
+    "link": true,
+    "module": "passport-google-oauth",
+    "strategy": "OAuth2Strategy",
+    "clientID": "{google-client-id-1}",
+    "clientSecret": "{google-client-secret-1}",
+    "callbackURL": "/link/google/callback",
+    "authPath": "/link/google",
+    "callbackPath": "/link/google/callback",
+    "successRedirect": "/auth/callback",
+    "failureRedirect": "/profile",
+    "failureMessage": true,
+    "scope": ["email", "profile"]
+
+  }
+
+}
