@@ -22,17 +22,21 @@
     "dataSource": "db",
     "public": true
   },
-  "ACL": {
+  "acl": {
     "dataSource": "db",
     "public": false
   },
-  "RoleMapping": {
+  "roleMapping": {
     "dataSource": "db",
     "public": false
   },
-  "Role": {
+  "role": {
     "dataSource": "db",
     "public": false
+  },
+  "InstanceAcl": {
+    "dataSource": "db",
+    "public": true
   },
   "MysqlPictures": {
     "dataSource": "MySQL",
@@ -47,6 +51,10 @@
     "public": true
   },
   "Segment": {
+    "dataSource": "db",
+    "public": true
+  },
+  "POI": {
     "dataSource": "db",
     "public": true
   }
