@@ -263,10 +263,9 @@
     function checkAccessForContext(data) {
       var q=Q.defer();
 
-      if (data.authorized) {
-        q.resolve(true);
-
-      } else if (false) {//data.picture.public || (data.accessToken && data.accessToken.userId==data.picture.userId)) {
+      if (data.picture.public===true || (data.accessToken && data.accessToken.userId==data.picture.userId)) {
+        // Allow public access here to avoid useless database access in checkAccessForContext for this rule
+        // (Bad practice because removing the rule in picture.json will not affect this)
         data.authorized=true;
         q.resolve(data);
 
@@ -277,7 +276,7 @@
 
           } else {
             console.log(resolved);
-            data.authorized|=(resolved.permission==ACL.ALLOW);
+            data.authorized=(resolved.permission==ACL.ALLOW);
             q.resolve(data);
 
           }
@@ -287,37 +286,6 @@
 
     } // checkAccessForContext
 
-/*
-    function checkPermission(data){
-      var q=Q.defer();
-
-      if (data.authorized) {
-        q.resolve(data);
-
-      } else {
-        ACL.checkPermission(
-          data.principalType,
-          data.principalId,
-          data.model,
-          data.property,
-          data.accessType,
-          function(err, resolved) {
-            if (err) {
-              q.reject(err);
-
-            } else {
-              console.log('resolved',resolved);
-              data.authorized|=(resolved.permission==ACL.ALLOW);
-              q.resolve(data);
-            }
-          }
-        );
-
-      }
-      return q.promise;
-
-    } // checkPermission
-*/
     function streamPicture(data) {
       var q=Q.defer();
 
@@ -355,6 +323,9 @@
       return q.promise;
 
     } // streamPicture
+
+
+    // Put the pieces together
 
     var data={
       authorized: false
