@@ -25,7 +25,7 @@
   "documentRoot": "/",
   "upload": {
     "maxDiskUsage": 0.95,
-    "directory": [ "..", "upload"],
+    "directory": [ "server", "upload"],
     "cleanupTmpDir": true,
     "maxFileAge": 18000,
     "segmentDigits": 8
