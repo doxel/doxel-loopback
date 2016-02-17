@@ -42,6 +42,9 @@
   var uploadRootDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
   var fs=require('fs');
   var loopback=require('loopback');
+  var exiv2=require('exiv2');
+  var sharp=require('sharp');
+  var piexif=require('piexifjs');
 
   Picture.getUploadRootDir=function(){
     return uploadRootDir;
@@ -202,7 +205,7 @@
     }
   );
 
-  Picture.download=function(sha256, segmentId, pictureId, timestamp_jpg, req, res, callback) {
+  Picture.download=function(thumb, sha256, segmentId, pictureId, timestamp_jpg, req, res, callback) {
     var Role=app.models.role;
     var RoleMapping=app.models.roleMapping;
     var ACL=app.models.acl;
@@ -263,7 +266,7 @@
     function checkAccessForContext(data) {
       var q=Q.defer();
 
-      if (data.picture.public===true || (data.accessToken && data.accessToken.userId==data.picture.userId)) {
+      if (false) {//data.picture.public===true || (data.accessToken && data.accessToken.userId==data.picture.userId)) {
         // Allow public access here to avoid useless database access in checkAccessForContext for this rule
         // (Bad practice because removing the rule in picture.json will not affect this)
         data.authorized=true;
@@ -286,41 +289,184 @@
 
     } // checkAccessForContext
 
-    function streamPicture(data) {
+    function streamFullSizePicture(data) {
       var q=Q.defer();
+
+      fs.stat(data.filename,function(err,stats){
+        if (err) {
+          return q.reject(err);
+        }
+
+        res.set('Content-Type','image/jpeg');
+        res.set('Content-Disposition','attachment;filename='+timestamp+'.jpg');
+        res.set('Content-Transfer-Encoding','binary');
+        res.set('Content-Size', stats.size);
+
+        fs.createReadStream(data.filename)
+        .on('end',function(){
+          q.resolve(data);
+        })
+        .on('error',function(err){
+          q.reject(err);
+        })
+        .pipe(res);
+
+      });
+
+      return q.promise;
+
+    } // streamFullSizePicture
+
+    function getImagePreviews(data) {
+      var q=Q.defer();
+
+      if (data.useExiv2) {
+        exiv2.getImagePreview(data.filename, function(err, previews){
+          if (err) {
+            console.log(err.stack, err.message);
+          }
+          data.previews=previews;
+          q.resolve(data);
+        });
+        return q.promise;
+      }
+
+      var jpeg_data='';
+      fs.createReadStream(data.filename,{
+        start: 0,
+        end: 256*1024,
+        encoding: 'binary'
+      })
+      .on('error', callback)
+      .on('data', function(chunk){
+        jpeg_data+=chunk;
+
+      })
+      .on('end', function(){
+        try {
+          var exif=data.exif=piexif.load(jpeg_data);
+
+        } catch(e) {
+          console.log(e.stack, e.message);
+          q.resolve(data);
+        }
+
+        if (!exif) {
+          q.resolve(data);
+        }
+
+        /*
+        var exifObj=exif;
+    for (var ifd in exifObj) {
+        if (ifd == "thumbnail") {
+            continue;
+        }
+        console.log("-" + ifd);
+        for (var tag in exifObj[ifd]) {
+            console.log("  " + piexif.TAGS[ifd][tag]["name"] + ":" + exifObj[ifd][tag]);
+        }
+    }
+*/
+        data.picture.width=exif['0th'][piexif.ImageIFD.ImageWidth];
+        data.picture.height=exif['0th'][piexif.ImageIFD.ImageHeight];
+
+        if (exif.thumbnail) {
+          data.previews=[{
+            mimeType: 'image/jpeg',
+            data: exif.thumbnail,
+            width: exif['1st'][piexif.ImageIFD.ImageWidth],
+            height: exif['1st'][piexif.ImageIFD.ImageHeight]
+          }];
+        }
+
+        q.resolve(data);
+
+      });
+
+      return q.promise;
+    }
+
+    function streamThumbnail(data) {
+
+      // read thumbnails from jpeg
+      return getImagePreviews(data)
+      .then(function(data){
+        var q=Q.defer();
+        var previews=data.previews;
+
+        if (previews) {
+          var thumb;
+          var width=0;
+          previews.forEach(function(preview){
+            if (preview.mimeType=='image/jpeg') {
+              if (preview.width>width) {
+                thumb=preview;
+              }
+            }
+          });
+
+          if (thumb && width>=256 && Math.abs(data.picture.width/data.picture.height-thumb.width/thumb.height)<0.01) {
+            console.log(thumb);
+            res.set('Content-Type','image/jpeg');
+            res.set('Content-Transfer-Encoding','binary');
+            res.set('Content-Size',thumb.data.length);
+            res.end(thumb.data);
+            return q.resolve(data);
+          }
+
+        }
+
+        // no (suitable) preview, create thumbnail
+        var thumbnailer=sharp()
+        .resize(256)
+        .on('error', function(err){
+          q.reject(err);
+        });
+
+        console.log('TODO: streamThumbnail: save thumbnail in exif');
+
+        res.set('Content-Type','image/jpeg');
+        res.set('Content-Transfer-Encoding','binary');
+
+        fs.createReadStream(data.filename)
+        .on('error', function(err){
+          q.reject(err);
+
+        })
+        .on('end', function(){
+          q.resolve(data);
+
+        })
+        .pipe(thumbnailer)
+        .pipe(res);
+
+        return q.promise;
+
+      });
+
+    } // streamThumbnail
+
+    function streamPicture(data) {
 
       if (!data.authorized) {
         var err=new Error('Not Authorized');
         err.status=401;
+        var q=Q.defer();
         q.reject(err);
+        return q.promise;
 
       } else {
         var picture=data.picture;
-        var filename=pictureFilePath(picture,picture.segment(),picture.user());
-        console.log(filename);
+        data.filename=pictureFilePath(picture,picture.segment(),picture.user());
+        console.log(data.filename);
 
-        fs.stat(filename,function(err,stats){
-          if (err) {
-            return q.reject(err);
-          }
+        if (thumb) {
+          return streamThumbnail(data);
 
-          res.set('Content-Type','image/jpeg');
-          res.set('Content-Disposition','attachment;filename='+timestamp+'.jpg');
-          res.set('Content-Transfer-Encoding','binary');
-          res.set('Content-Size', stats.size);
-
-          fs.createReadStream(filename)
-          .on('end',function(){
-            q.resolve();
-          })
-          .on('error',function(err){
-            q.reject(err);
-          })
-          .pipe(res);
-
-        });
+        } else {
+          return streamFullSizePicture(data);
+        }
       }
-      return q.promise;
 
     } // streamPicture
 
@@ -355,6 +501,7 @@
 
   Picture.remoteMethod('download',{
     accepts: [
+      {arg: 'thumb', type: 'string', required: false},
       {arg: 'sha256', type: 'string', required: true},
       {arg: 'segmentId', type: 'string', required: true},
       {arg: 'pictureId', type: 'string', required: true},
