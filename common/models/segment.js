@@ -58,4 +58,24 @@
     );
   }
 
+  Segment.viewer=function(req, res, callback){
+    console.log('viewer')
+    res.status(200).end('viewer '+req.url);
+
+  }
+
+  Segment.remoteMethod('viewer',{
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: {},
+    http: {
+      path: '/viewer/*',
+      verb: 'get'
+    }
+
+  });
+
 };
