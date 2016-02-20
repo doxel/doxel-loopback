@@ -187,7 +187,7 @@ module.exports=function(app){
           var segmentId=tSegmentId[newUserId+'_'+picture_segment];
 
           if (segmentId) {
-            q.resolve(segmentId);
+            q.resolve({id: segmentId});
             return q.promise;
 
           } else {
@@ -201,7 +201,7 @@ module.exports=function(app){
 
               } else {
                 tSegmentId[newUserId+'_'+picture_segment]=segment.id;
-                q.resolve(segment.id);
+                q.resolve(segment);
               }
             });
 
@@ -236,13 +236,13 @@ module.exports=function(app){
 
           var filepath_elem=args.filepath.substr(1).split('/');
           var timestamp=filepath_elem[8].split('.')[0];
-          var segment=filepath_elem[6];
+          var segmentTimestamp=filepath_elem[6];
 
-          findOrCreateSegment(args.newUserId,segment)
-          .then(function(segmentId) {
-            if (segmentId!=prevSegment) {
-              console.log('segment :'+segmentId);
-              prevSegment=segmentId;
+          findOrCreateSegment(args.newUserId,segmentTimestamp)
+          .then(function(segment) {
+            if (segment.id!=prevSegment) {
+              console.log('segment :'+segment.id);
+              prevSegment=segment.id;
             }
 
             var data={
@@ -250,7 +250,7 @@ module.exports=function(app){
               created: mysqlPicture && mysqlPicture.created.getTime() || Date.now(),
               timestamp: timestamp,
               userId: args.newUserId,
-              segmentId: segmentId
+              segmentId: segment.id
             }
 
             if (mysqlPicture) {
@@ -269,7 +269,22 @@ module.exports=function(app){
 
               } else {
                 args.picture=picture;
-                q.resolve(args);
+
+                // set preview picture id for new segment
+                if (segment.timestamp) {
+                  segment.previewId=picture.id;
+                  segment.save(function(err,segment){
+                    if (err) {
+                      q.reject(err);
+                    } else {
+                      q.resolve(args);
+                    }
+                  });
+
+                } else {
+                  q.resolve(args);
+                }
+
               }
             });
 
@@ -555,7 +570,7 @@ module.exports=function(app){
                  * @return promise {Promise} deferred promise
                  *
                  * @resolve args {Object} same as input parameter
-                 * @resolve args.segmentId {String}
+                 * @resolve args.segment {Object}
                  */
                 function findOrCreateSegment(args) {
                   var q=Q.defer();
@@ -563,7 +578,7 @@ module.exports=function(app){
                   var picture_segment=args.filepath_elem[6];
                   var segmentId=tSegmentId[args.userId+'_'+picture_segment];
                   if (segmentId) {
-                    args.segmentId=segmentId;
+                    args.segment={id: segmentId};
                     q.resolve(args);
 
                   } else {
@@ -577,7 +592,7 @@ module.exports=function(app){
 
                       } else {
                         tSegmentId[args.userId+'_'+picture_segment]=segment.id;
-                        args.segmentId=segment.id;
+                        args.segment=segment;
                         q.resolve(args);
                       }
 
@@ -622,7 +637,23 @@ module.exports=function(app){
 
                     } else {
                       args.picture=picture;
-                      q.resolve(args);
+
+                      // set preview picture id for new segment
+                      var segment=args.segment;
+                      if (segment.timestamp) {
+                        segment.previewId=picture.id;
+                        segment.save(function(err,segment){
+                          if (err) {
+                            q.reject(err);
+                          } else {
+                            q.resolve(args);
+                          }
+                        });
+
+                      } else {
+                        q.resolve(args);
+                      }
+
                     }
 
                   });
