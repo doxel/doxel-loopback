@@ -28,10 +28,10 @@
       "model": "user",
       "foreignKey": "userId"
     },
-    "pictures": {
-      "type": "hasMany",
-      "model": "POI",
-      "foreignKey": "poiId"
+    "preview": {
+      "type": "hasOne",
+      "model": "Picture",
+      "foreignKey": "previewId"
     },
     "POIs": {
       "type": "hasAndBelongsToMany",
