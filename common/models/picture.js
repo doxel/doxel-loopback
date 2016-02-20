@@ -277,7 +277,6 @@
             q.reject(err);
 
           } else {
-            console.log(resolved);
             data.authorized=(resolved.permission==ACL.ALLOW);
             q.resolve(data);
 
@@ -319,25 +318,27 @@
     function getExif(data) {
       var q=Q.defer();
 
-      var jpeg_data='';
-      fs.createReadStream(data.filename,{
-        start: 0,
-        end: 256*1024,
-        encoding: 'binary'
-      })
-      .on('error', callback)
-      .on('data', function(chunk){
-        jpeg_data+=chunk;
+      sharp(data.filename)
+      .metadata(function(err,metadata){
+        if (err) {
+          return q.reject(err);
+        }
+        data.metadata=metadata;
+        data.picture.aspect=metadata.width/metadata.height;
 
-      })
-      .on('end', function(){
-        try {
-          var exif=piexif.load(jpeg_data);
-          data.exif=exif;
+        if (metadata.exif) {
+          try {
+            var exif=piexif.load(metadata.exif.toString('binary'));
+            data.exif=exif;
 
-        } catch(e) {
-          console.log(e.stack, e.message);
+          } catch(e) {
+            console.log(e, e.stack, e.message);
+            data.exif=null;
+          }
+
+        } else {
           data.exif=null;
+
         }
         q.resolve(data);
 
@@ -347,139 +348,152 @@
 
     } // getExif
 
-    function getImagePreviews(data) {
+    function getExifThumbnails(data) {
+      return getExif(data)
+      .then(function(data){
 
-      if (data.useExiv2) {
-        var q=Q.defer();
-        exiv2.getImagePreview(data.filename, function(err, previews){
-          if (err) {
-            console.log(err.stack, err.message);
+          var exifObj=data.exif;
+      for (var ifd in exifObj) {
+          if (ifd == "thumbnail") {
+              continue;
           }
-          data.previews=previews;
-          q.resolve(data);
-        });
-        return q.promise;
-
-      } else {
-        return getExif(data)
-        .then(function(data){
-            /*
-            var exifObj=exif;
-        for (var ifd in exifObj) {
-            if (ifd == "thumbnail") {
-                continue;
-            }
-            console.log("-" + ifd);
-            for (var tag in exifObj[ifd]) {
-                console.log("  " + piexif.TAGS[ifd][tag]["name"] + ":" + exifObj[ifd][tag]);
-            }
-        }
-    */
-            var exif=data.exif;
-            data.picture.width=exif['0th'][piexif.ImageIFD.ImageWidth];
-            data.picture.height=exif['0th'][piexif.ImageIFD.ImageHeight];
-
-            if (exif.thumbnail) {
-              data.previews=[{
-                mimeType: 'image/jpeg',
-                data: exif.thumbnail,
-                width: exif['1st'][piexif.ImageIFD.ImageWidth],
-                height: exif['1st'][piexif.ImageIFD.ImageHeight]
-              }];
-            }
-
-            return data;
-        });
+          console.log("-" + ifd);
+          for (var tag in exifObj[ifd]) {
+              console.log("  " + piexif.TAGS[ifd][tag]["name"] + ":" + exifObj[ifd][tag]);
+          }
       }
 
-    } // getImagePreviews
+          var exif=data.exif;
 
-    function streamThumbnail(data) {
+          if (exif.thumbnail) {
+            data.previews=[{
+              mimeType: 'image/jpeg',
+              data: exif.thumbnail,
+              width: exif['1st'][piexif.ImageIFD.ImageWidth],
+              height: exif['1st'][piexif.ImageIFD.ImageHeight]
+            }];
+          }
 
+          return data;
+      });
+
+    } // getExifThumbnails
+
+    function getThumbnail(data) {
       // read thumbnails from jpeg
-      return getImagePreviews(data)
+      return getExifThumbnails(data)
       .then(function(data){
-        var q=Q.defer();
         var previews=data.previews;
+        var picture=data.picture;
 
         if (previews) {
           var thumb;
-          var width=0;
           previews.forEach(function(preview){
             if (preview.mimeType=='image/jpeg') {
-              if (preview.width>width) {
+              if (!thumb || preview.width>thumb.width) {
                 thumb=preview;
               }
             }
           });
 
-          if (thumb && width>=256 && Math.abs(data.picture.width/data.picture.height-thumb.width/thumb.height)<0.01) {
-            console.log(thumb);
-            res.set('Content-Type','image/jpeg');
-            res.set('Content-Transfer-Encoding','binary');
-            res.set('Content-Size',thumb.data.length);
-            res.end(thumb.data);
-            return q.resolve(data);
+          if (thumb && thumb.width>=256 && Math.abs(picture.aspect-thumb.width/thumb.height)<0.01) {
+            data.thumb=thumb;
+            return data;
           }
 
         }
 
         // no (suitable) preview, create thumbnail
-        var thumbnailer=sharp()
-        .resize(256)
-        .on('error', function(err){
-          q.reject(err);
-        });
-
-        console.log('TODO: streamThumbnail: save thumbnail in exif');
-
-        res.set('Content-Type','image/jpeg');
-        res.set('Content-Transfer-Encoding','binary');
-
-        fs.createReadStream(data.filename)
-        .on('error', function(err){
-          q.reject(err);
-
-        })
-        .on('end', function(){
-          q.resolve(data);
-
-        })
-        .pipe(thumbnailer)
-        .pipe(res);
-
-        return q.promise;
+        return createThumbnail(data);
 
       });
+
+    } // getThumbnail
+
+    function createThumbnail(data) {
+      var q=Q.defer();
+
+      var width=data.picture.aspect>=1?256:256*data.picture.aspect;
+      console.log(data.picture.aspect,width)
+      var thumbnailer=sharp(data.filename)
+      .resize(width)
+      .rotate()
+      .quality(70)
+      .withMetadata()
+      .on('error', function(err){
+        q.reject(err);
+      })
+      .toBuffer(function(err, buf, info){
+        if (err) {
+          q.reject(err);
+        }
+        console.log(buf.length/1024)
+        data.thumb={
+          mimeType: 'image/jpeg',
+          data: buf,
+          width: info.width,
+          height: info.height,
+          isNew: true
+        };
+
+        q.resolve(data);
+
+      });
+
+      return q.promise;
+
+    } // createThumbnail
+
+    function streamThumbnail(data) {
+
+      var thumb=data.thumb;
+      res
+      .set('Content-Type','image/jpeg')
+      .set('Content-Transfer-Encoding','binary')
+      .set('Content-Size',thumb.data.length)
+      .end(thumb.data);
 
     } // streamThumbnail
 
     function streamExif(data){
-      return getExif(data).then(function(data){
-        res.status(200).end(JSON.stringify(data.exif));
-      });
-    }
+      var q=Q.defer();
+      var json=JSON.stringify(data.exif);
+
+      res
+      .on('end', function() {
+        q.resolve(data);
+      })
+      .on('error', function(err){
+        q.reject(err);
+      })
+      .set('Content-Type','text/plain')
+      .set('Content-Transfer-Encoding','binary')
+      .set('Content-Length',json.length)
+      .end(json);
+
+      return q.promise;
+
+    } // streamExif(data)
 
     function streamRequestedData(data) {
 
       if (!data.authorized) {
         var err=new Error('Not Authorized');
         err.status=401;
-        var q=Q.defer();
-        q.reject(err);
-        return q.promise;
+        throw err;
 
       } else {
         var picture=data.picture;
         data.filename=pictureFilePath(picture,picture.segment(),picture.user());
-        console.log(data.filename);
-
+        console.log(what+': '+data.filename);
         switch(what) {
           case 'thumb':
-            return streamThumbnail(data);
+            return getThumbnail(data)
+            .then(streamThumbnail);
 
           case 'exif':
-            return streamExif(data);
+            return getThumbnail(data)
+            .then(streamExif);
 
           default:
             return streamFullSizePicture(data);
@@ -487,7 +501,6 @@
       }
 
     } // streamRequestedData
-
 
     // Put the pieces together
 
