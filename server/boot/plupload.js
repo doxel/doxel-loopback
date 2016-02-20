@@ -379,6 +379,7 @@ module.exports=function(app) {
                   if (err) {
                     q.reject(err);
                   } else {
+                    req.newSegment=true;
                     req.segment=segment;
                     q.resolve();
                   }
@@ -448,6 +449,22 @@ module.exports=function(app) {
 
         } // addPictureToDatabase
 
+        function setSegmentPreview() {
+          if (!req.newSegment) return;
+
+          var q=new Q.defer();
+          req.segment.previewId=req.picture.id;
+          req.segment.save(function(err,segment){
+            if (err) {
+              q.reject(err);
+            } else {
+              q.resolve();
+            }
+          });
+          return q.promise;
+
+        } // setSegmentPreview
+
         function movePictureToDestination() {
           var q=Q.defer();
 
@@ -498,9 +515,11 @@ module.exports=function(app) {
           .then(checkForSpecifiedSegment)
           .then(getPictureSegment)
           .then(addPictureToDatabase)
+          .then(setSegmentPreview)
           .then(movePictureToDestination)
           .then(req.success)
-          .fail(req.fail);
+          .fail(req.fail)
+          .done();
         }
 
       }); // busboy.on('finish')
