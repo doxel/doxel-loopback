@@ -1,4 +1,5 @@
 {
+  "production": true,
   "remoting": {
     "context": {
       "enableHttpContext": false

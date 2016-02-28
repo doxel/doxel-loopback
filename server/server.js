@@ -44,9 +44,28 @@ var php=require('node-php');
 
 var app = module.exports = loopback();
 
+// Make sure to also put this in `server/server.js`
+app.PassportConfigurator=require('loopback-component-passport').PassportConfigurator;
+
+  app.use(function(req,res,next){
+    var _send = res.send;
+    var sent = false;
+
+    res.send = function(data){
+      if(sent) {
+         console.log('warning: response was already sent');
+         return;
+      }
+      _send.bind(res)(data);
+      sent = true;
+    };
+    next();
+  });
+
 app.use(loopback.context());
-app.use(loopback.token());
+
 app.use(function setCurrentUser(req, res, next) {
+  console.log(req.url);
   if (!req.accessToken) {
     return next();
   }
@@ -63,9 +82,6 @@ app.use(function setCurrentUser(req, res, next) {
 
 });
  
-
-// Make sure to also put this in `server/server.js`
-var PassportConfigurator=require('loopback-component-passport').PassportConfigurator;
 
 app.use(loopback.compress());
 
@@ -118,7 +134,44 @@ boot(app, __dirname, function(err) {
   if (err) throw err;
 
   // start the server if `$ node server.js`
-  if (require.main === module)
-    app.start(app.get('enableSSL'));
+  if (require.main === module) {
+//    app.start(app.get('enableSSL'));
+    // https://docs.strongloop.com/display/MSG/Building+a+real-time+app+using+socket.io+and+AngularJS
+    app.io = require('socket.io')(app.start(app.get('enableSSL')));
+    require('socketio-auth')(app.io, {
+      authenticate: function (socket, value, callback) {       
+        var AccessToken = app.models.AccessToken;
+
+        // validate accessToken
+        var token = AccessToken.findById(value.id, function(err, accessToken){
+          if (!accessToken) {
+            callback(null,false);
+
+          } else {
+            accessToken.validate(function(err,isValid){
+              if (err) {
+                console.log(err);
+                callback(null,false);
+              } else {
+                callback(null,isValid);
+              }
+            });
+
+          }
+        }); //find function..    
+      } //authenticate function..
+    });
+
+    app.io.on('connection', function(socket){
+      console.log('a user connected',arguments);
+      socket.on('disconnect', function(){
+          console.log('user disconnected',arguments);
+      });
+    });
+  }
 
 });
+
+app.use(loopback.token({
+  model: app.models.accessToken
+}));

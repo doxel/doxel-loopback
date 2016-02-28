@@ -112,7 +112,7 @@ module.exports=function(app) {
         req.fail(err);
       }
 
- /**** works with firefox but not with chrome (status and error message are not received)
+ /**** works with firefox but not with chrome (status and error message are not received) */
       try {
         req.socket.end();
       } catch(e) {
@@ -120,12 +120,12 @@ module.exports=function(app) {
       }
 
       try {
-        res.socket.end();
+        res.socket.status(500).end();
       } catch(e) {
         console.log(e.message,e.stack);
       }
 
-*/
+/**/
       try {
         req.unpipe();
       } catch(e) {
@@ -402,7 +402,7 @@ module.exports=function(app) {
 
           },{
             sha256: sha256,
-            segment: req.segment,
+            segmentId: req.segment.id,
             timestamp: req.plupload.fields.timestamp,
             userId: req.accessToken.userId,
             created: Date.now(),
@@ -423,8 +423,10 @@ module.exports=function(app) {
 
               picture.isNew=null;
               picture.unsetAttribute('isNew');
-              req.plupload.fields.lat && (picture.lat=req.plupload.fields.lat);
-              req.plupload.fields.lon && (picture.lng=req.plupload.fields.lon);
+              if (req.plupload.fields.lat!==undefined && req.plupload.fields.lon!==undefined) {
+                 picture.lat=Number(req.plupload.fields.lat);
+                 picture.lng=Number(req.plupload.fields.lon);
+              }
 
               picture.uniqueTimestamp()
               .then(function(){
@@ -444,26 +446,44 @@ module.exports=function(app) {
             }
 
           });
-
           return q.promise;
 
         } // addPictureToDatabase
 
-        function setSegmentPreview() {
-          if (!req.newSegment) return;
+        function updateSegment() {
+          var update;
+
+          // set segment preview
+          if (req.newSegment) {
+            req.segment.previewId=req.picture.id;
+            update=true;
+          }
+
+          // update segment coords
+          if (req.picture.lat!==undefined && req.picture.lng!==undefined && !req.segment.geolock) {
+            req.segment.lat=(Number(req.segment.lat||0)+req.picture.lat)/2;
+            req.segment.lng=(Number(req.segment.lng||0)+req.picture.lng)/2;
+            update=true;
+          }
 
           var q=new Q.defer();
-          req.segment.previewId=req.picture.id;
-          req.segment.save(function(err,segment){
-            if (err) {
-              q.reject(err);
-            } else {
-              q.resolve();
-            }
-          });
+          if (update) {
+            req.segment.previewId=req.picture.id;
+            req.segment.save(function(err,segment){
+              if (err) {
+                q.reject(err);
+              } else {
+                q.resolve();
+              }
+            });
+
+          } else {
+            // dont mix async with sync
+            q.resolve();
+          }
           return q.promise;
 
-        } // setSegmentPreview
+        } // updateSegment
 
         function movePictureToDestination() {
           var q=Q.defer();
@@ -515,7 +535,7 @@ module.exports=function(app) {
           .then(checkForSpecifiedSegment)
           .then(getPictureSegment)
           .then(addPictureToDatabase)
-          .then(setSegmentPreview)
+          .then(updateSegment)
           .then(movePictureToDestination)
           .then(req.success)
           .fail(req.fail)

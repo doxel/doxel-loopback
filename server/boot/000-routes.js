@@ -35,38 +35,65 @@
 
  module.exports = function(app) {
   var loopback=require('loopback');
-  var dump=require('object-to-paths').dump;
+//  var production=app.get('production');
+ // var prefix=production?'':'#/';
+  var prefix='#/';
+ // var path=require('path');
+
+  console.dump=require('object-to-paths').dump;
   var config={
     documentRoot: app.get('documentRoot'),
     host: app.get('host')
   }
 
   app.get("/auth/callback", function(req,res,next) {
-//    dump(req);
-//
+    console.dump({req: req, res: res});
+
     res.cookie('pp-access_token', req.signedCookies.access_token, {path: '/'});
     res.cookie('pp-userId', req.signedCookies.userId, {path: '/'});
-    res.redirect(config.documentRoot+'#/login');
+    res.redirect(config.documentRoot+prefix+'login');
 
   });
 
-  app.get("/login", function(req,res,next) {
-    res.redirect(config.documentRoot+'#/login');
-
+  app.get("/failure", function(req,res,next) {
+    console.dump({failure: {req: req, res: res}});
+    res.redirect(config.documentRoot+prefix+'profile');
   });
 
-  app.get("/logout", function(req,res,next) {
-    res.redirect(config.documentRoot+'#/logout');
-
-  });
 
   app.get("/viewer", function(req,res,next) {
     res.redirect('//'+config.host+'/webglearth2/');
   });
 
   app.get("/upload", function(req,res,next) {
- //   dump(req);
     res.redirect('//'+config.host+'/upload/');
   });
+
+
+//  if (!production) {
+    app.get("/login", function(req,res,next) {
+      res.redirect(config.documentRoot+prefix+'login');
+
+    });
+
+    app.get("/profile", function(req,res,next) {
+      console.dump({profile: {res: res}});
+      res.redirect(config.documentRoot+prefix+'profile');
+
+    });
+
+    app.get("/logout", function(req,res,next) {
+      res.redirect(config.documentRoot+prefix+'logout');
+
+    });
+//  }
+/*
+// https://github.com/angular-ui/ui-router/wiki/Frequently-Asked-Questions#how-to-configure-your-server-to-work-with-html5mode
+app.all('/*', function(req, res, next) {
+  // Just send the index.html for other files to support HTML5Mode
+  res.sendFile('index.html', { root: path.resolve(__dirname, '..', '..', 'client', 'dist') });
+});
+*/
+
 
 }
