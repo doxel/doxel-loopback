@@ -120,7 +120,7 @@ module.exports=function(app) {
       }
 
       try {
-        res.socket.status(500).end();
+        res.socket.end();
       } catch(e) {
         console.log(e.message,e.stack);
       }
@@ -461,8 +461,16 @@ module.exports=function(app) {
 
           // update segment coords
           if (req.picture.lat!==undefined && req.picture.lng!==undefined && !req.segment.geolock) {
-            req.segment.lat=(Number(req.segment.lat||0)+req.picture.lat)/2;
-            req.segment.lng=(Number(req.segment.lng||0)+req.picture.lng)/2;
+            if (req.segment.lat===undefined) {
+              req.segment.lat=req.picture.lat;
+            } else {
+              req.segment.lat=(req.segment.lat+req.picture.lat)*0.5;
+            }
+            if (req.segment.lng===undefined) {
+              req.segment.lng=req.picture.lng;
+            } else {
+              req.segment.lng=(req.segment.lng+req.picture.lng)*0.5;
+            }
             update=true;
           }
 
