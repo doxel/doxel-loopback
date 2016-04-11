@@ -72,6 +72,7 @@ app.use(function setCurrentUser(req, res, next) {
 
   app.models.user.findById(req.accessToken.userId, function(err, user) {
     if (!err) {
+      req.user=user; // workaround for linking third-party accounts after user.login() see https://github.com/strongloop/loopback-component-passport/issues/134
       var loopbackContext = loopback.getCurrentContext();
       if (loopbackContext) {
         loopbackContext.set('currentUser', user);
