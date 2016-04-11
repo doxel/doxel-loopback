@@ -35,6 +35,11 @@
 
  module.exports = function(app) {
   var loopback=require('loopback');
+  var Q=require('q');
+  var User=app.models.user;
+  var UserCredential=app.models.userCredential;
+  var AccessToken=app.models.AccessToken;
+
 //  var production=app.get('production');
  // var prefix=production?'':'#/';
   var prefix='#/';
@@ -49,9 +54,101 @@
   app.get("/auth/callback", function(req,res,next) {
     console.dump({req: req, res: res});
 
-    res.cookie('pp-access_token', req.signedCookies.access_token, {path: '/'});
-    res.cookie('pp-userId', req.signedCookies.userId, {path: '/'});
-    res.redirect(config.documentRoot+prefix+'login');
+    // userId is undefined when linking an account
+    var login=(req.signedCookies.userId!=undefined);
+    var dest=login?'login':'profile';
+
+    if (!login) {
+      res.redirect(config.documentRoot+prefix+dest);
+
+    } else {
+      /* switch to parent account if any */
+
+      var q=Q.defer();
+
+      // first get userIdentity for passport userId
+      User.findById(req.signedCookies.userId,{
+        include: 'identities'
+
+      }, function(err,user){
+        if (err) {
+          console.trace(err);
+          q.reject(err);
+          return;
+        }
+
+        if (!user) {
+          q.reject(new Error('no user matching '+req.signedCookies.userId));
+          return;
+        }
+
+        // check for userCredential from linked account matching userIdentity
+        var userIdentity=user.identities()[0];
+        UserCredential.find({
+          where: {
+            provider: userIdentity.profile.provider+'-link',
+            externalId: userIdentity.externalId
+          },
+          include: {
+            user: 'accessTokens'
+          },
+          limit: 1
+
+        }, function(err, userCredential) {
+          if (err) {
+            q.reject(err);
+            return;
+          }
+
+          if (!userCredential) {
+            // no parent account, go on with thirdparty login
+            q.resolve({
+              accessToken: req.signedCookies.access_token,
+              userId: req.signedCookies.userId
+            });
+            return;
+          }
+
+          // create access token for parent user
+          var user=userCredential[0].user();
+          console.log(user);
+
+          AccessToken.create({
+            created: new Date(),
+            ttl: Math.min(user.constructor.settings.ttl, user.constructor.settings.maxTTL),
+            userId: user.id
+
+          }, function(err, accessToken) {
+            if (err) {
+              q.reject(err);
+              return;
+            }
+            console.log('accessToken.create',accessToken);
+
+            // switch to parent user
+            q.resolve({
+              accessToken: accessToken.id,
+              userId: accessToken.userId
+            });
+
+          });
+
+        });
+
+      });
+
+      q.promise.then(function(args){
+        res.cookie('pp-access_token', args.accessToken, {path: '/'});
+        res.cookie('pp-userId', args.userId.toString(), {path: '/'});
+        res.redirect(config.documentRoot+prefix+dest);
+      })
+      .fail(function(err){
+        console.log(err.message,err.stack);
+        res.redirect(config.documentRoot+prefix+dest);
+      })
+      .done();
+
+    }
 
   });
 
