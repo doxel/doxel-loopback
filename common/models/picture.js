@@ -352,6 +352,7 @@
       return getExif(data)
       .then(function(data){
 
+/*
           var exifObj=data.exif;
       for (var ifd in exifObj) {
           if (ifd == "thumbnail") {
@@ -362,7 +363,7 @@
               console.log("  " + piexif.TAGS[ifd][tag]["name"] + ":" + exifObj[ifd][tag]);
           }
       }
-
+*/
           var exif=data.exif;
 
           if (exif.thumbnail) {
@@ -413,8 +414,8 @@
     function createThumbnail(data) {
       var q=Q.defer();
 
-      var width=data.picture.aspect>=1?256:256*data.picture.aspect;
-      console.log(data.picture.aspect,width)
+      var width=data.picture.aspect>=1?256:Math.round(256*data.picture.aspect);
+  //    console.log(data.picture.aspect,width)
       var thumbnailer=sharp(data.filename)
       .resize(width)
       .rotate()
