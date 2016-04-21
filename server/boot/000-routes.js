@@ -51,104 +51,91 @@
     host: app.get('host')
   }
 
+  app.get("/link/callback", function(req,res,next) {
+      res.redirect(config.documentRoot+prefix+'profile');
+  });
+
   app.get("/auth/callback", function(req,res,next) {
-    console.dump({req: req, res: res});
+    var q=Q.defer();
 
-    // userId is undefined when linking an account
-    var login=(req.signedCookies.userId!=undefined);
-    var dest=login?'login':'profile';
+    // first get userIdentity for passport userId
+    User.findById(req.signedCookies.userId,{
+      include: 'identities'
 
-    if (!login) {
-      res.redirect(config.documentRoot+prefix+dest);
+    }, function(err,user){
+      if (err) {
+        console.trace(err);
+        q.reject(err);
+        return;
+      }
 
-    } else {
-      /* switch to parent account if any */
+      if (!user) {
+        q.reject(new Error('no user matching '+req.signedCookies.userId));
+        return;
+      }
 
-      var q=Q.defer();
+      // check for userCredential from linked account matching userIdentity
+      var userIdentity=user.identities()[0];
+      UserCredential.findOne({
+        where: {
+          provider: userIdentity.profile.provider+'-link',
+          externalId: userIdentity.externalId
+        },
+        include: 'user'
 
-      // first get userIdentity for passport userId
-      User.findById(req.signedCookies.userId,{
-        include: 'identities'
-
-      }, function(err,user){
+      }, function(err, userCredential) {
         if (err) {
-          console.trace(err);
           q.reject(err);
           return;
         }
 
-        if (!user) {
-          q.reject(new Error('no user matching '+req.signedCookies.userId));
+        if (!userCredential) {
+          // no parent account, go on with thirdparty login
+          q.resolve({
+            accessToken: req.signedCookies.access_token,
+            userId: req.signedCookies.userId
+          });
           return;
         }
 
-        // check for userCredential from linked account matching userIdentity
-        var userIdentity=user.identities()[0];
-        UserCredential.find({
-          where: {
-            provider: userIdentity.profile.provider+'-link',
-            externalId: userIdentity.externalId
-          },
-          include: {
-            user: 'accessTokens'
-          },
-          limit: 1
+        // create access token for parent user
+        var user=userCredential.user();
+        console.log(user);
 
-        }, function(err, userCredential) {
+        AccessToken.create({
+          created: new Date(),
+          ttl: Math.min(user.constructor.settings.ttl, user.constructor.settings.maxTTL),
+          userId: user.id
+
+        }, function(err, accessToken) {
           if (err) {
             q.reject(err);
             return;
           }
+          console.log('accessToken.create',accessToken);
 
-          if (!userCredential) {
-            // no parent account, go on with thirdparty login
-            q.resolve({
-              accessToken: req.signedCookies.access_token,
-              userId: req.signedCookies.userId
-            });
-            return;
-          }
-
-          // create access token for parent user
-          var user=userCredential[0].user();
-          console.log(user);
-
-          AccessToken.create({
-            created: new Date(),
-            ttl: Math.min(user.constructor.settings.ttl, user.constructor.settings.maxTTL),
-            userId: user.id
-
-          }, function(err, accessToken) {
-            if (err) {
-              q.reject(err);
-              return;
-            }
-            console.log('accessToken.create',accessToken);
-
-            // switch to parent user
-            q.resolve({
-              accessToken: accessToken.id,
-              userId: accessToken.userId
-            });
-
+          // switch to parent user
+          q.resolve({
+            accessToken: accessToken.id,
+            userId: accessToken.userId
           });
 
         });
 
       });
 
-      q.promise.then(function(args){
-        res.cookie('pp-access_token', args.accessToken, {path: '/'});
-        res.cookie('pp-userId', args.userId.toString(), {path: '/'});
-        res.redirect(config.documentRoot+prefix+dest);
-      })
-      .fail(function(err){
-        console.log(err.message,err.stack);
-        res.redirect(config.documentRoot+prefix+dest);
-      })
-      .done();
+    });
 
-    }
+    q.promise.then(function(args){
+      res.cookie('pp-access_token', args.accessToken, {path: '/'});
+      res.cookie('pp-userId', args.userId.toString(), {path: '/'});
+      res.redirect(config.documentRoot+prefix+'login');
+    })
+    .fail(function(err){
+      console.log(err.message,err.stack);
+      res.redirect(config.documentRoot+prefix+'login');
+    })
+    .done();
 
   });
 
@@ -156,7 +143,6 @@
     console.dump({failure: {req: req, res: res}});
     res.redirect(config.documentRoot+prefix+'profile');
   });
-
 
   app.get("/viewer", function(req,res,next) {
     res.redirect('//'+config.host+'/webglearth2/');
