@@ -89,12 +89,13 @@ module.exports=function(app) {
           res.status(201).end(err.message);
 
         } else {
-          res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": '+JSON.stringify({ message: err.message, stack: err.stack})+'}, "id": "id"}');
+          var message='{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": '+JSON.stringify({ message: err.message, stack: err.stack})+'}, "id": "id"}';
+          res.status(201).end(message);
         }
 
       } catch(e) {
-        res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": '+JSON.stringify({ message: err.message, stack: err.stack})+'}, "id": "id"}');
-
+        var message='{"jsonrpc" : "2.0", "error" : {"code": 500, "message": "Internal server error !", "original": '+JSON.stringify({ message: err.message, stack: err.stack})+'}, "id": "id"}';
+        res.status(201).end(message);
       }
 
     } // req.fail
@@ -108,9 +109,7 @@ module.exports=function(app) {
         req.busboy.file.resume();
       }
 
-      if (err) {
-        req.fail(err);
-      }
+      req.fail(err);
 
  /**** works with firefox but not with chrome (status and error message are not received) */
       try {
@@ -144,12 +143,12 @@ module.exports=function(app) {
       }, function(err, reply) {
         if (err) {
           req.abort(err);
-          q.reject();
+    //      q.reject();
 
         } else {
           if (reply[0].used / reply[0].size > upload.maxDiskUsage) {
             req.abort(new Error('{"jsonrpc" : "2.0", "error" : {"code": 907, "message": "Remote disk is full !"}, "id" : "id"}'));
-            q.reject();
+    //        q.reject();
 
           } else {
             q.resolve();
@@ -225,7 +224,7 @@ module.exports=function(app) {
           }, function(err,picture) {
             if (picture) {
               req.abort(new Error('{"jsonrpc" : "2.0", "error" : {"code": 904, "message": "Duplicate file: '+req.plupload.fields.name+' ('+picture.id+')."}, "id" : "id"}'));
-              q.reject();
+        //      q.reject();
 
             } else {
               q.resolve();
