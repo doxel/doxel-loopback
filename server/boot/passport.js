@@ -34,14 +34,24 @@
  */
 
  module.exports = function(app) {
-  var PassportConfigurator = require('loopback-component-passport').PassportConfigurator;
+  var PassportConfigurator = app.PassportConfigurator; //require('loopback-component-passport').PassportConfigurator;
   var passportConfigurator = new PassportConfigurator(app);
-  var config = require('../providers.json');
+  var config = {};
+
+  try {
+    config = require('../providers.json');
+
+  } catch(e) {
+    console.error('Please configure your passport strategy in `providers.json`.');
+    console.error('Copy `providers.json.template` to `providers.json` and replace the clientID/clientSecret values with your own.');
+    process.exit(1);
+
+  }
+
+  passportConfigurator.init();
 
   var flash=require('express-flash');
   app.use(flash());
-
-  passportConfigurator.init();
 
   passportConfigurator.setupModels({
     userModel: app.models.user,
