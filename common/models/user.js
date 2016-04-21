@@ -95,16 +95,21 @@ module.exports = function(User) {
           q.reject(err);
 
         } else {
-          accessToken.validate(function(err,isValid){
-            if (err) {
-              q.reject(err);
+          if (!accessToken) {
+            q.reject(new Error('Access token expired. '+access_token));
 
-            } else {
-              args.accessToken=accessToken;
-              q.resolve(args);
+          } else {
+            accessToken.validate(function(err,isValid){
+              if (err) {
+                q.reject(err);
 
-            }
-          });
+              } else {
+                args.accessToken=accessToken;
+                q.resolve(args);
+
+              }
+            });
+          }
         }
       }
     );
@@ -114,7 +119,8 @@ module.exports = function(User) {
 
   //send password reset link when password reset requested
   User.on('resetPasswordRequest', function(info) {
-    var url = 'http' + (config.httpOnly? '' : 's') + '://' + config.host + ':' + config.port + config.documentRoot + 'reset-password';
+    var app=User.app;
+    var url = 'http' + (app.get('httpOnly')? '' : 's') + '://' + app.get('host') + ':' + app.get('port') + app.get('documentRoot') + '#/reset-password';
     var html = 'Click <a href="' + url + '?access_token=' +
         info.accessToken.id + '">here</a> to reset your password';
 
@@ -373,47 +379,18 @@ module.exports = function(User) {
 
     var q=Q();
 
-    q.then(function getEmailFromUsername(){
-      console.log('1');
-      var q2=Q.defer();
-
-      if (options.email) {
-        q2.resolve();
-        return;
-      }
-
-      User.findOne({
-        where: {
-          username: options.username
-        }
-      },
-      function(err,user) {
-        if (err) {
-          q2.reject(err);
-        }
-        if (user) {
-          options.email=user.email;
-          q2.resolve();
-
-        } else {
-          q2.reject();
-        }
-
-      });
-
-      return q2.promise;
-
-    }).then(function user_login(){
+    q.then(function user_login(){
       var q3=Q.defer();
       console.log(options);
 
       User.login({
+        username: options.username,
         email: options.email,
         password: options.password
       },
       function(err,accessToken) {
         if (err) {
-          console.log(options.email+': password mismatch');
+          console.log((options.email||options.username)+': password mismatch');
           q3.reject(err);
           return;
         }
@@ -425,7 +402,7 @@ module.exports = function(User) {
       return q3.promise;
 
     }).fail(function(err){
-      console.log(err.stack, err.message);
+      console.log(err.stack,err.message);
       callback(null,{error: 'loginFailed'});
 
     }).done();
@@ -452,7 +429,7 @@ module.exports = function(User) {
 
     User.authenticate(req)
     .then(function(req){
-      if (options.all) {
+      if (options.removeAllAccessTokens) {
         User.app.models.AccessToken.destroyAll({
           where: {userId: req.accessToken.userId}
         }, function(err){
@@ -487,75 +464,37 @@ module.exports = function(User) {
     }
   );
 
-  /**
-  * @method User.addThirdPartyAccount
-  * bind the specified thirdparty account to the current user
-  * @param options.access_token {String} the thirdparty account access_token
-  */
-/*
-  User.addThirdPartyAccount=function user_addThirdPartyAccount(options,req,callback){
+  User.changePassword = function(options,req,callback) {
     User.authenticate({
-      access_token: options.access_token
+      access_token: req.headers.authorization
 
     }).then(function(args){
-      var thirdPartyUser=args.accessToken.user();
-      thirdPartyUser.updateAttribute('parentId',req.accessToken.userId,function(err,instance){
+      var user=args.accessToken.user();
+      user.updateAttribute('password', options.password, function(err, user) {
         if (err) {
-          callback(err);
-        } else {
-          callback(null);
+          console.log('changePassword:', err.message, err.stack);
+          return callback(null,{error: 'tokenExpired'});
         }
-
+        console.log('password changed for '+req.accessToken.userId);
+        callback(null,{success: true});
       });
-    });
 
-  } // User.addThirdPartyAccount
+    }).fail(function(err){
+        console.log('changePassword:', err.message, err.stack);
+        callback(null,{error: 'tokenExpired'});
+    }).done();
 
-  User.remoteMethod(
-    'addThirdPartyAccount',
-    {
-      accepts: [
-        {arg: 'options', type: 'object', 'http': {source: 'body'}},
-        {arg: 'req', type: 'object', 'http': {source: 'req'}},
-      ],
-      returns: {arg: 'result', type: 'object'}
-    }
-  );
-
-  User.getParent=function user_getParent(req,callback) {
-    console.log('access_token',req.accessToken);
-    User.findById(req.accessToken.userId, {include: {parent: accessTokens}}, function(err, user) {
-      if (err) {
-        callback(err);
-
-      } else {
-        console.log('user',user);
-        // create an access token for the parent user
-        user.parent.accessTokens.create({
-          created: new Date(),
-          ttl: Math.min(user.constructor.settings.ttl, user.constructor.settings.maxTTL)
-
-        }, function(err, accessToken) {
-          console.log('accessToken.create',err,accessToken);
-          callback(err, {
-            username: user.parent.username,
-            email: user.parent.email,
-            accessToken: accessToken
-          });
-        });
-      }
-    });
   };
 
   User.remoteMethod(
-    'getParent',
-    {
-      accepts: [
-        {arg: 'req', type: 'object', 'http': {source: 'req'}},
-      ],
-      returns: {arg: 'user', type: 'object'}
-    }
+      'changePassword',
+      {
+          accepts: [
+              {arg: 'options', type: 'object', 'http': {source: 'body'}},
+              {arg: 'req', type: 'object', http: {source: 'req'}},
+          ],
+          returns: { arg: 'result', type: 'object' }
+      }
   );
-  */
 
 };
