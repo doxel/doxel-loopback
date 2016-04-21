@@ -45,16 +45,6 @@
       "type": "hasMany",
       "model": "Segment",
       "foreignKey": "userId"
-    },
-    "children": {
-      "type": "hasMany",
-      "model": "user",
-      "foreignKey": "parentId"
-    },
-    "parent": {
-      "type": "belongsTo",
-      "model": "user",
-      "foreignKey": "parentId"
     }
   },
   "acls": [
@@ -78,18 +68,6 @@
     },
     {
       "principalType": "ROLE",
-      "principalId": "$owner",
-      "permission": "ALLOW",
-      "property": "addThirdPartyAccount"
-    },
-    {
-      "principalType": "ROLE",
-      "principalId": "$authenticated",
-      "permission": "ALLOW",
-      "property": "getParent"
-    },
-    {
-      "principalType": "ROLE",
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "login"
@@ -105,6 +83,18 @@
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "signin"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "changePassword"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$authenticated",
+      "permission": "ALLOW",
+      "property": "updateProfile"
     },
     {
       "accessType": "*",
