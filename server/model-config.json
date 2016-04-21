@@ -57,5 +57,16 @@
   "POI": {
     "dataSource": "db",
     "public": true
+  },
+  "Tag": {
+    "dataSource": "db",
+    "public": true
+  },
+  "Comment": {
+    "dataSource": "db",
+    "public": true
+  },
+  "Email": {
+    "dataSource": "email"
   }
 }
