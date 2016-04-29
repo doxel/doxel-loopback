@@ -106,8 +106,11 @@
 
   } // Picture.prototype.getFilePath
 
-  Picture.prototype.getUnixTimestamp=function(){
-    return Number(this.timestamp.substr(0,10)+this.timestamp.substr(11,3));
+  Picture.prototype.getUnixTimestamp=function(timestamp){
+    if (timestamp===undefined) {
+      timestamp=this.timestamp;
+    }
+    return Number(timestamp.substr(0,10)+timestamp.substr(11,3));
   }
 
   Picture.prototype.uniqueTimestamp=function() {
@@ -233,45 +236,52 @@
     function getPicture(data) {
       var q=Q.defer();
 
-      Picture.findById(
-        pictureId,
-        {include: ['segment', 'user']},
-        function(err, picture){
-          if (err) {
-            q.reject(err);
+      // allow Segment.preview to pass picture object instead of pictureId
+      if (pictureId && pictureId.id) {
+        data.picture=pictureId;
+        q.resolve(data);
 
-          } else if (picture &&
-              picture.sha256==sha256 &&
-              picture.segmentId==segmentId &&
-              picture.timestamp==timestamp
+      } else {
+        Picture.findById(
+          pictureId,
+          {include: ['segment', 'user']},
+          function(err, picture){
+            if (err) {
+              q.reject(err);
 
-          ) {
-            data.picture=picture;
-            q.resolve(data);
+            } else if (picture &&
+                picture.sha256==sha256 &&
+                picture.segmentId==segmentId &&
+                picture.timestamp==timestamp
 
-          } else {
-            var err=new Error('File not found');
-            err.status=404;
-            err.message='File not found';
-            q.reject(err);
+            ) {
+              data.picture=picture;
+              q.resolve(data);
 
+            } else {
+              var err=new Error('File not found');
+              err.status=404;
+              err.message='File not found';
+              q.reject(err);
+
+            }
           }
-        }
-      );
+        );
+      }
       return q.promise;
 
     } // getPicture
 
 
     function checkAccessForContext(data) {
+      var q=Q.defer();
       if (data.picture.public===true || (data.accessToken && data.accessToken.userId==data.picture.userId)) {
         // Allow public access here to avoid useless database access in checkAccessForContext for this rule
         // (Bad practice because removing the rule in picture.json will not affect this)
         data.authorized=true;
-        return data;
+        q.resolve(data);
 
       } else {
-        var q=Q.defer();
         ACL.checkAccessForContext(data.accessContext, function(err, resolved) {
           if (err) {
             q.reject(err);
@@ -282,8 +292,8 @@
 
           }
         });
-        return q.promise;
       }
+      return q.promise;
 
     } // checkAccessForContext
 

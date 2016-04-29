@@ -27,20 +27,19 @@
     },
     "public": {
       "type": "boolean",
-      "required": false
+      "required": true,
+      "default": true
     }
   },
   "validations": [],
   "relations": {
     "user": {
       "type": "belongsTo",
-      "model": "user",
-      "foreignKey": "userId"
+      "model": "user"
     },
     "segment": {
       "type": "belongsTo",
-      "model": "Segment",
-      "foreignKey": "segmentId"
+      "model": "Segment"
     },
     "POIs": {
       "type": "hasAndBelongsToMany",
@@ -48,8 +47,7 @@
     },
     "instanceAcls": {
       "type": "hasMany",
-      "model": "InstanceAcl",
-      "foreignKey": "InstanceAclId"
+      "model": "InstanceAcl"
     }
   },
   "acls": [
@@ -84,6 +82,12 @@
       "permission": "ALLOW"
     },
     {
+      "accessType": "READ",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW"
+    },
+    {
       "principalType": "ROLE",
       "principalId": "$authenticated",
       "permission": "ALLOW",
@@ -94,7 +98,15 @@
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "download"
+    },
+    {                                                                                                                 
+      "property": "count",
+      "accessType": "READ",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW"  
     }
+
   ],
   "methods": {}
 }
