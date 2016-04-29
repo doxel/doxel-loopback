@@ -39,6 +39,10 @@
   var User=app.models.user;
   var UserCredential=app.models.userCredential;
   var AccessToken=app.models.AccessToken;
+  var php=require('node-php');
+  var path=require('path');
+  var upload=app.get('upload');
+  var uploadRootDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
 
 //  var production=app.get('production');
  // var prefix=production?'':'#/';
@@ -144,8 +148,39 @@
     res.redirect(config.documentRoot+prefix+'profile');
   });
 
-  app.get("/viewer", function(req,res,next) {
-    res.redirect('//'+config.host+'/webglearth2/');
+  app.get("/viewer/:segmentId/:timestamp/*", function(req,res,next) {
+//    console.log(req);
+    var q=Q.defer();
+    var folder=req.params[0].split('/')[0];
+    if (app.get('viewer').folders.indexOf(folder)>=0) {
+      // TODO: maybe we should cache results if not done at lower level
+      app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,segment){
+        if (err || !segment || segment.timestamp!=req.params.timestamp) {
+          if (err) console.log(err.message,err.stack);
+          return res.status(404).end()
+        }
+        q.resolve(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+
+      });
+
+    } else {
+      q.resolve(app.get('viewerPath'));
+    }
+
+    q.promise.then(function(baseUrl){
+      var url=(baseUrl+'/'+req.params[0]);
+      if (req.params[0].match(/\.php/)) {
+        php.cgi(url);
+      } else {
+        res.sendFile(url);
+      }
+    }).done();
+
+//    res.redirect('/doxel-viewer/viewer.html?segmentId='+req.params.segmentId+'&timestamp='+req.params.timestamp);
+  });
+
+  app.get("/earth", function(req,res,next) {
+    res.redirect('//'+config.host+'/earth/');
   });
 
   app.get("/upload", function(req,res,next) {
