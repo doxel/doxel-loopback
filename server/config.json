@@ -42,5 +42,9 @@
     "segmentDigits": 8
   },
   "uploaderPath": "/var/www/doxel-uploader",
-  "viewerPath": "/var/www/webglearth2"
+  "earthPath": "/var/www/webglearth2",
+  "viewerPath": "/var/www/doxel-viewer",
+  "viewer" : {
+    "folders": ["viewer", "potree", "PMVS"]
+  }
 }
