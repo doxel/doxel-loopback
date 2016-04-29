@@ -88,12 +88,12 @@ app.use(loopback.compress());
 
 app.enable('trust proxy', '127.0.0.1');
 
-
 app.start = function(enableSSL) {
 
   // TODO: avoid using php for this
   app.use('/upload', php.cgi(app.get('uploaderPath')));
-  app.use('/viewer/', php.cgi(app.get('viewerPath')));
+  app.use('/doxel-viewer/', php.cgi(app.get('viewerPath')));
+  app.use('/earth/', php.cgi(app.get('earthPath')));
 
 
   if (enableSSL === undefined) {
