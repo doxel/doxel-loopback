@@ -36,13 +36,16 @@
  module.exports = function(Segment) {
   var path=require('path');
 
-  Segment.prototype.getUnixTimestamp=function(){
-    return Number(this.timestamp.substr(0,10)+this.timestamp.substr(11,3));
+  Segment.prototype.getUnixTimestamp=function(timestamp){
+    if (timestamp===undefined) {
+      timestamp=this.timestamp;
+    }
+    return Number(timestamp.substr(0,10)+timestamp.substr(11,3));
   }
 
   Segment.prototype.getPath=function segment_getPath(baseDirectory,token,segmentDirDigits) {
     var segment=this;
-    var date=new Date(segment.getUnixTimestamp());
+    var date=new Date(segment.getUnixTimestamp(segment.timestamp));
     var mm=String(date.getMonth()+1);
     var dd=String(date.getDate());
     if (mm.length==1) mm='0'+mm;
@@ -57,6 +60,43 @@
       segment.timestamp
     );
   }
+
+  Segment.preview=function(segmentId,timestamp,previewId,req,res,callback) {
+
+    var Picture=Segment.app.models.Picture;
+    Picture.findById(previewId,{
+      include: ['segment', 'user']
+
+    },function(err,picture){
+        if (err) {
+          return callback(err);
+        }
+        // users should not be able to guess combination
+        if (!picture || picture.segmentId!=segmentId || picture.segment().timestamp!=timestamp) {
+          return callback(new Error('Could not find segment preview for '+segmentId));
+        }
+        Picture.download('thumb', picture.sha256, segmentId, picture, picture.timestamp+'.jpg', req, res, callback);
+    });
+
+  }
+
+
+  Segment.remoteMethod('preview',{
+    accepts: [
+      {arg: 'segmentId', type: 'string', required: true},
+      {arg: 'timestamp', type: 'string', required: true},
+      {arg: 'previewId', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: {},
+    http: {
+      path: '/preview/:segmentId/:timestamp/:previewId',
+      verb: 'get'
+    }
+
+  });
 
   Segment.viewer=function(req, res, callback){
     console.log('viewer')
