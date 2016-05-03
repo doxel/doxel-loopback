@@ -207,10 +207,10 @@ module.exports = function(User) {
 
         } else {
           if (username) {
-            email=username.match(/@/) ? username : username+'@doxel.org';
+            email=username.match(/@/) ? username : username+'@anonymous';
 
           } else {
-            email=token+'@doxel.org';
+            email=token+'@anonymous';
           }
         }
         username=username || email.split('@')[0];
