@@ -33,8 +33,13 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+ var app = require('../../server/server');
+
  module.exports = function(Segment) {
   var path=require('path');
+  var Q=require('q');
+  var upload=app.get('upload');
+  var uploadRootDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
 
   Segment.prototype.getUnixTimestamp=function(timestamp){
     if (timestamp===undefined) {
@@ -99,8 +104,31 @@
   });
 
   Segment.viewer=function(req, res, callback){
-    console.log('viewer')
-    res.status(200).end('viewer '+req.url);
+    var q=Q.defer();
+    var folder=req.params[0].split('/')[0];
+    if (app.get('viewer').folders.indexOf(folder)>=0) {
+      // TODO: maybe we should cache results if not done at lower level
+      app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,segment){
+        if (err || !segment || segment.timestamp!=req.params.timestamp) {
+          if (err) console.log(err.message,err.stack);
+          return res.status(404).end()
+        }
+        q.resolve(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+
+      });
+
+    } else {
+      q.resolve(app.get('viewerPath'));
+    }
+
+    q.promise.then(function(baseUrl){
+      var url=(baseUrl+'/'+req.params[0]);
+      if (req.params[0].match(/\.php/)) {
+        php.cgi(url);
+      } else {
+        res.sendFile(url);
+      }
+    }).done();
 
   }
 
@@ -112,7 +140,7 @@
     ],
     returns: {},
     http: {
-      path: '/viewer/*',
+      path: '/viewer/:segmentId/:timestamp/*',
       verb: 'get'
     }
 
