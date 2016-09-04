@@ -39,6 +39,7 @@ var https = require('https');
 var http = require('http');
 var path = require('path');
 var sslConfig = require(path.join(__dirname,'ssl-config.js'));
+var compression = require('compression');
 
 var php=require('node-php');
 
@@ -84,7 +85,7 @@ app.use(function setCurrentUser(req, res, next) {
 });
  
 
-app.use(loopback.compress());
+app.use(compression());
 
 app.enable('trust proxy', '127.0.0.1');
 
