@@ -62,14 +62,6 @@ module.exports=function(app) {
 
   app.use('/sendfile', function(req, res, next){
 
-    // assert content-length is not null
-    var contentLength=Number(req.get('content-length'));
-    if (isNaN(contentLength)||!contentLength) {
-      res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 105, "message": "File size exceed content-length !"}, "id" : "id"}');
-      req.abort();
-      return;
-    }
-
     req.success=function success() {
       res.status(201).end('{"jsonrpc": "2.0", "result": {}, "id": "id"}');
     }
@@ -80,12 +72,14 @@ module.exports=function(app) {
       }
       console.trace(err);
 
-      res.socket.setNoDelay(true);
+    //  res.socket.setNoDelay(true);
+      res.setHeader('Content-Type','text/plain; charset=UTF-8');
       res.setHeader('Transfer-Encoding', 'chunked');
 
       try {
         var obj=JSON.parse(err.message);
         if (obj.jsonrpc) {
+          res.setHeader('Content-Length',strlen(err.message));
           res.status(201).end(err.message);
 
         } else {
@@ -111,24 +105,27 @@ module.exports=function(app) {
 
       req.fail(err);
 
- /**** works with firefox but not with chrome (status and error message are not received) */
-      try {
-        req.socket.end();
-      } catch(e) {
-        console.log(e.message,e.stack);
-      }
+      if (!req.headers && req.headers['user-agent'] && req.headers['user-agent'].match(/chrome/i)) {
+        console.log(req.headers);
+   /**** works with firefox but not with chrome (status and error message are not received) */
+        try {
+          req.socket.end();
+        } catch(e) {
+          console.log(e.message,e.stack);
+        }
 
-      try {
-        res.socket.end();
-      } catch(e) {
-        console.log(e.message,e.stack);
-      }
+        try {
+          res.socket.end();
+        } catch(e) {
+          console.log(e.message,e.stack);
+        }
 
-/**/
-      try {
-        req.unpipe();
-      } catch(e) {
-        console.log(e.message,e.stack);
+  /**/
+        try {
+          req.unpipe();
+        } catch(e) {
+          console.log(e.message,e.stack);
+        }
       }
 
     } // req.abort
@@ -159,6 +156,14 @@ module.exports=function(app) {
       return q.promise;
 
     } // checkFreeSpace
+
+    // assert content-length is not null
+    var contentLength=Number(req.get('content-length'));
+    if (isNaN(contentLength)||!contentLength) {
+      res.status(201).end('{"jsonrpc" : "2.0", "error" : {"code": 105, "message": "File size exceed content-length !"}, "id" : "id"}');
+      req.abort();
+      return;
+    }
 
     req.access_token=req.signedCookies.access_token;
     User.authenticate(req)
