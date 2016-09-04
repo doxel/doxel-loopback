@@ -12,10 +12,11 @@
     "connect-redis": "^3.0.1",
     "cookie-parser": "^1.4.0",
     "cors": "^2.5.2",
-    "exiv2": "^0.6.2",
-    "express-flash": "0.0.2",
+    "exiv2": "file:exiv2node",
+    "express-flash": "latest",
     "express-plupload": "file:express-plupload",
-    "express-session": "^1.12.1",
+    "express-session": "latest",
+    "grunt": "^1.0.1",
     "gulp": "^3.9.0",
     "loopback": "^2.22.0",
     "loopback-boot": "^2.6.5",
@@ -37,12 +38,17 @@
     "piexifjs": "^1.0.0",
     "q": "^1.4.1",
     "serve-favicon": "^2.0.1",
-    "sharp": "^0.13.0",
+    "sharp": "latest",
     "shelljs": "^0.5.3",
-    "socket.io": "^1.4.5",
-    "socketio-auth": "0.0.5"
+    "socket.io": "latest",
+    "socketio-auth": "latest"
   },
   "devDependencies": {
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-exec": "^1.0.0",
+    "grunt-newer": "^1.2.0",
+    "jshint-stylish": "^2.2.0",
     "jshint": "^2.5.6"
   },
   "repository": {
