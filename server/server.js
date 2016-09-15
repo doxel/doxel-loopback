@@ -63,8 +63,6 @@ app.PassportConfigurator=require('loopback-component-passport').PassportConfigur
     next();
   });
 
-app.use(loopback.context());
-
 app.use(function setCurrentUser(req, res, next) {
   console.log(req.url);
   if (!req.accessToken) {
@@ -74,16 +72,12 @@ app.use(function setCurrentUser(req, res, next) {
   app.models.user.findById(req.accessToken.userId, function(err, user) {
     if (!err) {
       req.user=user; // workaround for linking third-party accounts after user.login() see https://github.com/strongloop/loopback-component-passport/issues/134
-      var loopbackContext = loopback.getCurrentContext();
-      if (loopbackContext) {
-        loopbackContext.set('currentUser', user);
-      }
     }
     next(err);
   });
 
 });
- 
+
 
 app.use(compression());
 
@@ -95,7 +89,6 @@ app.start = function(enableSSL) {
   app.use('/upload', php.cgi(app.get('uploaderPath')));
   app.use('/doxel-viewer/', php.cgi(app.get('viewerPath')));
   app.use('/earth/', php.cgi(app.get('earthPath')));
-
 
   if (enableSSL === undefined) {
     enableSSL = process.env.enableSSL;
