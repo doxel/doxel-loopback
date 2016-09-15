@@ -82,6 +82,13 @@
       "permission": "ALLOW"
     },
     {
+      "property": "findById",
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW"
+    },
+    {
       "property": "viewer",
       "accessType": "*",
       "principalType": "ROLE",
