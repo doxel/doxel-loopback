@@ -33,6 +33,8 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
  module.exports = function(app) {
   var loopback=require('loopback');
   var Q=require('q');
@@ -41,6 +43,29 @@
   var AccessToken=app.models.AccessToken;
   var php=require('node-php');
   var path=require('path');
+  var proxy=require('map-tiles-proxy')({
+    middleware: true,
+    urlFromQueryString: false,
+    routes: {
+      osm: {
+        url: [
+          'a.tile.openstreetmap.org',
+          'b.tile.openstreetmap.org',
+          'c.tile.openstreetmap.org'
+        ]
+      },
+      "blue-marble": {
+        url: ['doxel.org/doxel-viewer/upload/blue-marble']
+      },
+      stamen: {
+        url: [
+           'a.tile.stamen.com',
+           'b.tile.stamen.com',
+           'c.tile.stamen.com'
+        ]
+      }
+    }
+  });
 
 //  var production=app.get('production');
  // var prefix=production?'':'#/';
@@ -153,6 +178,10 @@
   app.get("/upload", function(req,res,next) {
     res.redirect('//'+config.host+'/upload/');
   });
+
+  app.get('/osm/*', proxy.middleware.get);
+  app.get('/stamen/*', proxy.middleware.get);
+  app.get('/blue-marble/*', proxy.middleware.get);
 
 
 //  if (!production) {
