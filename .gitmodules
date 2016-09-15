@@ -4,3 +4,6 @@
 [submodule "express-plupload"]
 	path = express-plupload
 	url = https://github.com/luxigo/express-plupload
+[submodule "jpeg_metadata_size"]
+	path = jpeg_metadata_size
+	url = https://github.com/bugdanov/jpeg_metadata_size
