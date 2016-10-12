@@ -100,6 +100,18 @@ app.start = function(enableSSL) {
     server = http.createServer(app);
 
   } else {
+
+    // redirect http requests to https
+    var redirect_server = http.createServer(function(req,res,next){
+      console.log(req);
+      res.writeHead(302,{
+        'Location': 'https://'+req.headers.host+req.url
+      });
+      res.end();
+    });
+    redirect_server.listen(80);
+
+    // setup https certificates
     var options = {
       key: sslConfig.privateKey,
       cert: sslConfig.certificate
