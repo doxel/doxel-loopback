@@ -1,4 +1,5 @@
 {
+  "html5Mode": true,
   "restApiRoot": "/api",
   "host": "127.0.0.1",
   "port": 3000,
@@ -28,7 +29,7 @@
   "cookieSecret": "override me in config.local.json",
   "sessionSecret": "override me in config.local.json",
   "migrateAuthCookie": true,
-  "documentRoot": "/app/",
+  "documentRoot": "app/",
   "upload": {
     "maxDiskUsage": 0.95,
     "directory": [
@@ -41,10 +42,32 @@
     "maxFileAge": 18000,
     "segmentDigits": 8
   },
-  "uploaderPath": "/var/www/doxel-uploader",
-  "earthPath": "/var/www/webglearth2",
-  "viewerPath": "/var/www/doxel-viewer",
+  "uploaderPath": "server/doxel-uploader",
+  "viewerPath": "server/doxel-viewer",
   "viewer" : {
     "folders": ["viewer", "potree", "PMVS"]
+  },
+  "tileProxyConfig": {
+    "middleware": true,
+    "urlFromQueryString": false,
+    "routes": {
+      "osm": {
+        "url": [
+          "a.tile.openstreetmap.org",
+          "b.tile.openstreetmap.org",
+          "c.tile.openstreetmap.org"
+        ]
+      },
+      "blue-marble": {
+        "url": ["www.doxel.org/doxel-viewer/upload/blue-marble"]
+      },
+      "stamen": {
+        "url": [
+           "a.tile.stamen.com",
+           "b.tile.stamen.com",
+           "c.tile.stamen.com"
+        ]
+      }
+    }
   }
 }
