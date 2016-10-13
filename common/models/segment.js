@@ -40,6 +40,7 @@
   var Q=require('q');
   var upload=app.get('upload');
   var uploadRootDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
+  var viewerPath=path.join(process.cwd(),app.get('viewerPath'));
 
   Segment.prototype.getUnixTimestamp=function(timestamp){
     if (timestamp===undefined) {
@@ -118,11 +119,12 @@
       });
 
     } else {
-      q.resolve(app.get('viewerPath'));
+      q.resolve(viewerPath);
     }
 
     q.promise.then(function(baseUrl){
       var url=(baseUrl+'/'+req.params[0]);
+      //console.log(url);
       if (req.params[0].match(/\.php/)) {
         php.cgi(url);
       } else {
