@@ -28,7 +28,7 @@
   },
   "files": {
     "loopback#static": {
-      "params": "$!../client"
+      "params": "$!../client/app"
     }
   },
   "final": {
