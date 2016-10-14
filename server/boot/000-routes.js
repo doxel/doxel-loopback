@@ -155,17 +155,9 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
     res.redirect(config.documentRoot+prefix+'profile');
   });
 
-  app.get("/earth", function(req,res,next) {
-    res.redirect('//'+config.host+'/earth/');
-  });
-
-  app.get("/upload", function(req,res,next) {
-    res.redirect('//'+config.host+'/upload/');
-  });
-
-  app.get('/osm/*', proxy.middleware.get);
-  app.get('/stamen/*', proxy.middleware.get);
-  app.get('/blue-marble/*', proxy.middleware.get);
+  app.all('/osm/*', proxy.middleware.get);
+  app.all('/stamen/*', proxy.middleware.get);
+  app.all('/blue-marble/*', proxy.middleware.get);
 
 
 //  if (!production) {
@@ -187,17 +179,9 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
 
   function html5Mode_support() {
     var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', app.get('production')?'dist':'app') };
-    [
-      'bower_components',
-      'scripts',
-      'styles',
-      'views',
-      'favicon.ico',
-      'fonts',
-      'images',
-      'robots.txt',
-      '404.html',
-      'index.html'
+
+if (true)    [
+      'bower_components/leaflet/dist/images'
     ].forEach(function(folder){
       app.all('/'+folder+'/*', function(req,res,next){
 
@@ -207,16 +191,16 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
 "https://ww3.doxel.org/bower_components/leaflet/dist/images/data:image/png;b…du5HG6MdHjNcNYGqfDm5YRzLBBCCDl/2bk8a8gdbqcfwECu62Fg/HrggAAAABJRU5ErkJggg==" */
         req.url=req.url.replace(/data:image.*/,'marker-icon.png');
 
+        // TODO: hey what about middleware.json for static files ?...
         res.sendFile(url.parse(req.url).pathname, _documentRoot);
       });
     });
 
-    app.all('/*', function(req, res, next) {
 
+    app.all('/*', function(req, res, next) {
       if (req.url.substr(0,5)=='/api/') {
         return next();
       }
-
       res.sendFile('index.html', _documentRoot);
     });
   }
