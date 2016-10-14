@@ -45,6 +45,9 @@ var php=require('node-php');
 
 var app = module.exports = loopback();
 
+// already defined in middleware.json but works only here.. something changed ?
+app.use(loopback.static(path.resolve(__dirname, '../client/'+(process.env.production?'dist':'app'))));
+
 // Make sure to also put this in `server/server.js`
 app.PassportConfigurator=require('loopback-component-passport').PassportConfigurator;
 
