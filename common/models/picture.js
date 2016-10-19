@@ -415,10 +415,11 @@
         }
 
         // no (suitable) preview, create thumbnail
-        return createThumbnail(data);
-
+        return createThumbnail(data)/*.then(function(data){
+          // TODO: save thumb in EXIF
+        });
+        */
       });
-
     } // getThumbnail
 
     function createThumbnail(data) {
@@ -438,7 +439,6 @@
         if (err) {
           q.reject(err);
         }
-        console.log(buf.length/1024)
         data.thumb={
           mimeType: 'image/jpeg',
           data: buf,
@@ -461,7 +461,8 @@
       res
       .set('Content-Type','image/jpeg')
       .set('Content-Transfer-Encoding','binary')
-      .set('Content-Size',thumb.data.length)
+      .set('Cache-Control','public, max-age=315360000')
+      .set('Content-Length',thumb.data.length)
       .end(thumb.data);
 
     } // streamThumbnail
@@ -479,6 +480,7 @@
       })
       .set('Content-Type','text/plain')
       .set('Content-Transfer-Encoding','binary')
+      .set('Cache-Control','public, max-age=315360000')
       .set('Content-Length',json.length)
       .end(json);
 
