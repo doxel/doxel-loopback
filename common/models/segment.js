@@ -125,11 +125,13 @@
     q.promise.then(function(baseUrl){
       var url=(baseUrl+'/'+req.params[0]);
       //console.log(url);
-      if (req.params[0].match(/\.php/)) {
-        php.cgi(url);
-      } else {
-        res.sendFile(url);
-      }
+//      if (req.params[0].match(/\.php/)) {
+//        php.cgi(url);
+//      } else {
+      console.log(url);
+      res.sendFile(url,{
+        maxAge: 3153600000000 // 10 years
+      });
     }).done();
 
   }
