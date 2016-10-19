@@ -40,13 +40,30 @@ var http = require('http');
 var path = require('path');
 var sslConfig = require(path.join(__dirname,'ssl-config.js'));
 var compression = require('compression');
+var helmet = require('helmet');
+
+
+if (process.env.TRACE) console.log=console.trace;
 
 var php=require('node-php');
 
 var app = module.exports = loopback();
 
-// already defined in middleware.json but works only here.. something changed ?
-app.use(loopback.static(path.resolve(__dirname, '../client/'+(process.env.production?'dist':'app'))));
+app.use(helmet({
+  noCache: false
+}));
+
+if (false)
+app.use('/routes',function(req,res,next){
+  app._router.stack.forEach(function(r){
+      if (r.route && r.route.path){
+            console.log(r.route.path)
+      }
+  });
+});
+
+var plupload=require(path.join(__dirname,'plupload.js'))(app);
+
 
 // Make sure to also put this in `server/server.js`
 app.PassportConfigurator=require('loopback-component-passport').PassportConfigurator;
@@ -67,7 +84,6 @@ app.PassportConfigurator=require('loopback-component-passport').PassportConfigur
   });
 
 app.use(function setCurrentUser(req, res, next) {
-  console.log(req.url);
   if (!req.accessToken) {
     return next();
   }
@@ -81,17 +97,14 @@ app.use(function setCurrentUser(req, res, next) {
 
 });
 
-
 app.use(compression());
+
 
 app.enable('trust proxy', '127.0.0.1');
 
 app.start = function(enableSSL) {
 
   // TODO: avoid using php for this
-  app.use('/upload', php.cgi(app.get('uploaderPath')));
-  app.use('/doxel-viewer/', php.cgi(app.get('viewerPath')));
-  app.use('/earth/', php.cgi(app.get('earthPath')));
 
   if (enableSSL === undefined) {
     enableSSL = process.env.enableSSL;
