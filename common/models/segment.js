@@ -106,17 +106,25 @@
 
   Segment.viewer=function(req, res, callback){
     var q=Q.defer();
-    var folder=req.params[0].split('/')[0];
-    if (app.get('viewer').folders.indexOf(folder)>=0) {
-      // TODO: maybe we should cache results if not done at lower level
-      app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,segment){
-        if (err || !segment || segment.timestamp!=req.params.timestamp) {
-          if (err) console.log(err.message,err.stack);
-          return res.status(404).end()
-        }
-        q.resolve(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+    var folder=req.params[0].split('/');
+    if (app.get('viewer').folders.indexOf(folder[0])>=0) {
 
-      });
+      if (folder[0]=='potree' && folder[4]!='data' && folder[2]!='potree.js'/*potree/examples/potree.js*/  && folder[4]!='cloud.js'/*potree/resources/pointclouds/potree/cloud.js*/) {
+          // serve common files from common potree viewer folder
+          q.resolve(process.cwd()+'/client');
+
+      } else {
+        // serve segment related potree viewer files from upload directory
+        // TODO: maybe we should cache results if not done at lower level
+        app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,segment){
+          if (err || !segment || segment.timestamp!=req.params.timestamp) {
+            if (err) console.log(err.message,err.stack);
+            return res.status(404).end()
+          }
+          q.resolve(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+
+        });
+      }
 
     } else {
       q.resolve(viewerPath);
@@ -128,7 +136,6 @@
 //      if (req.params[0].match(/\.php/)) {
 //        php.cgi(url);
 //      } else {
-      console.log(url);
       res.sendFile(url,{
         maxAge: 3153600000000 // 10 years
       });
