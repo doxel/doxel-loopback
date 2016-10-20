@@ -31,10 +31,11 @@
   "migrateAuthCookie": true,
   "documentRoot": "app/",
   "upload": {
+    "REMARK": "The upload property in config.local.json or config.production.json is IGNORED !",
     "maxDiskUsage": 0.95,
     "directory": [
       "server",
-      "upload_dev"
+      "upload"
     ],
     "imagesDir": "original_images",
     "imageExtension": "jpeg",
@@ -42,8 +43,8 @@
     "maxFileAge": 18000,
     "segmentDigits": 8
   },
-  "uploaderPath": "server/doxel-uploader",
-  "viewerPath": "server/doxel-viewer",
+  "uploaderPath": "client/app/uploader",
+  "viewerPath": "client/viewer",
   "viewer" : {
     "folders": ["viewer", "potree", "PMVS"]
   },
