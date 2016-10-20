@@ -109,7 +109,7 @@
     var folder=req.params[0].split('/');
     if (app.get('viewer').folders.indexOf(folder[0])>=0) {
 
-      if (folder[0]=='potree' && folder[4]!='data' && folder[2]!='potree.js'/*potree/examples/potree.js*/  && folder[4]!='cloud.js'/*potree/resources/pointclouds/potree/cloud.js*/) {
+      if (folder[0]=='potree' && folder[2]!='pointclouds'/*potree/resources/pointclouds*/ && folder[2]!='potree.js'/*potree/examples/potree.js*/) {
           // serve common files from common potree viewer folder
           q.resolve(process.cwd()+'/client');
 
