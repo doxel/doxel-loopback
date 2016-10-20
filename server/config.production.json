@@ -23,13 +23,6 @@
   },
   "legacyExplorer": false,
   "enableSSL": true,
-  "documentRoot": "/",
-  "upload": {
-    "maxDiskUsage": 0.95,
-    "directory": [ "server", "upload"],
-    "cleanupTmpDir": true,
-    "maxFileAge": 18000,
-    "segmentDigits": 8
-  }
+  "documentRoot": "/"
 
 }
