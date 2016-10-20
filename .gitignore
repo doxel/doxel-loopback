@@ -17,3 +17,7 @@
 coverage
 node_modules
 npm-debug.log
+server/upload_dev
+server/upload
+server/private
+*.local.json
