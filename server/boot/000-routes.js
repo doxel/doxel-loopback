@@ -162,23 +162,6 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
   app.all('/blue-marble/*', proxy.middleware.get);
 
 
-//  if (!production) {
-    app.get("/login", function(req,res,next) {
-      res.redirect(config.documentRoot+prefix+'login');
-
-    });
-
-    app.get("/profile", function(req,res,next) {
-      console.dump({profile: {res: res}});
-      res.redirect(config.documentRoot+prefix+'profile');
-
-    });
-
-    app.get("/logout", function(req,res,next) {
-      res.redirect(config.documentRoot+prefix+'logout');
-
-    });
-
   app.use(loopback.static(path.resolve(__dirname, '../../client/'+(process.env.production?'dist':'app'))));
 
 }
