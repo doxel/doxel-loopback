@@ -376,7 +376,7 @@
 */
           var exif=data.exif;
 
-          if (exif.thumbnail) {
+          if (exif && exif.thumbnail) {
             data.previews=[{
               mimeType: 'image/jpeg',
               data: exif.thumbnail,
@@ -498,7 +498,7 @@
       } else {
         var picture=data.picture;
         data.filename=pictureFilePath(picture,picture.segment(),picture.user());
-        console.log(what+': '+data.filename);
+//        console.log(what+': '+data.filename);
         switch(what) {
           case 'thumb':
             return getThumbnail(data)
