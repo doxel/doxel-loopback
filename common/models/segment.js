@@ -109,8 +109,10 @@
     var folder=req.params[0].split('/');
     if (app.get('viewer').folders.indexOf(folder[0])>=0) {
 
+//console.log(folder);
       if (folder[0]=='potree' && folder[2]!='pointclouds'/*potree/resources/pointclouds*/ && folder[2]!='potree.js'/*potree/examples/potree.js*/) {
           // serve common files from common potree viewer folder
+ //         console.log('common',req.params[0]);
           q.resolve(process.cwd()+'/client');
 
       } else {
@@ -120,6 +122,11 @@
           if (err || !segment || segment.timestamp!=req.params.timestamp) {
             if (err) console.log(err.message,err.stack);
             return res.status(404).end()
+          }
+          var _user=segment.user();
+          if (!_user) {
+            console.trace('no such owner: ',segment.userId, ' for segment:',segment.id);
+            return res.status(404).end();
           }
           q.resolve(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
 
@@ -132,7 +139,8 @@
 
     q.promise.then(function(baseUrl){
       var url=(baseUrl+'/'+req.params[0]);
-      //console.log(url);
+
+//      console.log(url);
 //      if (req.params[0].match(/\.php/)) {
 //        php.cgi(url);
 //      } else {
