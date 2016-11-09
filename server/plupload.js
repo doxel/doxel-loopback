@@ -46,6 +46,7 @@ module.exports=function(app) {
   var upload=require(path.join(__dirname,'/config.json')).upload;
   var mmm=require('mmmagic');
   var spawn=require('child_process').spawn;
+  var loopback=require('loopback');
 
   // upload directory
   var uploadDir=path.join.apply(path,[process.cwd()].concat(upload.directory))+(process.env.production?'':'_dev');
@@ -428,8 +429,10 @@ module.exports=function(app) {
               picture.isNew=null;
               picture.unsetAttribute('isNew');
               if (req.plupload.fields.lat!==undefined && req.plupload.fields.lon!==undefined) {
-                 picture.lat=Number(req.plupload.fields.lat);
-                 picture.lng=Number(req.plupload.fields.lon);
+                picture.geo=new loopback.GeoPoint({
+                  lat: Number(req.plupload.fields.lat),
+                  lng: Number(req.plupload.fields.lon)
+                });
               }
 
               picture.uniqueTimestamp()
@@ -464,16 +467,15 @@ module.exports=function(app) {
           }
 
           // update segment coords
-          if (req.picture.lat!==undefined && req.picture.lng!==undefined && !req.segment.geolock) {
-            if (req.segment.lat===undefined) {
-              req.segment.lat=req.picture.lat;
+          if (req.picture.geo) {
+            if (!req.segment.geo) {
+              req.segment.geo=new loopback.GeoPoint({
+                lat: req.picture.geo.lat,
+                lng: req.picture.geo.lng
+              });
             } else {
-              req.segment.lat=(req.segment.lat+req.picture.lat)*0.5;
-            }
-            if (req.segment.lng===undefined) {
-              req.segment.lng=req.picture.lng;
-            } else {
-              req.segment.lng=(req.segment.lng+req.picture.lng)*0.5;
+              req.segment.geo.lat=(req.segment.geo.lat+req.picture.geo.lat)*0.5;
+              req.segment.geo.lng=(req.segment.geo.lng+req.picture.geo.lng)*0.5;
             }
             update=true;
           }
