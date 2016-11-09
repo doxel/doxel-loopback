@@ -3,6 +3,12 @@
   "restApiRoot": "/api",
   "host": "127.0.0.1",
   "port": 3000,
+  "admin": {
+    "remark": "override this in config.local.json",
+    "email": "admin@admin.org",
+    "user": "admin",
+    "pass": "admin"
+  },
   "remoting": {
     "context": {
       "enableHttpContext": false
@@ -45,8 +51,12 @@
   },
   "uploaderPath": "client/app/uploader",
   "viewerPath": "client/viewer",
-  "viewer" : {
-    "folders": ["viewer", "potree", "PMVS"]
+  "viewer": {
+    "folders": [
+      "viewer",
+      "potree",
+      "PMVS"
+    ]
   },
   "tileProxyConfig": {
     "middleware": true,
@@ -60,13 +70,15 @@
         ]
       },
       "blue-marble": {
-        "url": ["www.doxel.org/doxel-viewer/upload/blue-marble"]
+        "url": [
+          "www.doxel.org/doxel-viewer/upload/blue-marble"
+        ]
       },
       "stamen": {
         "url": [
-           "a.tile.stamen.com",
-           "b.tile.stamen.com",
-           "c.tile.stamen.com"
+          "a.tile.stamen.com",
+          "b.tile.stamen.com",
+          "c.tile.stamen.com"
         ]
       }
     }
