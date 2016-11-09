@@ -53,6 +53,27 @@ app.use(helmet({
   noCache: false
 }));
 
+// convert request access token to cookie
+require(path.join(__dirname,'access-token_cookie.js'))(app);
+
+// allow API explorer for admin only
+app.use('/explorer', function(req,res,next) {
+    req.access_token=req.signedCookies.access_token;
+    app.models.User.authenticate(req)
+		.then(function(){
+			if (req.accessToken.user().username=='admin') {
+				next();
+
+			} else {
+				res.status(401).end('Access to API explorer denied');
+			}
+
+		}).fail(function(err){
+				res.status(401).end('Access to API explorer denied');
+		});
+
+});
+
 if (false)
 app.use('/routes',function(req,res,next){
   app._router.stack.forEach(function(r){
@@ -198,3 +219,4 @@ boot(app, __dirname, function(err) {
 app.use(loopback.token({
   model: app.models.accessToken
 }));
+
