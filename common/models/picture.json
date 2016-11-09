@@ -19,11 +19,9 @@
       "type": "string",
       "required": true
     },
-    "lng": {
-      "type": "number"
-    },
-    "lat": {
-      "type": "number"
+    "geo": {
+      "type": "GeoPoint",
+      "required": false
     },
     "public": {
       "type": "boolean",
@@ -99,14 +97,13 @@
       "permission": "ALLOW",
       "property": "download"
     },
-    {                                                                                                                 
-      "property": "count",
+    {
       "accessType": "READ",
       "principalType": "ROLE",
       "principalId": "$everyone",
-      "permission": "ALLOW"  
+      "permission": "ALLOW",
+      "property": "count"
     }
-
   ],
   "methods": {}
 }

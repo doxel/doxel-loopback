@@ -22,6 +22,15 @@
     "status": {
       "type": "string",
       "required": false
+    },
+    "geo": {
+      "type": "GeoPoint",
+      "required": false
+    },
+    "popularity": {
+      "type": "number",
+      "required": "false",
+      "default": 0
     }
   },
   "validations": [],
@@ -75,34 +84,33 @@
       "permission": "ALLOW"
     },
     {
-      "property": "find",
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "$everyone",
-      "permission": "ALLOW"
+      "permission": "ALLOW",
+      "property": "find"
     },
     {
-      "property": "findById",
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "$everyone",
-      "permission": "ALLOW"
+      "permission": "ALLOW",
+      "property": "findById"
     },
     {
-      "property": "viewer",
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "$everyone",
-      "permission": "ALLOW"
+      "permission": "ALLOW",
+      "property": "viewer"
     },
     {
-      "property": "preview",
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "$everyone",
-      "permission": "ALLOW"
+      "permission": "ALLOW",
+      "property": "preview"
     }
-
   ],
   "methods": {}
 }

@@ -38,6 +38,7 @@ module.exports = function(User) {
 
   var crypto=require('crypto');
   var Q=require('q');
+  var path=require('path');
 
   User.prototype.getRoles=function(callback){
     var user=this;
@@ -103,6 +104,9 @@ module.exports = function(User) {
               if (err) {
                 q.reject(err);
 
+              } else if (!isValid) {
+                q.reject(new Error('Access token expired '+access_token));
+
               } else {
                 args.accessToken=accessToken;
                 q.resolve(args);
@@ -120,9 +124,8 @@ module.exports = function(User) {
   //send password reset link when password reset requested
   User.on('resetPasswordRequest', function(info) {
     var app=User.app;
-    var url = 'http' + (app.get('httpOnly')? '' : 's') + '://' + app.get('host') + ':' + app.get('port') + app.get('documentRoot') + '#/reset-password';
-    var html = 'Click <a href="' + url + '?access_token=' +
-        info.accessToken.id + '">here</a> to reset your password';
+    var url = 'http' + (app.get('httpOnly')? '' : 's') + '://' + app.get('host') + ':' + app.get('port') + '/reset-password-form';
+    var html = 'Click <a href="' + url + '/' + info.accessToken.id + '">here</a> to reset your password';
 
     app.models.Email.send({
       to: info.email,

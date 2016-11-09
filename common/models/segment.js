@@ -139,7 +139,6 @@
 
     q.promise.then(function(baseUrl){
       var url=(baseUrl+'/'+req.params[0]);
-
 //      console.log(url);
 //      if (req.params[0].match(/\.php/)) {
 //        php.cgi(url);
