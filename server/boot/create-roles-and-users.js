@@ -40,6 +40,7 @@ module.exports = function(app) {
     var User = app.models.User;
     var RoleMapping = app.models.RoleMapping;
     var q = new Q();
+    var extend=require('extend');
 
     q.then(function(){
         // add role "admin"
@@ -74,16 +75,22 @@ module.exports = function(app) {
 
     }).then(function() {
         // add member "admin"
+        var admin=extend({
+          user: 'admin',
+          pass: 'admin',
+          email: 'admin@doxel.org'
+        },app.get('admin'));
+
         User.findOrCreate({
             where: {
-                email: 'admin@doxel.org'
+              username: 'admin',
             }
 
         }, {
-            email: 'admin@doxel.org',
-            username: 'admin',
+            email: admin.email,
+            username: admin.user,
             emailVerified: true,
-            password:'admin',
+            password: admin.pass,
             fingerprint: 'dummy',
             ip: '127.0.0.1'
 
