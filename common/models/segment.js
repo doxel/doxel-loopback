@@ -37,6 +37,7 @@
 
  module.exports = function(Segment) {
   var path=require('path');
+  var fs=require('fs');
   var Q=require('q');
   var upload=app.get('upload');
   var uploadRootDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
@@ -103,6 +104,54 @@
     }
 
   });
+
+  Segment.prototype.getViewerJSON=function(args) {
+    args=args||{};
+    var q=Q.defer();
+    var segment=args.segment||this;
+
+    try {
+      var jsonpath=path.join(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits),'viewer','viewer.json');
+      fs.readFile(jsonpath,'utf8',function(err,data){
+        if (err) {
+          q.reject(err);
+          return;
+        }
+        args.viewerJSON=JSON.parse(data);
+        q.resolve(args);
+      });
+
+    } catch (e) {
+      q.reject(e);
+    }
+
+    return q.promise;
+  }
+
+  Segment.prototype.getCloudJSON=function(args) {
+    args=args||{};
+    var q=Q.defer();
+    var segment=args.segment||this;
+
+    try {
+      var jsonpath=path.join(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits),'potree','resources','pointclouds','potree','cloud.js');
+      fs.readFile(jsonpath,'utf8',function(err,data){
+        if (err) {
+          q.reject(err);
+          return;
+        }
+        args.cloudJSON=JSON.parse(data);
+        q.resolve(args);
+      });
+
+    } catch (e) {
+      q.reject(e);
+
+    }
+
+    return q.promise;
+  }
+
 
   Segment.viewer=function(req, res, callback){
     var q=Q.defer();
