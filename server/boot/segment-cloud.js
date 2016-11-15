@@ -22,10 +22,12 @@ module.exports=function(app){
         .then(segment.getCloudJSON)
         .then(function(args){
           var json=args.viewerJSON;
-          args.segment.pointCloud.create({
+          if (!segment.pointCloud())
+          segment.pointCloud.create({
             poseCount: json.extrinsics.length,
             viewCount: json.views.length,
             pointCount: args.cloudJSON.points
+
           },function(err,pointCloud){
             var q=Q.defer();
             if (err) {
@@ -33,6 +35,7 @@ module.exports=function(app){
               q.reject(err);
               return;
             }
+            console.log('added '+args.segment.id+' '+pointCloud.id)
             args.segment.save(function(err){
               if (err) {
                 q.reject(err);
@@ -45,7 +48,8 @@ module.exports=function(app){
           });
         })
         .fail(console.log)
-        .finally(loop);
+        .finally(loop)
+        .done();
 
     } // loop
 
