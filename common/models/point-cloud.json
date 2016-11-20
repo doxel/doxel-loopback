@@ -1,0 +1,55 @@
+{
+  "name": "PointCloud",
+  "plural": "PointClouds",
+  "base": "PersistedModel",
+  "idInjection": true,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "poseCount": {
+      "type": "number",
+      "required": true
+    },
+    "viewCount": {
+      "type": "number",
+      "required": true
+    },
+    "pointCount": {
+      "type": "number",
+      "required": "true"
+    }
+  },
+  "validations": [],
+  "relations": {
+    "segment": {
+      "type": "belongsTo",
+      "model": "Segment"
+    },
+    "poses": {
+      "type": "hasMany",
+      "model": "Pose"
+    }
+  },
+  "acls": [
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "DENY"
+    },
+    {
+      "accessType": "READ",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW"
+    }
+  ],
+  "methods": {}
+}

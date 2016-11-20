@@ -47,6 +47,10 @@
       "type": "hasOne",
       "model": "Picture"
     },
+    "pointCloud": {
+      "type": "hasOne",
+      "model": "PointCloud"
+    },
     "POIs": {
       "type": "hasAndBelongsToMany",
       "model": "POI"
