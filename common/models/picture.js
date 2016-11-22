@@ -331,6 +331,7 @@
       sharp(data.filename)
       .metadata(function(err,metadata){
         if (err) {
+          console.log('ERROR: '+data.filename);
           return q.reject(err);
         }
         data.metadata=metadata;
