@@ -105,9 +105,11 @@ module.exports=function(app){
 
             if (args.mysqlUser) {
               cmd='find /upload/*/*/*/*/'+args.mysqlUser.pass+' -maxdepth 8 -wholename \*/original_images/*.jpeg';
+              cmd='grep -E -e /'+args.mysqlUser.pass+'/.*/original_images/.*jpeg upload.txt || true';
 
             } else {
               cmd='find /upload/ -maxdepth 8 -wholename \*/original_images/\*.jpeg';
+              cmd='grep -E -e original_images/.*jpeg upload.txt || true';
 
             }
 
