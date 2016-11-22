@@ -38,7 +38,10 @@ Read the [COPYRIGHT.md](https://github.com/doxel/doxel-loopback/blob/master/COPY
 ## installation
 
 ```
-npm install -g strongloop
+
+sudo apt-get install build-essential cmake libexpat1-dev mongodb
+
+npm install -g strongloop bower grunt grunt-cli
 
 npm install
 
