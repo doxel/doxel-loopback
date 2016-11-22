@@ -57,7 +57,7 @@ module.exports=function(app){
         }
       
         var picture=pictures[picture_idx++];  
-        geo=picture.geo; // force save to delete latlnt
+        geo=picture.geo; // force save to delete latlng
         if (!picture.geo) {
           if (picture.lat!==undefined) {
             geo=picture.geo=new loopback.GeoPoint({lat: picture.lat, lng: picture.lng});

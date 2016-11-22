@@ -70,10 +70,10 @@ module.exports=function(app){
 
                 // get the next pose
                 if (extrinsic_idx>=viewerJSON.extrinsics.length) {
+                  console.log(segment_idx+'/'+segments.length+' - '+extrinsic_idx+'/'+viewerJSON.extrinsics.length);
                   q.resolve();
                   return;
                 }
-      console.log(segment_idx+'/'+segments.length+' - '+extrinsic_idx+'/'+viewerJSON.extrinsics.length);
                 extrinsics=viewerJSON.extrinsics[extrinsic_idx++];
 
                 // get view

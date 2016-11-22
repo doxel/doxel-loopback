@@ -38,7 +38,6 @@ module.exports = function(app) {
     var User=app.models.user;
 
     app.use(function(req, res, next) {
-        console.log(req.cookies);
 
         if (req.cookies.access_token) {
           next();
