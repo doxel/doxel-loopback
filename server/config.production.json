@@ -21,7 +21,7 @@
       "disableStackTrace": true
     }
   },
-  "legacyExplorer": false,
+  "legacyExplorer": true,
   "enableSSL": true,
   "documentRoot": "/"
 
