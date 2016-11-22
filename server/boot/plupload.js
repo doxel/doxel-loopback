@@ -33,6 +33,7 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
+
 module.exports=function(app) {
 
   var path=require('path');
@@ -42,13 +43,24 @@ module.exports=function(app) {
   console.dump=require('object-to-paths').dump;
   var express_plupload=require('express-plupload');
   var shell=require('shelljs');
-  var upload=app.get('upload');
+  var upload=require(path.join(__dirname,'/config.json')).upload;
   var mmm=require('mmmagic');
   var spawn=require('child_process').spawn;
-  var User=app.models.User;
+  var loopback=require('loopback');
+  var extend=require('extend');
+//  var NodeGeocoder=require('node-geocoder');
+
+  /*
+  var geocoder_options=app.get('geocoder');
+  var HttpsAdapter = require('node-geocoder/lib/httpadapter/httpsadapter.js');
+  var httpAdapter = new HttpsAdapter(null, geocoder_options.httpsAdapter_options);
+  var geocoder=NodeGeocoder(extend({},geocoder_options.nodeGeocoder,{
+    httpAdapter: httpAdapter
+  }));
+  */
 
   // upload directory
-  var uploadDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
+  var uploadDir=path.join.apply(path,[process.cwd()].concat(upload.directory))+(process.env.production?'':'_dev');
 
   // upload temporary directory
   var tmpDir=path.join(uploadDir,'tmp');
@@ -166,7 +178,7 @@ module.exports=function(app) {
     }
 
     req.access_token=req.signedCookies.access_token;
-    User.authenticate(req)
+    app.models.User.authenticate(req)
     .then(checkFreeSpace)
     .then(function(){
 
@@ -428,8 +440,10 @@ module.exports=function(app) {
               picture.isNew=null;
               picture.unsetAttribute('isNew');
               if (req.plupload.fields.lat!==undefined && req.plupload.fields.lon!==undefined) {
-                 picture.lat=Number(req.plupload.fields.lat);
-                 picture.lng=Number(req.plupload.fields.lon);
+                picture.geo=new loopback.GeoPoint({
+                  lat: Number(req.plupload.fields.lat),
+                  lng: Number(req.plupload.fields.lon)
+                });
               }
 
               picture.uniqueTimestamp()
@@ -464,38 +478,52 @@ module.exports=function(app) {
           }
 
           // update segment coords
-          if (req.picture.lat!==undefined && req.picture.lng!==undefined && !req.segment.geolock) {
-            if (req.segment.lat===undefined) {
-              req.segment.lat=req.picture.lat;
+          if (req.picture.geo) {
+            if (!req.segment.geo) {
+              req.segment.geo=new loopback.GeoPoint({
+                lat: req.picture.geo.lat,
+                lng: req.picture.geo.lng
+              });
             } else {
-              req.segment.lat=(req.segment.lat+req.picture.lat)*0.5;
-            }
-            if (req.segment.lng===undefined) {
-              req.segment.lng=req.picture.lng;
-            } else {
-              req.segment.lng=(req.segment.lng+req.picture.lng)*0.5;
+              req.segment.geo.lat=(req.segment.geo.lat+req.picture.geo.lat)*0.5;
+              req.segment.geo.lng=(req.segment.geo.lng+req.picture.geo.lng)*0.5;
             }
             update=true;
           }
 
           var q=new Q.defer();
-          if (update) {
-            req.segment.previewId=req.picture.id;
-            req.segment.save(function(err,segment){
-              if (err) {
-                q.reject(err);
-              } else {
-                q.resolve();
-              }
-            });
 
-          } else {
-            // dont mix async with sync
-            q.resolve();
-          }
+
+  //      setCountry(function(){
+            if (update) {
+              req.segment.save(function(err,segment){
+                if (err) {
+                  q.reject(err);
+                } else {
+                  q.resolve();
+                }
+              });
+
+            } else {
+              // dont mix async with sync
+              q.resolve();
+            }
+ //       });
           return q.promise;
 
         } // updateSegment
+
+        /*
+         * TODO: setCountry (must use separate unique process and queuing for georeferencing)
+        function setCountry(callback){
+          if (!req.segment.country) {
+            callback();
+            return;
+          }
+          callback();
+          
+        }
+        */
 
         function movePictureToDestination() {
           var q=Q.defer();
