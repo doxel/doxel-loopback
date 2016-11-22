@@ -67,6 +67,23 @@
     "public": true
   },
   "Email": {
-    "dataSource": "email"
+    "dataSource": "email",
+    "public": false
+  },
+  "PointCloud": {
+    "dataSource": "db",
+    "public": true
+  },
+  "geocodeq": {
+    "dataSource": "db",
+    "public": false
+  },
+  "Like": {
+    "dataSource": "db",
+    "public": true
+  },
+  "Pose": {
+    "dataSource": "db",
+    "public": true
   }
 }
