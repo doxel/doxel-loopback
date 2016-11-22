@@ -47,6 +47,17 @@ module.exports=function(app) {
   var mmm=require('mmmagic');
   var spawn=require('child_process').spawn;
   var loopback=require('loopback');
+  var extend=require('extend');
+//  var NodeGeocoder=require('node-geocoder');
+
+  /*
+  var geocoder_options=app.get('geocoder');
+  var HttpsAdapter = require('node-geocoder/lib/httpadapter/httpsadapter.js');
+  var httpAdapter = new HttpsAdapter(null, geocoder_options.httpsAdapter_options);
+  var geocoder=NodeGeocoder(extend({},geocoder_options.nodeGeocoder,{
+    httpAdapter: httpAdapter
+  }));
+  */
 
   // upload directory
   var uploadDir=path.join.apply(path,[process.cwd()].concat(upload.directory))+(process.env.production?'':'_dev');
@@ -481,23 +492,38 @@ module.exports=function(app) {
           }
 
           var q=new Q.defer();
-          if (update) {
-            req.segment.previewId=req.picture.id;
-            req.segment.save(function(err,segment){
-              if (err) {
-                q.reject(err);
-              } else {
-                q.resolve();
-              }
-            });
 
-          } else {
-            // dont mix async with sync
-            q.resolve();
-          }
+
+  //      setCountry(function(){
+            if (update) {
+              req.segment.save(function(err,segment){
+                if (err) {
+                  q.reject(err);
+                } else {
+                  q.resolve();
+                }
+              });
+
+            } else {
+              // dont mix async with sync
+              q.resolve();
+            }
+ //       });
           return q.promise;
 
         } // updateSegment
+
+        /*
+         * TODO: setCountry (must use separate unique process and queuing for georeferencing)
+        function setCountry(callback){
+          if (!req.segment.country) {
+            callback();
+            return;
+          }
+          callback();
+          
+        }
+        */
 
         function movePictureToDestination() {
           var q=Q.defer();
