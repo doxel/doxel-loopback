@@ -12,10 +12,12 @@ module.exports=function(app){
   var Pose=app.models.Pose;
   var PointCloud=app.models.PointCloud;
 
-  Q(Segment.find({
+  Q(Pose.destroyAll()).then(function(){
+   return Q(Segment.find({
     include: ['user', 'pointCloud', 'pictures']
 
-  }))
+    }))
+  })
   .then(function(segments){
     var segment_idx=0;
     segments_loop();
@@ -30,12 +32,8 @@ module.exports=function(app){
 
       console.log(segment_idx+'/'+segments.length);
 
-      if (segment.pointCloud()) {
-        console.log('already got a pointcloud for segment '+segment.timestamp+' '+new Date(Number(segment.timestamp.substr(0,10)+'000')));
-        process.nextTick(segments_loop);
-        return;
-      }
 
+//      console.log('getViewerJSON',segment);
       // get viewer.json
       segment.getViewerJSON({segment: segment})
         // get cloud.js
@@ -45,15 +43,18 @@ module.exports=function(app){
           var viewerJSON=args.viewerJSON;
           var cloudJSON=args.cloudJSON;
 
-          return Q(args.pointCloud=segment.pointCloud.create({
+          return Q(args.pointCloud=PointCloud.upsert({
             poseCount: viewerJSON.extrinsics.length,
             viewCount: viewerJSON.views.length,
-            pointCount: cloudJSON.points
+            pointCount: cloudJSON.points,
+            segmentId: segment.id
 
           })).then(function(pointCloud){
+            segment.pointCloudId=pointCloud.id;
+            segment.updateAttribute('pointCloudId',pointCloud.id);
 
             function delete_poses(){
-              return Q(Pose.remove({
+              return Q(Pose.destroyAll({
                 where: {
                   pointCloudId: pointCloud.id
                 }
@@ -124,7 +125,6 @@ module.exports=function(app){
 
             } // create poses
 
-//            return delete_poses().then(create_poses);
             return create_poses();
 
           })
@@ -134,7 +134,9 @@ module.exports=function(app){
         .finally(segments_loop)
         .done();
 
+
     } // loop
 
   });
 }
+
