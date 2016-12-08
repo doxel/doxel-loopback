@@ -19,7 +19,8 @@
   "relations": {
     "pointCloud": {
       "type": "belongsTo",
-      "model": "PointCloud"
+      "model": "PointCloud",
+      "foreignKey": "pointCloudId"
     },
     "picture": {
       "type": "hasOne",
@@ -37,6 +38,12 @@
       "accessType": "*",
       "principalType": "ROLE",
       "principalId": "admin",
+      "permission": "ALLOW"
+    },
+    {
+      "accessType": "READ",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
       "permission": "ALLOW"
     }
   ],
