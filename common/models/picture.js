@@ -44,6 +44,7 @@
   var exiv2=require('exiv2');
   var sharp=require('sharp');
   var piexif=require('piexifjs');
+  var thumbWidth=192;
 
   Picture.getUploadRootDir=function(){
     return uploadRootDir;
@@ -408,7 +409,7 @@
             }
           });
 
-          if (thumb && thumb.width>=256 && Math.abs(picture.aspect-thumb.width/thumb.height)<0.01) {
+          if (thumb && thumb.width>=thumbWidth && Math.abs(picture.aspect-thumb.width/thumb.height)<0.01) {
             data.thumb=thumb;
             return data;
           }
@@ -426,7 +427,7 @@
     function createThumbnail(data) {
       var q=Q.defer();
 
-      var width=data.picture.aspect>=1?256:Math.round(256*data.picture.aspect);
+      var width=data.picture.aspect>=1?thumbWidth:Math.round(thumbWidth*data.picture.aspect);
   //    console.log(data.picture.aspect,width)
       var thumbnailer=sharp(data.filename)
       .resize(width)
