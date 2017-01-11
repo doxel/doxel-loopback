@@ -213,4 +213,40 @@
 
   });
 
+  Segment.path=function(req, res, callback){
+    var ip = req.headers['x-real-ip'] || req.ip;
+    if (ip!='127.0.0.1' && ip!='::1') {
+      res.status(404).end();
+      return;
+    }
+
+    app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,segment){
+      if (err || !segment) {
+        if (err) console.log(err.message,err.stack);
+        return res.status(404).end()
+      }
+      var _user=segment.user();
+      if (!_user) {
+        console.trace('no such owner: ',segment.userId, ' for segment:',segment.id);
+        return res.status(404).end();
+      }
+      res.status(200).end(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+
+    });
+  }
+
+  Segment.remoteMethod('path',{
+    accepts: [
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: {},
+    http: {
+      path: '/path/:segmentId',
+      verb: 'get'
+    }
+
+  });
+
 };
