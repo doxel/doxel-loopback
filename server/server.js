@@ -56,6 +56,19 @@ app.use(helmet({
 // convert request access token to cookie
 require(path.join(__dirname,'access-token_cookie.js'))(app);
 
+app.use('/doxel/home',function xrobot(req,res,next){
+  res.setHeader('X-Robots-Tag', 'nofollow');
+  return next();
+});
+
+app.get('/',function(req,res,next){
+  res.redirect('/doxel/home');
+});
+
+app.use('/fonts*',function(req,res){
+  res.status(404).end();
+});
+
 // allow API explorer for admin only
 app.use('/explorer', function(req,res,next) {
     req.access_token=req.signedCookies.access_token;
@@ -125,8 +138,6 @@ app.enable('trust proxy', '127.0.0.1');
 
 app.start = function(enableSSL) {
 
-  // TODO: avoid using php for this
-
   if (enableSSL === undefined) {
     enableSSL = process.env.enableSSL;
   }
@@ -179,7 +190,10 @@ boot(app, __dirname, function(err) {
 
   // start the server if `$ node server.js`
   if (require.main === module) {
-//    app.start(app.get('enableSSL'));
+    if (!app.get('enableSocketio')) {
+      app.start(app.get('enableSSL'));
+      return;
+    }
     // https://docs.strongloop.com/display/MSG/Building+a+real-time+app+using+socket.io+and+AngularJS
     app.io = require('socket.io')(app.start(app.get('enableSSL')));
     require('socketio-auth')(app.io, {
