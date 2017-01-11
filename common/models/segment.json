@@ -115,6 +115,13 @@
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "preview"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "path"
     }
   ],
   "methods": {}
