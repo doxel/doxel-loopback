@@ -534,8 +534,13 @@ module.exports=function(app) {
             'original_images'
           );
 
-          shell.mkdir('-p', destDir);
-          var sherr=shell.error();
+          var sherr;
+          try {
+            shell.mkdir('-p', destDir);
+            sherr=shell.error();
+          } catch(e) {
+            sherr=e.message;
+          }
           if (sherr) {
             q.reject(new Error('Cannot create destination directory: '+sherr));
 
