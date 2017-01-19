@@ -97,7 +97,7 @@ module.exports = function(User) {
 
         } else {
           if (!accessToken) {
-            q.reject(new Error('Access token expired. '+access_token));
+            q.reject(new Error('Access token expired. '+args.access_token));
 
           } else {
             accessToken.validate(function(err,isValid){
@@ -105,7 +105,7 @@ module.exports = function(User) {
                 q.reject(err);
 
               } else if (!isValid) {
-                q.reject(new Error('Access token expired '+access_token));
+                q.reject(new Error('Access token expired '+args.access_token));
 
               } else {
                 args.accessToken=accessToken;
