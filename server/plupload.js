@@ -74,6 +74,8 @@ module.exports=function(app) {
 
   app.use('/sendfile', function(req, res, next){
 
+//    req.setTimeout(300);
+
     req.success=function success() {
       res.status(201).end('{"jsonrpc": "2.0", "result": {}, "id": "id"}');
     }
@@ -117,7 +119,7 @@ module.exports=function(app) {
 
       req.fail(err);
 
-      if (!req.headers && req.headers['user-agent'] && req.headers['user-agent'].match(/chrome/i)) {
+      if (req.headers && req.headers['user-agent'] && !req.headers['user-agent'].match(/chrome/i)) {
         console.log(req.headers);
    /**** works with firefox but not with chrome (status and error message are not received) */
         try {
@@ -177,7 +179,7 @@ module.exports=function(app) {
       return;
     }
 
-    req.access_token=req.signedCookies.access_token;
+    req.access_token=req.headers['authorization']||req.signedCookies.access_token;
     app.models.User.authenticate(req)
     .then(checkFreeSpace)
     .then(function(){
