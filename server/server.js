@@ -65,10 +65,6 @@ app.get('/',function(req,res,next){
   res.redirect('/doxel/home');
 });
 
-app.use('/fonts*',function(req,res){
-  res.status(404).end();
-});
-
 // allow API explorer for admin only
 app.use('/explorer', function(req,res,next) {
     req.access_token=req.signedCookies.access_token;
