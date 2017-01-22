@@ -98,20 +98,20 @@ var plupload=require(path.join(__dirname,'plupload.js'))(app);
 // Make sure to also put this in `server/server.js`
 app.PassportConfigurator=require('loopback-component-passport').PassportConfigurator;
 
-  app.use(function(req,res,next){
-    var _send = res.send;
-    var sent = false;
+app.use(function(req,res,next){
+  var _send = res.send;
+  res.__sent = false;
 
-    res.send = function(data){
-      if(sent) {
-         console.log('warning: response was already sent');
-         return;
-      }
-      _send.bind(res)(data);
-      sent = true;
-    };
-    next();
-  });
+  res.send = function(data){
+    if(res.__sent) {
+       console.log('warning: response was already sent');
+       return;
+    }
+    _send.bind(res)(data);
+    res.__sent = true;
+  };
+  next();
+});
 
 app.use(function setCurrentUser(req, res, next) {
   if (!req.accessToken) {
