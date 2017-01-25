@@ -45,7 +45,7 @@ var helmet = require('helmet');
 
 if (process.env.TRACE) console.log=console.trace;
 
-var php=require('node-php');
+//var php=require('node-php');
 
 var app = module.exports = loopback();
 
