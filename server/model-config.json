@@ -38,14 +38,6 @@
     "dataSource": "db",
     "public": true
   },
-  "MysqlPictures": {
-    "dataSource": "MySQL",
-    "public": true
-  },
-  "MysqlUser": {
-    "dataSource": "MySQL",
-    "public": true
-  },
   "Picture": {
     "dataSource": "db",
     "public": true

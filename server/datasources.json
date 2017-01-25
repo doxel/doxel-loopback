@@ -6,13 +6,20 @@
     "name": "db",
     "connector": "mongodb"
   },
-  "MySQL": {
-    "name": "MySQL",
-    "connector": "mysql",
-    "database": "doxel",
-    "host": "127.0.0.1",
-    "port": 3306,
-    "username": "root",
-    "password": "root"
+  "email": {
+    "connector": "mail",
+    "transports": [{
+      "type": "smtp",
+      "host": "mail.yourdomain.com",
+      "secure": true,
+      "port": 465,
+      "tls": {
+        "rejectUnauthorized": true
+      },
+      "auth": {
+        "user": "user@domain",
+        "pass": "password"
+      }
+    }]
   }
 }
