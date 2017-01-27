@@ -212,14 +212,14 @@
 
   });
 
-  Segment.path=function(req, res, callback){
+  Segment.path=function(segmentId, req, res, callback){
     var ip = req.headers['x-real-ip'] || req.ip;
     if (ip!='127.0.0.1' && ip!='::1') {
       res.status(404).end();
       return;
     }
 
-    app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,segment){
+    app.models.Segment.findById(segmentId,{include: 'user'},function(err,segment){
       if (err || !segment) {
         if (err) console.log(err.message,err.stack);
         return res.status(404).end()
