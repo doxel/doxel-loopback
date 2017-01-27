@@ -50,9 +50,11 @@
     return uploadRootDir;
   }
 
+  /*  
   Picture.observe('before delete', function group_delete(ctx, next) {
-    app.models.InstanceAcl._delete(ctx, next);
+    app.models.InstanceAcl._delete(ctx, 'Picture', next);
   });
+  */
 
   function pictureFilePath(picture,segment,user){
     return path.join(
@@ -500,7 +502,8 @@
       } else {
         var picture=data.picture;
         data.filename=pictureFilePath(picture,picture.segment(),picture.user());
-//        console.log(what+': '+data.filename);
+        console.log(what+': '+data.filename);
+
         switch(what) {
           case 'thumb':
             return getThumbnail(data)

@@ -5,5 +5,21 @@
     "database": "doxel_dev",
     "name": "db",
     "connector": "mongodb"
+  },
+  "email": {
+    "connector": "mail",
+    "transports": [{
+      "type": "smtp",
+      "host": "mail.yourdomain.com",
+      "secure": true,
+      "port": 465,
+      "tls": {
+        "rejectUnauthorized": true
+      },
+      "auth": {
+        "user": "user@domain",
+        "pass": "password"
+      }
+    }]
   }
 }

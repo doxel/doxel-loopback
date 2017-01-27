@@ -124,6 +124,7 @@ module.exports = function(InstanceAcl) {
     q.promise.then(function(instances) {
       var q=Q.defer();
 
+      console.log('CTX',ctx,instances);
       // destroy instanceAcl instances matching the deleted ctx.Model instances
       var i=0;
       function loop(){
@@ -140,6 +141,7 @@ module.exports = function(InstanceAcl) {
           }, function(err, info) {
             if (err) {
               console.trace(err,info);
+              console.log('modelName',modelName,instanceAcl.modelName);
             }
             loop();
 
@@ -155,6 +157,7 @@ module.exports = function(InstanceAcl) {
       next();
     })
     .fail(function(err) {
+      console.log(err);
       next(err);
     })
     .done();

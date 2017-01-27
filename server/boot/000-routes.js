@@ -43,7 +43,6 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
   var User=app.models.user;
   var UserCredential=app.models.userCredential;
   var AccessToken=app.models.AccessToken;
-  var php=require('node-php');
   var path=require('path');
   var url=require('url');
   var proxy=require('map-tiles-proxy')(app.get('tileProxyConfig'));

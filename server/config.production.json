@@ -22,7 +22,7 @@
     }
   },
   "legacyExplorer": true,
-  "enableSSL": true,
+  "enableSSL": false,
   "documentRoot": "/"
 
 }
