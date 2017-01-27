@@ -5,14 +5,5 @@
     "database": "doxel_dev",
     "name": "db",
     "connector": "mongodb"
-  },
-  "MySQL": {
-    "name": "MySQL",
-    "connector": "mysql",
-    "database": "doxel",
-    "host": "127.0.0.1",
-    "port": 3306,
-    "username": "root",
-    "password": "root"
   }
 }
