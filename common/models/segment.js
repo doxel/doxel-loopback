@@ -109,7 +109,6 @@
     args=args||{};
     var q=Q.defer();
     var segment=args.segment||this;
-
     try {
       var jsonpath=path.join(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits),'viewer','viewer.json');
       fs.readFile(jsonpath,'utf8',function(err,data){
@@ -237,6 +236,7 @@
 
   Segment.remoteMethod('path',{
     accepts: [
+      {arg: 'segmentId', type: 'string', required: true},
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
@@ -249,4 +249,196 @@
 
   });
 
+  Segment._injectPointcloud=function(segmentId){
+    var segment;
+
+    // fetch segment data
+    return Q(app.models.Segment.findById(segmentId,{
+      include: ['user', 'pointCloud', 'pictures']
+
+    })).then(function(_segment){
+      if (!_segment) {
+        return Q.reject(new Error('segment not found: '+segmentId));
+      }
+      segment=_segment;
+      return Q.resolve();
+    })
+    .then(function(){
+      // remove existing related PointCloud and Pose model intances
+      var pointCloudId=segment.pointCloudId||(segment.pointCloud&&segment.pointCloud.id);
+      if (pointCloudId){
+        return Q(app.models.Pose.destroyAll({pointCloudId: pointCloudId}).then(Q(app.models.PointCloud.destroyById(pointCloudId))));
+      }
+
+    })
+    .then(function(){
+      // check for existing pictures
+      if (!segment.pictures || !segment.pictures.length) {
+        return Q.reject(new Error('no pictures in segment '+segment.id));
+      }
+      return segment.getViewerJSON();
+    })
+    // get cloud.js
+    .then(function(args){
+      return segment.getCloudJSON(args);
+
+    })
+    .then(function(args){
+      segment.viewerJSON=args.viewerJSON;
+      var cloudJSON=args.cloudJSON;
+
+      // create PointCloud instance
+      return app.models.PointCloud.create({
+        poseCount: segment.viewerJSON.extrinsics.length,
+        viewCount: segment.viewerJSON.views.length,
+        pointCount: cloudJSON.points,
+        segmentId: segment.id
+      });
+
+
+    }).then(function(pointCloud){
+      // store pointCloudId in segment
+      segment.pointCloudId=pointCloud.id;
+      return Q(segment.updateAttribute('pointCloudId',pointCloud.id));
+
+    }).then(function(){
+      // create poses
+      var q=Q.defer();
+      var extrinsic_idx=0;
+      var extrinsics;
+
+      function extrinsics_loop(){
+        var view;
+
+        // get the next pose
+        if (extrinsic_idx>=segment.viewerJSON.extrinsics.length) {
+          q.resolve();
+          return;
+        }
+        extrinsics=segment.viewerJSON.extrinsics[extrinsic_idx++];
+
+        // get view
+        var view;
+        view=segment.viewerJSON.views[extrinsics.key];
+
+        if (!view) {
+          q.reject(new Error('ERROR: missing view '+extrinsics.key+' for segment '+segment.id+' '+segment.timestamp+' '+new Date(Number(segment.timestamp.substr(0,10)+'000'))));
+          return;
+        }
+        if (extrinsics.key!=view.value.ptr_wrapper.data.id_pose) {
+          q.reject(new Error('ERROR: extrinsics.key != view.id_pose !!! '+extrinsics.key+' '+view.value.ptr_wrapper.data.id_pose+' for segment '+segment.id+' '+segment.timestamp+' '+new Date(Number(segment.timestamp.substr(0,10)+'000'))));
+          return;
+        }
+
+        // get pose picture
+        var timestamp=view.value.ptr_wrapper.data.filename.substr(0,17);
+        var picture=null;
+        segment.pictures().some(function(_picture){
+          if (_picture.timestamp==timestamp) {
+            picture=_picture;
+            return true;
+          }
+        });
+
+        if (!picture) {
+          console.log(new Error('ERROR: Picture '+timestamp+' not found in segment '+segment.id+' '+segment.timestamp+' '+new Date(Number(segment.timestamp.substr(0,10)+'000'))));
+          picture={};
+        }
+
+        // create pointCloud.pose instance
+        Q(app.models.PointCloud.scopes.poses.modelTo.create({
+          pointCloudId: segment.pointCloudId,
+          pictureId: picture.id,
+          center: extrinsics.value.center,
+          rotation: extrinsics.value.rotation
+        }))
+        .fail(console.log)
+        .finally(extrinsics_loop)
+        .done();
+
+      } // extrinsics_loop
+
+      extrinsics_loop();
+
+      return q.promise;
+
+    })
+  }
+
+  Segment.timestampToId=function(timestamp) {
+    return Q.fcall(function(){
+      // check if segmentId is a timestamp
+      if (timestamp.match(/^[0-9]{10}_[0-9]{6}$/)) {
+        return Q(app.models.Segment.find({
+          fields: 'id',
+          where: {
+            timestamp: timestamp
+          }
+
+        })).then(function(segments){
+          // no matching segment ?
+          if (!segments.length) {
+            return Q.reject(new Error('ERROR: no such timestamp: '+timestamp));
+          }
+          // many matching segments ?
+          if (segments.length>1) {
+            var list=[];
+            segments.some(function(segment){list.push(segment.id)});
+            return Q.reject(new Error('ERROR: many segments with timestamp '+timestamp+' : '+list.join(', ')));
+          }
+          // return unique matching segment id
+          return segments[0].id;
+        });
+
+      } else {
+        // return specified segmentId 
+        return timestamp;
+      }
+
+    });
+  }
+
+  Segment.injectPointcloud=function(segmentId, req, res, callback) {
+    // only from localhost (or via ssh wget)
+    console.log(req.headers)
+    var ip = (req.headers && req.headers['x-real-ip']) || req.ip;
+    if (ip!='127.0.0.1' && ip!='::1') {
+      res.status(404).end();
+      return;
+    }
+
+    var segment;
+
+    Segment.timestampToId(segmentId)
+    .then(Segment._injectPointcloud)
+    .fail(function(err){
+      console.log(err.message,err.stack);
+      res.status(500).end('ERROR: could not inject cloud for segment '+segmentId+' : '+err.message);
+    })
+    .then(function(){
+      res.status(200).end('DONE: cloud injected for segment '+segmentId);
+    })
+    .done();
+  }
+
+  Segment.remoteMethod('injectPointcloud',{
+    accepts: [
+      {arg: 'segmentId', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: {},
+    http: {
+      path: '/:segmentId/inject-pointcloud',
+      verb: 'get'
+    }
+
+  });
+
 };
+
+
+
+
+

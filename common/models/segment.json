@@ -49,8 +49,7 @@
     },
     "pointCloud": {
       "type": "hasOne",
-      "model": "PointCloud",
-      "foreignKey": "pointCloudId"
+      "model": "PointCloud"
     },
     "POIs": {
       "type": "hasAndBelongsToMany",
@@ -122,6 +121,13 @@
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "path"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "inject-pointcloud"
     }
   ],
   "methods": {}

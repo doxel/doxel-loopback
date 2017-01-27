@@ -8,134 +8,49 @@ module.exports=function(app){
 
   var Q=require('q');
 
+  if (!process.argv[1].split('/').pop()=='lb-ng' || !process.env.REINJECT_POINTCLOUDS) {
+    return;
+  }
+
   var Segment=app.models.Segment;
   var Pose=app.models.Pose;
   var PointCloud=app.models.PointCloud;
 
-  Q(Pose.destroyAll()).then(function(){
-   return Q(Segment.find({
-    include: ['user', 'pointCloud', 'pictures']
+  Q.fcall(function(){
+    // delete all PointCloud and Pose instances
+    return Q(PointCloud.destroyAll()).then(Q(Pose.destroyAll()));
 
-    }))
+  })
+  .then(function(){
+   // get all the segment ids
+   return Q(Segment.find({
+     fields: ['id']
+   }))
+
   })
   .then(function(segments){
     var segment_idx=0;
-    segments_loop();
 
     function segments_loop(){
+      // exit loop when no segment left
       if (segment_idx>=segments.length) {
         console.log('segment-viewer-status-update DONE');
         return
       }
 
+      // get next segment
       var segment=segments[segment_idx++];
-
       console.log(segment_idx+'/'+segments.length);
 
+      // create segment PointCloud and Pose instances
+      Segment._injectPointcloud(segment.id)
+      .fail(console.log)
+      .finally(segments_loop)
+      .done();
+    }
 
-//      console.log('getViewerJSON',segment);
-      // get viewer.json
-      segment.getViewerJSON({segment: segment})
-        // get cloud.js
-        .then(segment.getCloudJSON)
-        .then(function(args){
-          console.log('got cloud.json');
-          var viewerJSON=args.viewerJSON;
-          var cloudJSON=args.cloudJSON;
-
-          return Q(args.pointCloud=PointCloud.upsert({
-            poseCount: viewerJSON.extrinsics.length,
-            viewCount: viewerJSON.views.length,
-            pointCount: cloudJSON.points,
-            segmentId: segment.id
-
-          })).then(function(pointCloud){
-            segment.pointCloudId=pointCloud.id;
-            segment.updateAttribute('pointCloudId',pointCloud.id);
-
-            function delete_poses(){
-              return Q(Pose.destroyAll({
-                where: {
-                  pointCloudId: pointCloud.id
-                }
-              }));
-            }
-
-            function create_poses(){
-              var q=Q.defer();
-              var extrinsic_idx=0;
-              var extrinsics;
-
-              function extrinsics_loop(){
-                var view;
-
-                // get the next pose
-                if (extrinsic_idx>=viewerJSON.extrinsics.length) {
-                  console.log(segment_idx+'/'+segments.length+' - '+extrinsic_idx+'/'+viewerJSON.extrinsics.length);
-                  q.resolve();
-                  return;
-                }
-                extrinsics=viewerJSON.extrinsics[extrinsic_idx++];
-
-                // get view
-                var view;
-                view=viewerJSON.views[extrinsics.key];
-
-                if (!view) {
-                  console.log(new Error('ERROR: missing view '+extrinsics.key+' for segment '+segment.timestamp+' '+new Date(Number(segment.timestamp.substr(0,10)+'000'))));
-                  extrinsics_loop();
-                  return;
-                }
-                if (extrinsics.key!=view.value.ptr_wrapper.data.id_pose) {
-                  q.reject(new Error('ERROR: extrinsics.key != view.id_pose !!! '+extrinsics.key+' '+view.value.ptr_wrapper.data.id_pose));
-                  return;
-                }
-
-                // get pose picture
-                var timestamp=view.value.ptr_wrapper.data.filename.substr(0,17);
-                var picture=null;
-                segment.pictures().some(function(_picture){
-                  if (_picture.timestamp==timestamp) {
-                    picture=_picture;
-                    return true;
-                  }
-                });
-
-                if (!picture) {
-                  console.log(new Error('ERROR: Picture '+timestamp+' not found in segment '+segment.timestamp+' '+new Date(Number(segment.timestamp.substr(0,10)+'000'))));
-                  picture={};
-                }
-
-                // add pointCloud.pose
-                Q(PointCloud.scopes.poses.modelTo.create({
-                  pointCloudId: pointCloud.id,
-                  pictureId: picture.id,
-                  center: extrinsics.value.center,
-                  rotation: extrinsics.value.rotation
-                }))
-                .fail(console.log)
-                .finally(extrinsics_loop)
-                .done();
-
-              } // extrinsics_loop
-
-              extrinsics_loop();
-
-              return q.promise;
-
-            } // create poses
-
-            return create_poses();
-
-          })
-
-        })
-        .fail(console.log)
-        .finally(segments_loop)
-        .done();
-
-
-    } // loop
+    // enter the loop
+    segments_loop();
 
   });
 }
