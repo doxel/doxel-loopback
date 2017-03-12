@@ -436,6 +436,82 @@
 
   });
 
+  Segment._purge=function(segmentId) {
+    return Q(app.models.PointCloud.findOne({
+      'where': {'segmentId': segmentId}
+    }, function(err, pointCloud){
+      if (err) {
+        return Q.reject(err);
+      }
+
+      if (pointCloud) {
+        return Q(app.models.Pose.destroyAll({pointCloudId: pointCloud.id},function(err,info,count){
+          if (err) return Q.reject(err);
+          console.log(info,'segment '+segmentId+' pointCloud '+pointCloud+': '+count+' poses destroyed');
+          return Q.resolve();
+        }))
+        .then(Q(app.models.PointCloud.destroyById(pointCloudId,function(err){
+          if (err) return Q.reject(err);
+          console.log(info,'segment '+segmentId+' pointCloud '+pointCloud+' destroyed');
+          return Q.resolve();
+        })));
+
+      } else {
+        return Q.resolve();
+      }
+
+    }))
+    .then(Q(app.models.Picture.destroyAll({segmentId: segmentId},function(err,info,count){
+      if (err) return Q.reject(err);
+      console.log(info,'segment '+segmentId+': '+count+' pictures destroyed');
+      return Q.resolve();
+    })))
+    .then(Q(app.models.Segment.destroyById(segmentId,function(err){
+      if (err) return Q.reject(err);
+      console.log('segment '+segmentId+' purged successfuly');
+      return Q.resolve();
+    })));
+  };
+
+
+  Segment.purge=function(segmentId, req, res, callback) {
+    // only from localhost (or via ssh wget)
+    console.log(req.headers)
+    var ip = (req.headers && req.headers['x-real-ip']) || req.ip;
+    if (ip!='127.0.0.1' && ip!='::1') {
+      res.status(404).end();
+      return;
+    }
+
+    var segment;
+
+    Segment.timestampToId(segmentId)
+    .then(Segment._purge)
+    .fail(function(err){
+      console.log(err.message,err.stack);
+      res.status(500).end('ERROR: could not purge segment '+segmentId+' : '+err.message);
+    })
+    .then(function(){
+      res.status(200).end('DONE: purged segment '+segmentId+ ' from database.');
+    })
+    .done();
+  }
+
+  Segment.remoteMethod('purge',{
+    accepts: [
+      {arg: 'segmentId', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: {},
+    http: {
+      path: '/:segmentId/purge',
+      verb: 'get'
+    }
+
+  });
+
 };
 
 
