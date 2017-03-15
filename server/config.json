@@ -79,7 +79,9 @@
       },
       "blue-marble": {
         "url": [
-          "www.doxel.org/doxel-viewer/upload/blue-marble"
+          "a.doxel.org/blue_marble",
+          "b.doxel.org/blue_marble",
+          "c.doxel.org/blue_marble"
         ]
       },
       "stamen": {
