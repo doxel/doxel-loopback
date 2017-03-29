@@ -4,7 +4,8 @@
     "url": "mongodb://127.0.0.1/doxel_dev",
     "database": "doxel_dev",
     "name": "db",
-    "connector": "mongodb"
+    "connector": "mongodb",
+    "enableGeoIndexing": false
   },
   "email": {
     "connector": "mail",

@@ -36,7 +36,8 @@
  var app = require('../../server/server');
 
  module.exports = function(Segment) {
-  var path=require('path');
+  var loopback = require('loopback');
+      var path=require('path');
   var fs=require('fs');
   var Q=require('q');
   var upload=app.get('upload');
@@ -510,6 +511,71 @@
       verb: 'get'
     }
 
+  });
+
+  Segment._find=function(filter,req, res, callback) {
+    console.log(JSON.stringify(filter,false,4));
+    if (filter && filter.where && filter.where.geo) {
+
+      var geo=filter.where.geo;
+      geo.near=new loopback.GeoPoint(geo.near);
+      filter.where.geo={exists: true};
+
+      var limit=filter.limit||undefined;
+      delete filter.limit;
+
+      var skip=filter.skip||0;
+      delete filter.skip;
+
+      var timestamp=filter.where.timestamp;
+      delete filter.where.timestamp;
+
+      delete filter.order;
+
+      Segment.find(filter,function(err,segments){
+        if (err) callback(err,null);
+        else filterByGeo(segments);
+      });
+
+      console.log(JSON.stringify(filter,false,6));
+      function filterByGeo(segments){
+        var result=[];
+        segments.some(function(segment){
+          var segment_geo=new loopback.GeoPoint(segment.geo);
+          var d=segment_geo.distanceTo(geo.near,{type: 'meters'});
+          if (!geo.maxDistance || d<geo.maxDistance) {
+            result.push(segment);
+            segment.d=d;
+          }
+        });
+        result.sort(function(a,b){
+          return a.d-b.d;
+        });
+        if (limit||skip) callback(null,result.slice(skip,limit));
+        else callback(null,result);
+      }
+
+    } else {
+      Segment.find(filter,callback);
+    }
+
+  }
+
+  Segment.remoteMethod('_find',{
+    accepts: [
+      {arg: 'filter', type: 'object', http: {source: 'query'}, required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: [
+      { arg: 'segments', type: 'array', root: true}
+
+    ],
+    http: {
+      path: '/_find',
+      verb: 'get'
+    }
   });
 
 };

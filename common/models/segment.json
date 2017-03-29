@@ -4,7 +4,10 @@
   "base": "PersistedModel",
   "idInjection": true,
   "options": {
-    "validateUpsert": true
+    "validateUpsert": true,
+    "mongodb": {
+      "allowExtendedOperators": true
+    }
   },
   "properties": {
     "timestamp": {
@@ -25,6 +28,7 @@
     },
     "geo": {
       "type": "GeoPoint",
+      "index": true,
       "required": false
     },
     "popularity": {
@@ -132,9 +136,16 @@
     {
       "accessType": "*",
       "principalType": "ROLE",
-      "principalId": "admin",
+      "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "purge"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "_find"
     }
   ],
   "methods": {}
