@@ -539,6 +539,7 @@
 
       console.log(JSON.stringify(filter,false,6));
       function filterByGeo(segments){
+        console.log('fetched',segments.length);
         var result=[];
         segments.some(function(segment){
           var segment_geo=new loopback.GeoPoint(segment.geo);
@@ -551,7 +552,7 @@
         result.sort(function(a,b){
           return a.d-b.d;
         });
-        if (limit||skip) callback(null,result.slice(skip,limit));
+        if (limit||skip) callback(null,result.slice(skip,skip+limit));
         else callback(null,result);
       }
 
