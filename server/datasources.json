@@ -8,19 +8,22 @@
     "enableGeoIndexing": false
   },
   "email": {
+    "name": "email",
     "connector": "mail",
-    "transports": [{
-      "type": "smtp",
-      "host": "mail.yourdomain.com",
-      "secure": true,
-      "port": 465,
-      "tls": {
-        "rejectUnauthorized": true
-      },
-      "auth": {
-        "user": "user@domain",
-        "pass": "password"
+    "transports": [
+      {
+        "type": "smtp",
+        "host": "mail.yourdomain.com",
+        "secure": true,
+        "port": 465,
+        "tls": {
+          "rejectUnauthorized": true
+        },
+        "auth": {
+          "user": "user@domain",
+          "pass": "password"
+        }
       }
-    }]
+    ]
   }
 }

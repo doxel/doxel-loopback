@@ -28,8 +28,8 @@
     },
     "geo": {
       "type": "GeoPoint",
-      "index": true,
-      "required": false
+      "required": false,
+      "index": true
     },
     "popularity": {
       "type": "number",
@@ -58,6 +58,10 @@
     "POIs": {
       "type": "hasAndBelongsToMany",
       "model": "POI"
+    },
+    "tags": {
+      "type": "hasMany",
+      "model": "SegmentTag"
     }
   },
   "acls": [

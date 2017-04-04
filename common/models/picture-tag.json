@@ -1,26 +1,26 @@
 {
-  "name": "Tag",
+  "name": "PictureTag",
   "base": "PersistedModel",
   "idInjection": true,
   "options": {
     "validateUpsert": true
   },
   "properties": {
-    "value": {
-      "type": "string",
-      "required": true
+    "score": {
+      "type": "number",
+      "required": false
     }
   },
   "validations": [],
   "relations": {
-    "segmentTags": {
-      "type": "hasMany",
-      "model": "SegmentTag",
-      "foreignKey": "tagId"
+    "picture": {
+      "type": "belongsTo",
+      "model": "Picture",
+      "foreignKey": "pictureId"
     },
-    "pictureTags": {
-      "type": "hasMany",
-      "model": "PictureTag",
+    "tag": {
+      "type": "belongsTo",
+      "model": "Tag",
       "foreignKey": "tagId"
     }
   },

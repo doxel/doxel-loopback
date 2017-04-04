@@ -392,7 +392,7 @@
         });
 
       } else {
-        // return specified segmentId 
+        // return specified segmentId
         return timestamp;
       }
 
@@ -579,6 +579,170 @@
     }
   });
 
+  /**
+   * @method Segment._updateClassifiers
+   * @param segmentId
+   * @return promise
+   * For each picture in segment <segmentId>
+   * - parse the <segment>/tensorflow/<timestamp>.jpeg.txt file
+   * - add new classifiers to model Tag
+   * - add new classifiers to segment.tags
+   * - add classifiers to picture.tags
+   */
+  Segment._updateClassifiers=function(segmentId) {
+
+    return Q(app.models.Segment.findById(segmentId,{
+      include: ['user', {'pictures' : 'tags'}, 'tags']
+
+    }).then(function(segment){
+      if (!segment) {
+        return Q.reject(new Error('Error: no such segment: '+segmentId));
+      }
+
+      var classifiersPath=path.join(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits),'tensorflow');
+      var pictures=segment.pictures();
+      var picture_idx=0;
+      var q=Q.defer();
+      var segmentTags=segment.tags();
+
+      // pictures loop iteration
+      function pictureLoop(){
+        if (picture_idx>=pictures.length) {
+          // exit the picture loop
+          return q.resolve();
+        }
+        var picture=pictures[picture_idx];
+        var pictureTags=picture.tags();
+
+        // read tensorflow file
+        var filename=path.join(classifiersPath,picture.timestamp+'.jpeg.txt');
+        console.log(filename);
+
+        fs.readFile(filename,'utf8',function(err,data){
+          if (err) {
+            return q.reject(err);
+          }
+          var q2=Q.defer();
+          var lines=data.split('\n');
+
+          // classifiers loop iteration
+          function classifierLoop(){
+            if (!lines.length) {
+              // exit the classifierLoop
+              return q2.resolve();
+            }
+
+            // pop a line from the file
+            var line=lines.pop();
+
+            // get classifier list and score
+            var m=line.match(/(.*) \(score = ([0-9\.]+)/);
+            if (m) {
+              var text=m[1];
+              var score=Number(m[2]);
+ //             console.log(line);
+              // fetch or create tag
+              Q(app.models.Tag.findOrCreate({
+                where: {
+                  value: text
+                }
+              },{
+                value: text
+
+              }))
+              .then(function(result){
+                var tag=result[0];
+
+                function addClassifierToSegment(){
+                  // search existing segmentTag
+                  var segmentTag;
+                  var found=segmentTags.some(function(_segmentTag){
+                    if (tag.id.equals(_segmentTag.tagId)) {
+                      segmentTag=_segmentTag;
+                      return true;
+                    }
+                  });
+
+                  if (!found) {
+                    // create new segmentTag
+                    return Q(app.models.Segment.scopes.tags.modelTo.create({
+                      segmentId: segment.id,
+                      tagId: tag.id,
+                      score: score
+                    }))
+                    .then(function(segmentTag){
+                      // add to the list of existing segmentTags
+                      segmentTags.unshift(segmentTag);
+                    });
+
+                  } else {
+                    // update existing segmentTag (keep highest score)
+                    segmentTag.score=Math.max(segmentTag.score,score);
+//                    console.log('SCORE',tag,segmentTag);
+                    return Q(segmentTag.save());
+                  }
+                } // addClassifierToSegment
+
+                function addClassifierToPicture(){
+                  // search existing pictureTag
+                  var found=pictureTags.some(function(_pictureTag){
+                    return tag.id.equals(_pictureTag.tagId);
+                  });
+                  if (!found) {
+                    // create new pictureTag
+                    return Q(app.models.Picture.scopes.tags.modelTo.create({
+                      pictureId: picture.id,
+                      tagId: tag.id
+                    }))
+                    .then(function(pictureTag){
+                      // add to the list of existing pictureTags
+                      pictureTags.unshift(pictureTag);
+                    });
+
+                  } else {
+                    return Q.resolve();
+                  }
+                } // addClassifierToPicture
+
+                return addClassifierToSegment()
+                .then(addClassifierToPicture);
+
+              })
+              .catch(function(err){
+                console.log(err);
+              })
+              .finally(classifierLoop)
+              .done();
+
+            } else {
+              process.nextTick(classifierLoop);
+            }
+          } // classifierLoop
+
+          // enter the classifiers loop
+          classifierLoop();
+
+          q2.promise
+          .catch(function(err){
+            console.trace(err);
+          })
+          .finally(function(){
+            ++picture_idx;
+            pictureLoop();
+          })
+          .done();
+
+        }); // readFile
+
+
+      } // pictures_loop
+
+      // enter the loop
+      pictureLoop();
+      return q.promise;
+
+    }));
+  }
 };
 
 

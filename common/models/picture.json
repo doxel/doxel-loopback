@@ -46,6 +46,10 @@
     "instanceAcls": {
       "type": "hasMany",
       "model": "InstanceAcl"
+    },
+    "tags": {
+      "type": "hasMany",
+      "model": "PictureTag"
     }
   },
   "acls": [

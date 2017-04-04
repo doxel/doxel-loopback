@@ -77,5 +77,13 @@
   "Pose": {
     "dataSource": "db",
     "public": true
+  },
+  "SegmentTag": {
+    "dataSource": "db",
+    "public": true
+  },
+  "PictureTag": {
+    "dataSource": "db",
+    "public": true
   }
 }

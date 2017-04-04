@@ -1,28 +1,29 @@
 {
-  "name": "Tag",
+  "name": "SegmentTag",
   "base": "PersistedModel",
   "idInjection": true,
   "options": {
     "validateUpsert": true
   },
   "properties": {
-    "value": {
-      "type": "string",
-      "required": true
+    "score": {
+      "type": "number",
+      "required": false
     }
   },
   "validations": [],
   "relations": {
-    "segmentTags": {
-      "type": "hasMany",
-      "model": "SegmentTag",
-      "foreignKey": "tagId"
+    "segment": {
+      "type": "belongsTo",
+      "model": "Segment",
+      "foreignKey": "segmentId"
     },
-    "pictureTags": {
-      "type": "hasMany",
-      "model": "PictureTag",
+    "tag": {
+      "type": "belongsTo",
+      "model": "Tag",
       "foreignKey": "tagId"
     }
+
   },
   "acls": [
     {
