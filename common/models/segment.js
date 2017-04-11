@@ -305,18 +305,19 @@
     }).then(function(){
       // create poses
       var q=Q.defer();
-      var extrinsic_idx=0;
+      var extrinsic_idx=-1;
       var extrinsics;
 
       function extrinsics_loop(){
         var view;
+        ++extrinsic_idx;
 
         // get the next pose
         if (extrinsic_idx>=segment.viewerJSON.extrinsics.length) {
           q.resolve();
           return;
         }
-        extrinsics=segment.viewerJSON.extrinsics[extrinsic_idx++];
+        extrinsics=segment.viewerJSON.extrinsics[extrinsic_idx];
 
         // get view
         var view;
@@ -351,7 +352,8 @@
           pointCloudId: segment.pointCloudId,
           pictureId: picture.id,
           center: extrinsics.value.center,
-          rotation: extrinsics.value.rotation
+          rotation: extrinsics.value.rotation,
+          index: extrinsic_idx
         }))
         .fail(console.log)
         .finally(extrinsics_loop)
@@ -431,13 +433,13 @@
     ],
     returns: {},
     http: {
-      path: '/:segmentId/inject-pointcloud',
+      path: '/inject-pointcloud/:segmentId',
       verb: 'get'
     }
 
   });
 
-  Segment._purge=function(segmentId) {
+  Segment._purge=function(segmentId,keepPictures,keepSegment) {
     return Q(app.models.PointCloud.findOne({
       'where': {'segmentId': segmentId}
     }, function(err, pointCloud){
@@ -462,16 +464,26 @@
       }
 
     }))
-    .then(Q(app.models.Picture.destroyAll({segmentId: segmentId},function(err,info,count){
-      if (err) return Q.reject(err);
-      console.log(info,'segment '+segmentId+': '+count+' pictures destroyed');
-      return Q.resolve();
-    })))
-    .then(Q(app.models.Segment.destroyById(segmentId,function(err){
-      if (err) return Q.reject(err);
-      console.log('segment '+segmentId+' purged successfuly');
-      return Q.resolve();
-    })));
+    .then(function(){
+      if (keepPictures) {
+        return Q.resolve();
+      }
+      return Q(app.models.Picture.destroyAll({segmentId: segmentId},function(err,info,count){
+        if (err) return Q.reject(err);
+        console.log(info,'segment '+segmentId+': '+count+' pictures destroyed');
+        return Q.resolve();
+      }));
+    })
+    .then(function(){
+      if (keepSegment) {
+        return Q.resolve();
+      }
+      return Q(app.models.Segment.destroyById(segmentId,function(err){
+        if (err) return Q.reject(err);
+        console.log('segment '+segmentId+' purged successfuly');
+        return Q.resolve();
+      }));
+    });
   };
 
 
@@ -487,7 +499,9 @@
     var segment;
 
     Segment.timestampToId(segmentId)
-    .then(Segment._purge)
+    .then(function(segmentId){
+      return Segment._purge(segmentId,req.keepSegment,req.keepSegment);
+    })
     .fail(function(err){
       console.log(err.message,err.stack);
       res.status(500).end('ERROR: could not purge segment '+segmentId+' : '+err.message);
@@ -507,7 +521,28 @@
     ],
     returns: {},
     http: {
-      path: '/:segmentId/purge',
+      path: '/purge/:segmentId',
+      verb: 'get'
+    }
+
+  });
+
+  Segment.removePointcloud=function(segmentId,req,res,callback){
+    console.log('hey',req.headers);
+    req.keepSegment=true;
+    return this.purge(segmentId,req,res,callback);
+  }
+
+  Segment.remoteMethod('removePointcloud',{
+    accepts: [
+      {arg: 'segmentId', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: {},
+    http: {
+      path: '/remove-pointcloud/:segmentId',
       verb: 'get'
     }
 
@@ -692,7 +727,8 @@
                     // create new pictureTag
                     return Q(app.models.Picture.scopes.tags.modelTo.create({
                       pictureId: picture.id,
-                      tagId: tag.id
+                      tagId: tag.id,
+                      score: score
                     }))
                     .then(function(pictureTag){
                       // add to the list of existing pictureTags
