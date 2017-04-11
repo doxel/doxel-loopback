@@ -8,7 +8,8 @@ module.exports=function(app){
 
   var Q=require('q');
 
-  if (!process.argv[1].split('/').pop()=='lb-ng' || !process.env.REINJECT_POINTCLOUDS) {
+    console.log(process.argv[1]);
+  if (!process.argv[1].split('/').pop()=='doxel-loopback' || !process.env.REINJECT_POINTCLOUDS) {
     return;
   }
 
