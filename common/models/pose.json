@@ -13,7 +13,12 @@
     "rotation": {
       "type": "array",
       "required": "false"
+    },
+    "index": {
+      "type": "number",
+      "required": "true"
     }
+
   },
   "validations": [],
   "relations": {
@@ -23,8 +28,9 @@
       "foreignKey": "pointCloudId"
     },
     "picture": {
-      "type": "hasOne",
-      "model": "Picture"
+      "type": "belongsTo",
+      "model": "Picture",
+      "foreignKey": "pictureId"
     }
   },
   "acls": [
