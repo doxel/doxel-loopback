@@ -133,9 +133,16 @@
     {
       "accessType": "*",
       "principalType": "ROLE",
-      "principalId": "admin",
+      "principalId": "$everyone",
       "permission": "ALLOW",
-      "property": "inject-pointcloud"
+      "property": "injectPointcloud"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "removePointcloud"
     },
     {
       "accessType": "*",
