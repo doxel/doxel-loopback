@@ -17,6 +17,7 @@
     "express-flash": "latest",
     "express-plupload": "file:express-plupload",
     "express-session": "latest",
+    "geoip-middleware": "file:geoip-middleware",
     "grunt": "^1.0.1",
     "gulp": "^3.9.0",
     "helmet": "^2.3.0",

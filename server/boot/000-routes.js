@@ -46,6 +46,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
   var path=require('path');
   var url=require('url');
   var proxy=require('map-tiles-proxy')(app.get('tileProxyConfig'));
+  var geoip=require('geoip-middleware')();
 
   var prefix=app.get('html5Mode')?'':'#/';
 
@@ -159,6 +160,8 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
   app.all('/osm/*', proxy.middleware.get);
   app.all('/stamen/*', proxy.middleware.get);
   app.all('/blue-marble/*', proxy.middleware.get);
+
+  app.all('/geoip', geoip.middleware.get);
 
 
   app.use(loopback.static(path.resolve(__dirname, '../../client/'+(process.env.production?'dist':'app'))));
