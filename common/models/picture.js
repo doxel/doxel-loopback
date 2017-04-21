@@ -50,7 +50,7 @@
     return uploadRootDir;
   }
 
-  /*  
+  /*
   Picture.observe('before delete', function group_delete(ctx, next) {
     app.models.InstanceAcl._delete(ctx, 'Picture', next);
   });
@@ -247,6 +247,68 @@
     return q.promise;
 
   } // getExif
+
+  // Mostly copied from client/app/scripts/services/jpeg-file.js
+  Picture.prototype.getGPSCoords=function getGPSCoords(data){
+
+      // I love this recursive pattern using promises !
+      if (!data) {
+        var picture=this;
+        return picture.getExif().then(picture.getGPSCoords);
+      }
+
+      // get GPS coordinates
+      try {
+        var rawdms=data.exif['GPS'][piexif.GPSIFD.GPSLongitude];
+        if (rawdms) {
+          var dms=[
+            parseInt(rawdms[0][0])/parseInt(rawdms[0][1]),
+            parseInt(rawdms[1][0])/parseInt(rawdms[1][1]),
+            parseInt(rawdms[2][0])/parseInt(rawdms[2][1])
+          ];
+
+          // convert to decimal
+          data.lon=dms[0]+dms[1]/60+dms[2]/3600;
+
+          // set negative value for west coordinate
+          if (data.exif['GPS'][piexif.GPSIFD.GPSLongitudeRef]=='W') {
+            data.lon=-Math.abs(data.lon);
+          }
+
+        }
+      } catch(e) {
+        console.log(e);
+        return Q.reject(e);
+      }
+
+      try {
+        var rawdms=data.exif['GPS'][piexif.GPSIFD.GPSLatitude];
+
+        if (rawdms) {
+          var dms=[
+            parseInt(rawdms[0][0])/parseInt(rawdms[0][1]),
+            parseInt(rawdms[1][0])/parseInt(rawdms[1][1]),
+            parseInt(rawdms[2][0])/parseInt(rawdms[2][1])
+          ];
+
+          // convert to signed decimal
+          data.lat=dms[0]+dms[1]/60+dms[2]/3600;
+
+          // set negative value for south coordinate
+          if (data.exif['GPS'][piexif.GPSIFD.GPSLongitudeRef]=='S') {
+            data.lat=-Math.abs(data.lat);
+          }
+
+        }
+
+      } catch(e) {
+        console.log(e);
+        return Q.reject(e);
+      }
+
+      return Q.resolve(data);
+
+  } // getGPSCoords
 
   Picture.download=function(what, sha256, segmentId, pictureId, timestamp_jpg, req, res, callback) {
     var Role=app.models.role;
