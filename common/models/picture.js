@@ -67,7 +67,8 @@
     );
   }
 
-  Picture.prototype.getFilePath=function(callback){
+  Picture.prototype.getFilePath=function(){
+    var q=Q.defer();
     var picture=this;
 
     if (
@@ -76,17 +77,13 @@
       && picture.segment.user
       && picture.segment.user.token
     ) {
-      return process.nextTick(function(){
-        callback(null,pictureFilePath(picture,picture.segment,picture.segment.user));
-      });
+        q.resolve(pictureFilePath(picture,picture.segment,picture.segment.user));
 
     } else {
-      var q=Q.defer();
-        app.models.Segment.findOne({
+      app.models.Segment.findOne({
         where: {
           id: picture.segmentId
         },
-        limit: 1,
         include: 'user'
 
       },function(err, segment){
@@ -94,18 +91,14 @@
           return q.reject(err);
         }
         if (segment) {
-          q.resolve({picture: picture, segment: segment});
+          q.resolve(pictureFilePath(picture,segment,segment.user()));
         } else {
-          return q.reject(new Error('Segment not found'));
+          q.reject(new Error('Segment not found'));
         }
       });
     }
 
-    q.promise.then(function(args){
-      callback(null, pictureFilePath(args.picture,args.segment,args.segment.user()));
-    })
-    .fail(callback)
-    .done();
+    return q.promise;
 
   } // Picture.prototype.getFilePath
 
@@ -210,6 +203,50 @@
       returns: {arg: 'result', type: 'object'}
     }
   );
+
+  Picture.prototype.getExif=function getExif(data) {
+
+    if (!data) {
+      var picture=this;
+      return picture.getFilePath().then(function(filename){
+        return getExif({
+          picture: picture
+          filename: filename,
+        });
+      });
+    }
+
+    var q=Q.defer();
+    sharp(data.filename)
+    .metadata(function(err,metadata){
+      if (err) {
+        console.log('ERROR: '+data.filename);
+        return q.reject(err);
+      }
+      data.metadata=metadata;
+      data.picture.aspect=metadata.width/metadata.height;
+
+      if (metadata.exif) {
+        try {
+          var exif=piexif.load(metadata.exif.toString('binary'));
+          data.exif=exif;
+
+        } catch(e) {
+          console.log(e, e.stack, e.message);
+          data.exif=null;
+        }
+
+      } else {
+        data.exif=null;
+
+      }
+      q.resolve(data);
+
+    });
+
+    return q.promise;
+
+  } // getExif
 
   Picture.download=function(what, sha256, segmentId, pictureId, timestamp_jpg, req, res, callback) {
     var Role=app.models.role;
@@ -328,42 +365,8 @@
 
     } // streamFullSizePicture
 
-    function getExif(data) {
-      var q=Q.defer();
-
-      sharp(data.filename)
-      .metadata(function(err,metadata){
-        if (err) {
-          console.log('ERROR: '+data.filename);
-          return q.reject(err);
-        }
-        data.metadata=metadata;
-        data.picture.aspect=metadata.width/metadata.height;
-
-        if (metadata.exif) {
-          try {
-            var exif=piexif.load(metadata.exif.toString('binary'));
-            data.exif=exif;
-
-          } catch(e) {
-            console.log(e, e.stack, e.message);
-            data.exif=null;
-          }
-
-        } else {
-          data.exif=null;
-
-        }
-        q.resolve(data);
-
-      });
-
-      return q.promise;
-
-    } // getExif
-
     function getExifThumbnails(data) {
-      return getExif(data)
+      return data.picture.getExif(data)
       .then(function(data){
 
 /*
