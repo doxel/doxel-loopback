@@ -44,6 +44,7 @@
   var exiv2=require('exiv2');
   var sharp=require('sharp');
   var piexif=require('piexifjs');
+  var stream=require('stream');
   var thumbWidth=192;
 
   Picture.getUploadRootDir=function(){
@@ -210,8 +211,8 @@
       var picture=this;
       return picture.getFilePath().then(function(filename){
         return getExif({
-          picture: picture
-          filename: filename,
+          picture: picture,
+          filename: filename
         });
       });
     }
@@ -407,10 +408,12 @@
           return q.reject(err);
         }
 
-        res.set('Content-Type','image/jpeg');
-        res.set('Content-Disposition','attachment;filename='+timestamp+'.jpg');
-        res.set('Content-Transfer-Encoding','binary');
-        res.set('Content-Size', stats.size);
+        res
+          .set('Content-Type','image/jpeg')
+          .set('Content-Disposition','attachment;filename='+timestamp+'.jpg')
+          .set('Content-Transfer-Encoding','binary')
+          .set('Cache-Control','public, max-age=315360000')
+          .set('Content-Size', stats.size);
 
         fs.createReadStream(data.filename)
         .on('end',function(){
@@ -525,14 +528,26 @@
     } // createThumbnail
 
     function streamThumbnail(data) {
-
+      var q=Q.defer();
       var thumb=data.thumb;
+
       res
       .set('Content-Type','image/jpeg')
       .set('Content-Transfer-Encoding','binary')
       .set('Cache-Control','public, max-age=315360000')
       .set('Content-Length',thumb.data.length)
-      .end(thumb.data);
+      .on('end', function() {
+        q.resolve(data);
+      })
+      .on('error', function(err){
+        q.reject(err);
+      })
+
+      var bufferStream=new stream.PassThrough();
+      bufferStream.end(thumb.data);
+      bufferStream.pipe(res);
+
+      return q.promise;
 
     } // streamThumbnail
 
