@@ -22,6 +22,16 @@
       "type": "hasMany",
       "model": "PictureTag",
       "foreignKey": "tagId"
+    },
+    "segments": {
+      "type": "hasMany",
+      "model": "Segment",
+      "through": "SegmentTag"
+    },
+    "pictures": {
+      "type": "hasMany",
+      "model": "Picture",
+      "through": "PictureTag"
     }
   },
   "acls": [

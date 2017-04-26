@@ -59,10 +59,16 @@
       "type": "hasAndBelongsToMany",
       "model": "POI"
     },
-    "tags": {
+    "segmentTags": {
       "type": "hasMany",
       "model": "SegmentTag"
+    },
+    "tags": {
+      "type": "hasMany",
+      "model": "Tag",
+      "through": "SegmentTag"
     }
+
   },
   "acls": [
     {

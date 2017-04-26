@@ -47,10 +47,16 @@
       "type": "hasMany",
       "model": "InstanceAcl"
     },
-    "tags": {
+    "pictureTags": {
       "type": "hasMany",
       "model": "PictureTag"
+    },
+    "tags": {
+      "type": "hasMany",
+      "model": "Tag",
+      "through": "PictureTag"
     }
+
   },
   "acls": [
     {
