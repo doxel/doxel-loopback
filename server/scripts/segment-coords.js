@@ -55,7 +55,7 @@ module.exports=function(app){
     }
   };
 
-  if (process.argv[3].length){
+  if (process.argv[3] && process.argv[3].length){
     where=JSON.parse(process.argv[3]);
   }
 
