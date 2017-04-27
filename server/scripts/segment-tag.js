@@ -77,7 +77,7 @@ module.exports=function(app){
       segment.tag=[];
       segmentTags.forEach(function(segmentTag){
         segment.tag.push({
-          'tagId': segmentTag.tagId.toString(),
+          'tagId': segmentTag.tagId,
           'score': segmentTag.score
         });
       });
