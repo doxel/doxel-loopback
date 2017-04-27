@@ -5,6 +5,7 @@
     "database": "doxel_dev",
     "name": "db",
     "connector": "mongodb",
+    "allowExtendedOperators": true,
     "enableGeoIndexing": false
   },
   "email": {

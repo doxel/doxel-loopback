@@ -41,8 +41,7 @@
       "default": 0
     },
     "tag": [{
-      "type": "string",
-      "id": true
+      "type": "object"
     }]
   },
   "validations": [],
@@ -171,6 +170,13 @@
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "_find"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "count"
     }
   ],
   "methods": {}
