@@ -56,14 +56,28 @@ app.use(helmet({
 // convert request access token to cookie
 require(path.join(__dirname,'access-token_cookie.js'))(app);
 
-app.use('/doxel/home',function xrobot(req,res,next){
+//app.use('/doxel/home',function xrobot(req,res,next){
+app.use('/'+(app.get('html5Mode')?'doxel/home':''),function xrobot(req,res,next){
   res.setHeader('X-Robots-Tag', 'nofollow');
   return next();
 });
 
-app.get('/',function(req,res,next){
-  res.redirect('/doxel/home');
-});
+if (app.get('html5Mode')) {
+  app.get('/',function(req,res,next){
+    res.redirect('/doxel/home');
+  });
+} else {
+  [ 
+    '/doxel*',
+    '/login*',
+    '/logout*',
+    '/upload*'
+  ].forEach(function(route){
+    app.get(route,function(req,res,next){
+      res.redirect('/#!'+req.originalUrl);
+    });
+  });
+}
 
 // allow API explorer for admin only
 app.use('/explorer', function(req,res,next) {
