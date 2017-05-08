@@ -550,6 +550,8 @@
 
   Segment._find=function(filter,req, res, callback) {
     console.log(JSON.stringify(filter,false,4));
+    // TODO: upgrade to loopback 3.0 so that we
+    // can filter with geo + something else "natively"
     if (filter && filter.where && filter.where.geo) {
 
       var geo=filter.where.geo;
@@ -780,8 +782,3 @@
     }));
   }
 };
-
-
-
-
-
