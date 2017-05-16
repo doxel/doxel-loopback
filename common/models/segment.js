@@ -43,6 +43,8 @@
   var upload=app.get('upload');
   var uploadRootDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
   var viewerPath=path.join(process.cwd(),app.get('viewerPath'));
+  var loopbackFilters=require('loopback-filters');
+  var extend=require('extend');
 
   Segment.prototype.getUnixTimestamp=function(timestamp){
     if (timestamp===undefined) {
@@ -51,6 +53,13 @@
     return Number(timestamp.substr(0,10)+timestamp.substr(11,3));
   }
 
+  /**
+    @method Segment.getPath
+    @description return segment filepath synchronously
+    @param baseDirectory
+    @param token
+    @param segmentDirDigits
+  */
   Segment.prototype.getPath=function segment_getPath(baseDirectory,token,segmentDirDigits) {
     var segment=this;
     var date=new Date(segment.getUnixTimestamp(segment.timestamp));
@@ -213,6 +222,56 @@
 
   });
 
+  /**
+    @method Segment._path
+    @description return segment instance filepath asynchronously
+    @param callback(err,path)
+  */
+  Segment.prototype._path=function(callback){
+    var q=Q.defer();
+
+    var segment=this;
+    if (segment.user && segment.user()) {
+      q.resolve(segment);
+
+    } else {
+      app.models.Segment.findById(segment.id,{
+        include: 'user'
+
+      }, function(err,_segment){
+        if (err || !_segment) {
+          if (!err) {
+            err=new Error('no such segment: '+segment.id);
+          }
+          return q.reject(err);
+
+        } else {
+          return q.resolve(_segment);
+        }
+      });
+    }
+
+    q.promise.then(function(segment){
+      var _user=segment.user();
+      if (!_user) {
+        console.log(segment);
+        var err=new Error('no such owner: '+segment.userId+' for segment: '+segment.id);
+        console.log(err);
+        callback(err);
+
+      } else {
+        callback(null,segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+      }
+
+    })
+    .catch(function(err){
+      console.log(err);
+      callback(err);
+
+    });
+
+  }; // _path
+
   Segment.path=function(segmentId, req, res, callback){
     var ip = req.headers['x-real-ip'] || req.ip;
     if (ip!='127.0.0.1' && ip!='::1') {
@@ -220,19 +279,13 @@
       return;
     }
 
-    app.models.Segment.findById(segmentId,{include: 'user'},function(err,segment){
-      if (err || !segment) {
-        if (err) console.log(err.message,err.stack);
+    Segment.prototype._path.apply({id:segmentId},[function(err,path){
+      if (err||!path||!path.length) {
         return res.status(404).end()
       }
-      var _user=segment.user();
-      if (!_user) {
-        console.trace('no such owner: ',segment.userId, ' for segment:',segment.id);
-        return res.status(404).end();
-      }
-      res.status(200).end(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+      res.status(200).end(path);
+    }]);
 
-    });
   }
 
   Segment.remoteMethod('path',{
@@ -549,9 +602,11 @@
   });
 
   Segment._find=function(filter,req, res, callback) {
-    console.log(JSON.stringify(filter,false,4));
+    console.log(JSON.stringify(_filter,false,4));
     // TODO: upgrade to loopback 3.0 so that we
     // can filter with geo + something else "natively"
+
+    var _filter=extend(true,{},filter);
     if (filter && filter.where && filter.where.geo) {
 
       var geo=filter.where.geo;
@@ -586,11 +641,16 @@
             segment.d=d;
           }
         });
-        result.sort(function(a,b){
+        delete _filter.geo;
+        var res=loopbackFilters(result,_filter);
+        callback(null,res);
+
+/*        result.sort(function(a,b){
           return a.d-b.d;
         });
         if (limit||skip) callback(null,result.slice(skip,skip+limit));
-        else callback(null,result);
+        else callback(null,result)
+        */;
       }
 
     } else {
