@@ -17,6 +17,7 @@
     "express-flash": "latest",
     "express-plupload": "file:express-plupload",
     "express-session": "latest",
+    "extend": "^3.0.1",
     "geoip-middleware": "file:geoip-middleware",
     "geolib": "^2.0.22",
     "grunt": "^1.0.1",
