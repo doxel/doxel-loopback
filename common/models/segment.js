@@ -493,19 +493,27 @@
   });
 
   Segment._purge=function(segmentId,keepPictures,keepSegment) {
+    // get pointCloud (assume there's only one point cloud per segment)
     return Q(app.models.PointCloud.findOne({
       'where': {'segmentId': segmentId}
+
     }, function(err, pointCloud){
       if (err) {
         return Q.reject(err);
       }
 
       if (pointCloud) {
+        // better worry than sorry (maybe segmentId is invalid and the first pointcloud is returned)
+        if (pointCloud.segmentId!=segmentId) {
+          return Q.reject(new Error('pointcloud segmentId ('+pointCloud.segmentId+') does not match segment.id ('+segmentId+') !'));
+        }
+        // destroy pointcloud poses
         return Q(app.models.Pose.destroyAll({pointCloudId: pointCloud.id},function(err,info,count){
           if (err) return Q.reject(err);
           console.log(info,'segment '+segmentId+' pointCloud '+pointCloud+': '+count+' poses destroyed');
           return Q.resolve();
         }))
+        // destroy pointcloud
         .then(Q(app.models.PointCloud.destroyById(pointCloudId,function(err){
           if (err) return Q.reject(err);
           console.log(info,'segment '+segmentId+' pointCloud '+pointCloud+' destroyed');
@@ -521,6 +529,10 @@
       if (keepPictures) {
         return Q.resolve();
       }
+
+      // TODO: destroy segment pictureTags (rebuild tags with server/scripts/segment-tag in the meanwhile)
+
+      // destroy segment pictures
       return Q(app.models.Picture.destroyAll({segmentId: segmentId},function(err,info,count){
         if (err) return Q.reject(err);
         console.log(info,'segment '+segmentId+': '+count+' pictures destroyed');
@@ -528,9 +540,18 @@
       }));
     })
     .then(function(){
+      // destroy segment tags
+      return Q(app.models.SegmentTag.destroyAll({segmentId: segmentId},function(err,info,count){
+        if (err) return Q.reject(err);
+        console.log(info,'segment '+segmentId+': '+count+' segmentTags destroyed');
+        return Q.resolve();
+      }));
+    })
+    .then(function(){
       if (keepSegment) {
         return Q.resolve();
       }
+      // destroy segment
       return Q(app.models.Segment.destroyById(segmentId,function(err){
         if (err) return Q.reject(err);
         console.log('segment '+segmentId+' purged successfuly');
@@ -538,7 +559,6 @@
       }));
     });
   };
-
 
   Segment.purge=function(segmentId, req, res, callback) {
     // only from localhost (or via ssh wget)
@@ -581,8 +601,7 @@
   });
 
   Segment.removePointcloud=function(segmentId,req,res,callback){
-    console.log('hey',req.headers);
-    req.keepSegment=true;
+    req.keepSegment=true; // will force keepPictures
     return this.purge(segmentId,req,res,callback);
   }
 
