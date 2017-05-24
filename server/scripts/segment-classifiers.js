@@ -1,5 +1,5 @@
 /*
- * segment-cloud.js
+ * segment-classifiers.js
  *
  * Copyright (c) 2017 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
@@ -35,53 +35,57 @@
 
  module.exports=function(app){
   /*
-   * import cloud data in database:
+   * import tensorflow classifiers <segment>/tensorflow/<timestamp>.jpeg.txt files into database
+   * run with eg PORT=1234 node . $(pwd)/server/scripts/segment-classifiers.js
    *
-   * - create pointCloud instance
-   * - update segment picture
   */
-
   var Q=require('q');
 
   var Segment=app.models.Segment;
-  var Pose=app.models.Pose;
-  var PointCloud=app.models.PointCloud;
+  var Picture=app.models.Picture;
+  var Classifier=app.models.Classifier;
 
-  Q.fcall(function(){
-    // delete all PointCloud and Pose instances
-    return Q(PointCloud.destroyAll()).then(Q(Pose.destroyAll()));
+  function importClassifiers() {
 
-  })
-  .then(function(){
-   // get all the segment ids
-   return Q(Segment.find({
-     fields: ['id']
-   }))
+    // get all the segment ids
+    return Q.fcall(function(){
+      return Segment.find({ fields: ['id'] })
 
-  })
-  .then(function(segments){
-    var segment_idx=0;
+    }).then(function(segments){
+      var q=Q.defer();
+      var segment_idx=0;
 
-    function segments_loop(){
-      // exit loop when no segment left
-      if (segment_idx>=segments.length) {
-        console.log('segment-viewer-status-update DONE');
-        return
+      console.log(segments.length,'segments');
+      function segments_loop(){
+        // exit loop when no segment left
+        if (segment_idx>=segments.length) {
+          console.log('import-classifiers DONE');
+          return q.resolve();
+        }
+
+        // get next segment
+        var segment=segments[segment_idx++];
+        console.log('import-classifiers: '+segment_idx+'/'+segments.length);
+
+        // create segment PointCloud and Pose instances
+        Segment._updateClassifiers(segment.id)
+        .fail(console.log)
+        .finally(segments_loop)
+        .done();
       }
 
-      // get next segment
-      var segment=segments[segment_idx++];
-      console.log(segment_idx+'/'+segments.length);
+      // enter the loop
+      segments_loop();
 
-      // create segment PointCloud and Pose instances
-      Segment._injectPointcloud(segment.id)
-      .fail(console.log)
-      .finally(segments_loop)
-      .done();
-    }
+      return q.promise;
 
-    // enter the loop
-    segments_loop();
+    });
+  }
 
-  });
+  importClassifiers()
+  .catch(function(err){
+    console.log(err);
+  })
+  .done();
+
 }

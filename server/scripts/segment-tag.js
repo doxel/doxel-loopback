@@ -6,7 +6,7 @@
  *
  * Author(s):
  *
- *      Luc Deschenaux <luc.deschenaux@freesurf.ch>
+ *      Rurik Bugdanov <rurik.bugdanov@alsenet.com>
  *
  * This file is part of the DOXEL project <http://doxel.org>.
  *
@@ -94,4 +94,3 @@ module.exports=function(app){
 
   });
 }
-

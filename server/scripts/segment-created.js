@@ -6,7 +6,7 @@
  *
  * Author(s):
  *
- *      Luc Deschenaux <luc.deschenaux@freesurf.ch>
+ *      Rurik Bugdanov <rurik.bugdanov@alsenet.com>
  *
  * This file is part of the DOXEL project <http://doxel.org>.
  *
@@ -48,14 +48,14 @@ module.exports=function(app){
   var Segment=app.models.Segment;
   var loopback=require('loopback');
 
-  var where;
+  var where={
+  };
 
   if (process.argv[3] && process.argv[3].length){
     where=JSON.parse(process.argv[3]);
   }
 
   Segment.find({
-    where: where,
     include: 'pictures'
 
   }, function(err,segments){
