@@ -29,7 +29,7 @@
     }
   },
   "final": {
-    "loopback#urlNotFound": {}
+    "./middleware/url-not-found-handler": {}
   },
   "final:after": {
     "loopback#errorHandler": {}
