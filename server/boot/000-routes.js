@@ -47,6 +47,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
   var url=require('url');
   var proxy=require('map-tiles-proxy')(app.get('tileProxyConfig'));
   var geoip=require('geoip-middleware')();
+  var fs=require('fs');
 
   var prefix=app.get('html5Mode')?'':'#/';
 
@@ -63,6 +64,16 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
     });
   }
   */
+
+  var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', app.get('production')?'dist':'app') };
+
+  app.get("/app/*", function(req,res,next){
+    res.sendFile('index.html', _documentRoot);
+  });
+
+  app.get("/", function(req,res,next){
+    res.sendFile('hello.html', _documentRoot);
+  });
 
   app.get("/link/callback", function(req,res,next) {
       res.redirect(config.documentRoot+prefix+'profile');
