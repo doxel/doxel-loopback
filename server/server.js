@@ -57,7 +57,7 @@ app.use(helmet({
 require(path.join(__dirname,'access-token_cookie.js'))(app);
 
 //app.use('/doxel/home',function xrobot(req,res,next){
-app.use('/'+(app.get('html5Mode')?'doxel/home':''),function xrobot(req,res,next){
+app.use('/app/',function xrobot(req,res,next){
   res.setHeader('X-Robots-Tag', 'nofollow');
   return next();
 });
@@ -67,7 +67,7 @@ if (app.get('html5Mode')) {
     res.redirect('/doxel/home');
   });
 } else {
-  [ 
+  [
     '/doxel*',
     '/login*',
     '/logout*',
@@ -243,4 +243,3 @@ boot(app, __dirname, function(err) {
 app.use(loopback.token({
   model: app.models.accessToken
 }));
-
