@@ -441,7 +441,13 @@ module.exports=function(app) {
 
               picture.isNew=null;
               picture.unsetAttribute('isNew');
-              if (req.plupload.fields.lat!==undefined && req.plupload.fields.lon!==undefined) {
+              if (
+                req.plupload.fields.lat!==undefined &&
+                req.plupload.fields.lat!=='undefined' &&
+                req.plupload.fields.lon!==undefined &&
+                req.plupload.fields.lon!=='undefined'
+              ) {
+                console.log(req.plupload.fields)
                 picture.geo=new loopback.GeoPoint({
                   lat: Number(req.plupload.fields.lat),
                   lng: Number(req.plupload.fields.lon)
@@ -523,7 +529,7 @@ module.exports=function(app) {
             return;
           }
           callback();
-          
+
         }
         */
 
