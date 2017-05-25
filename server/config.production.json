@@ -1,9 +1,7 @@
 {
   "production": true,
   "remoting": {
-    "context": {
-      "enableHttpContext": false
-    },
+    "context": false,
     "rest": {
       "normalizeHttpPath": false,
       "xml": false
@@ -16,10 +14,7 @@
       "extended": true,
       "limit": "100kb"
     },
-    "cors": false,
-    "errorHandler": {
-      "disableStackTrace": true
-    }
+    "cors": false
   },
   "legacyExplorer": true,
   "enableSSL": false,
