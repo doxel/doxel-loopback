@@ -65,13 +65,15 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
   }
   */
 
-  var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', app.get('production')?'dist':'app') };
+  //var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', app.get('production')?'dist':'app') };
 
   app.get("/app/*", function(req,res,next){
+    var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', (app.get('production')&&!req.cookies.debug)?'dist':'app') };
     res.sendFile('index.html', _documentRoot);
   });
 
   app.get("/", function(req,res,next){
+    var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', (app.get('production')&&!req.cookies.debug)?'dist':'app') };
     res.sendFile('hello.html', _documentRoot);
   });
 
