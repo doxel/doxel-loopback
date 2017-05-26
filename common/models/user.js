@@ -430,6 +430,7 @@ module.exports = function(User) {
       callback(null,{error: 'logoutFailed'});
     }
 
+    req.access_token=req.headers.authorization || (req.accessToken && req.accessToken.id);
     User.authenticate(req)
     .then(function(req){
       if (options.removeAllAccessTokens) {
