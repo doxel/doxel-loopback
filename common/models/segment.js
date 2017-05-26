@@ -494,6 +494,10 @@
 
   Segment._purge=function(segmentId,keepPictures,keepSegment) {
     // get pointCloud (assume there's only one point cloud per segment)
+    if (!segmentId) {
+      return Q.reject(new Error('no segmentId specified'));
+    }
+
     return Q(app.models.PointCloud.findOne({
       'where': {'segmentId': segmentId}
 

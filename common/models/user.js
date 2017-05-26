@@ -433,14 +433,19 @@ module.exports = function(User) {
     User.authenticate(req)
     .then(function(req){
       if (options.removeAllAccessTokens) {
-        User.app.models.AccessToken.destroyAll({
-          where: {userId: req.accessToken.userId}
-        }, function(err){
-          if (err) {
-            return failed(err);
-          }
+        if (req.accessToken && req.accessToken.userId) {
+          User.app.models.AccessToken.destroyAll({
+            userId: req.accessToken.userId
+          }, function(err){
+            if (err) {
+              return failed(err);
+            }
+            callback();
+          });
+
+        } else {
           callback();
-        });
+        }
 
       } else {
         req.accessToken.destroy(function(err){

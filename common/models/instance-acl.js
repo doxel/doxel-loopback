@@ -133,24 +133,27 @@ module.exports = function(InstanceAcl) {
         }
 
         (function(i){
-          InstanceAcl.destroyAll({
-            where: {
+          if (modelName && intances[i] && instances[i].id) {
+            InstanceAcl.destroyAll({
               modelName: modelName,
               modelId: instances[i].id
-            }
-          }, function(err, info) {
-            if (err) {
-              console.trace(err,info);
-              console.log('modelName',modelName,instanceAcl.modelName);
-            }
-            loop();
 
-          });
+            }, function(err, info) {
+              if (err) {
+                console.trace(err,info);
+                console.log('modelName',modelName,instanceAcl.modelName);
+              }
+              process.nextTick(loop);
+            });
+
+          } else {
+            process.nextTick(loop);
+          }
         })(i++);
 
       } // loop
 
-      loop();
+      process.nextTick(loop);
       return q.promise;
 
     }).then(function(){
