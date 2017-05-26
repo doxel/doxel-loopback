@@ -22,7 +22,9 @@
     "forwarded_for": {
       "type": "string",
       "required": false
-    }
+    },
+    "created": "date",
+    "lastUpdated": "date"
   },
   "validations": [],
   "relations": {

@@ -7,14 +7,6 @@
     "validateUpsert": true
   },
   "mixins": {
-    "DisableAllMethods": {
-      "expose": [
-        "create",
-        "findOrCreate",
-        "find",
-        "delete"
-      ]
-    }
   },
   "properties": {
     "modelName": {

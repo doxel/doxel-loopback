@@ -67,6 +67,13 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
 
   //var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', app.get('production')?'dist':'app') };
 
+  app.get('/cgi-bin*',function(req,res,next){
+    // ban offender
+    console.log(req.headers['x-real-ip']);
+    fs.appendFile(path.resolve(__dirname, '..','rogue_robots_ip.txt'),req.headers['x-real-ip']+'\n');
+    res.status(500).end('The site is down for maintenance. Please try again later. Sorry for the inconvenience.');
+  });
+
   app.get("/app/*", function(req,res,next){
     var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', (app.get('production')&&!req.cookies.debug)?'dist':'app') };
     res.sendFile('index.html', _documentRoot);
