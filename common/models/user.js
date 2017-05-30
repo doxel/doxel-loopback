@@ -124,8 +124,8 @@ module.exports = function(User) {
   //send password reset link when password reset requested
   User.on('resetPasswordRequest', function(info) {
     var app=User.app;
-    var url = 'http' + (app.get('httpOnly')? '' : 's') + '://' + app.get('host') + (app.get('reverseProxy')?'':':'+app.get('port')) + '/reset-password-form';
-    var html = 'Click <a href="' + url + '/' + info.accessToken.id + '">here</a> to reset your password';
+    var url = 'http' + (app.get('httpOnly')? '' : 's') + '://' + app.get('host') + (app.get('reverseProxy')?'':':'+app.get('port')) + '/app/#!/reset-password-form';
+    var html = 'Click <a href="' + url + '/' + info.accessToken.id + '">here</a> to reset your password.';
 
     app.models.Email.send({
       to: info.email,
