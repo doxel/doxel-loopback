@@ -151,7 +151,7 @@ module.exports = function(User) {
 
   // create a unique token for users logged in with third party accounts
   User.observe('before save', function setToken(ctx, next) {
-    var obj=ctx.instance||ctx.data;
+    var obj=ctx.instance||ctx.currentInstance||ctx.data;
     if (obj.token) {
       next();
 
