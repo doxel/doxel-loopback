@@ -94,13 +94,14 @@ module.exports = function(app) {
             fingerprint: 'dummy',
             ip: '127.0.0.1'
 
-        }, function(err, user) {
+        }, function(err, user, created) {
             if (err) {
                 throw err;
             }
-            console.log('Found or created user:', user.email);
+            console.log((created?'Created':'Found')+' user:', user.email);
 
-            Role.findOne({
+
+            if (created) Role.findOne({
                 where: {
                     name: 'admin'
                 }
