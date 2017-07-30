@@ -53,6 +53,37 @@ npm install
 
 bower install
 
-grunt
+grunt --force
 
 ```
+
+## Run
+
+For example:
+```
+slc start
+slc ctl set-size doxel-loopback $(nproc)
+slc ctl log-dump doxel-loopback --follow
+
+```
+
+## Debug
+
+For example:
+
+```
+[PORT=12345] node --inspect -i -e "require('./server/server.js')"
+```
+
+The '-i' option will run the node interpreter in interactive mode, and using -e to load the entry point will ensure that you can effectively use the console and run interactive commands.
+
+You can then access the app object from the terminal with eg:
+
+```
+> var loopback=require('loopback')
+> var app=loopback.getModel('user').app
+
+```
+
+The --inspect options allows attaching Chrome DevTools to nodejs using the URL printed in the console.
+
