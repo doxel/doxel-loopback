@@ -4,7 +4,7 @@ module.exports=function(app){
   // eg: PORT=4444 node . $(realpath updatedb.js)
   // 
 
-  if (process.argv[1].split('/').pop()!='doxel-loopback' || process.argv.length<3) {
+  if ((process.argv.length>1 && process.argv[1].split('/').pop()!='doxel-loopback') || process.argv.length<3) {
     return;
   }
 
