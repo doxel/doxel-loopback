@@ -22,6 +22,7 @@
     "geolib": "^2.0.22",
     "grunt": "^1.0.1",
     "gulp": "^3.9.1",
+    "har-schema": "^2.0.0",
     "helmet": "^3.6.1",
     "jshint": "^2.9.4",
     "loopback": "^3.8.0",
