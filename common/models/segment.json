@@ -9,6 +9,11 @@
       "allowExtendedOperators": true
     }
   },
+  "mixins": {
+    "SetupRemoteMethods": {
+      "disableAllExcept": ["find"]
+    }
+  },
   "properties": {
     "userId": {
       "type": "string"
