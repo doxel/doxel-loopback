@@ -117,7 +117,7 @@ module.exports = function(app) {
             if (err) {
               return q.reject(new Error('no such user'));
             }
-            user.getRoles(function(roles){
+            user.getRoles().then(function(roles){
               roleRules.some(function(rule){
                 authorized=(roles.indexOf(rule.principalId.toString())>=0);
                 return authorized;
