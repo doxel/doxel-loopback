@@ -39,31 +39,57 @@ module.exports = function(User) {
   var crypto=require('crypto');
   var Q=require('q');
   var path=require('path');
+  var ObjectID = require('mongodb').ObjectID;
 
-  User.prototype.getRoles=function(callback){
+  User.prototype.getRoles=function(){
+    var user=this;
+    var RoleMapping=User.app.models.roleMapping;
+
+    return Q(RoleMapping.find({
+      where: {
+        principalType: RoleMapping.USER,
+        principalId: user.id
+      }
+    }))
+    .then(function(mappings){
+      console.log('mappings',mappings);
+      if (!mappings) {
+        return Q.resolve([]);
+      }
+      var result=[];
+      mappings.forEach(function(mapping){
+        result.push(mapping.roleId);
+      });
+      return Q.resolve(result);
+    })
+    .fail(console.log);
+  }
+
+  User.prototype.getRoleNames=function(){
     var user=this;
     var Role=User.app.models.role;
     var RoleMapping=User.app.models.roleMapping;
 
-    Role.getRoles({
-      principalType: RoleMapping.USER,
-      principalId: user.id
-
-    }, function(err, roles){
-      if (err) {
-        return callback(err);
-      }
-      if (!roles) {
-        return callback(null,null);
+    return Q(RoleMapping.find({
+      where: {
+        principalType: RoleMapping.USER,
+        principalId: user.id
+      },
+      include: 'role'
+    }))
+    .then(function(mappings){
+      console.log('mappings',mappings);
+      if (!mappings) {
+        return Q.resolve([]);
       }
       var result=[];
-      roles.forEach(function(role){
-        if (!result[role]) {
-          result.push(role);
-        }
+      mappings.forEach(function(mapping){
+        result.push(mapping.role().name);
       });
-      callback(null,result);
-    });
+      return Q.resolve(result);
+
+    })
+    .fail(console.log);
   }
 
   /**
@@ -380,31 +406,21 @@ module.exports = function(User) {
       return;
     }
 
-    var q=Q();
-
-    q.then(function user_login(){
-      var q3=Q.defer();
-      console.log(options);
-
-      User.login({
+    Q(User.login({
         username: options.username,
         email: options.email,
         password: options.password
-      },
-      function(err,accessToken) {
-        if (err) {
-          console.log((options.email||options.username)+': password mismatch');
-          q3.reject(err);
-          return;
-        }
-        console.log(accessToken);
-        callback(null,{session: accessToken});
-        q3.resolve();
+
+    })).then(function(accessToken){
+      return Q.fcall(function(){
+        User.prototype.getRoleNames.call({id: ObjectID(accessToken.userId)}).then(function(roles){
+          console.log('roles',roles);
+          callback(null,{session: accessToken, roles: roles});
+        });
       });
 
-      return q3.promise;
-
     }).fail(function(err){
+      console.log('login failed: '+JSON.stringify(options));
       console.log(err.stack,err.message);
       callback(null,{error: 'loginFailed'});
 
