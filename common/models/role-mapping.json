@@ -3,6 +3,7 @@
   "plural": "roleMappings",
   "base": "RoleMapping",
   "idInjection": true,
+  "strictObjectIDCoercion": true,
   "options": {
     "validateUpsert": true
   },
