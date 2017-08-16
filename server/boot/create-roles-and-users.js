@@ -41,8 +41,11 @@ module.exports = function(app) {
     var RoleMapping = app.models.RoleMapping;
     var q = new Q();
     var extend=require('extend');
+    var _created_admin_role;
 
     q.then(function(){
+
+        var q=Q.defer();
         // add role "admin"
         Role.findOrCreate({
             where: { name: 'admin' }
@@ -50,14 +53,20 @@ module.exports = function(app) {
         }, {
             name: 'admin'
 
-        }, function(err, role) {
+        }, function(err, role, created) {
             if (err) {
                 throw err;
             }
+            _created_admin_role=created;
             console.log('Found or created role:', role.name);
+            q.resolve();
         });
 
+        return q.promise;
+
     }).then(function(){
+
+        var q=Q.defer();
         // add role "member"
         Role.findOrCreate({
             where: { name: 'member' }
@@ -70,8 +79,10 @@ module.exports = function(app) {
                 throw err;
             }
             console.log('Found or created role:', role.name);
+            q.resolve();
 
         });
+        return q.promise;
 
     }).then(function() {
         // add member "admin"
@@ -101,7 +112,7 @@ module.exports = function(app) {
             console.log((created?'Created':'Found')+' user:', user.email);
 
 
-            if (created) Role.findOne({
+            if (created || _created_admin_role) Role.findOne({
                 where: {
                     name: 'admin'
                 }
