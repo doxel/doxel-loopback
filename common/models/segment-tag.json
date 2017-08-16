@@ -23,7 +23,6 @@
       "model": "Tag",
       "foreignKey": "tagId"
     }
-
   },
   "acls": [
     {

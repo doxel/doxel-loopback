@@ -6,8 +6,6 @@
   "options": {
     "validateUpsert": true
   },
-  "mixins": {
-  },
   "properties": {
     "modelName": {
       "type": "string",

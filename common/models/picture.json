@@ -56,7 +56,6 @@
       "model": "Tag",
       "through": "PictureTag"
     }
-
   },
   "acls": [
     {
