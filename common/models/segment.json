@@ -104,6 +104,20 @@
       "permission": "ALLOW"
     },
     {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "__get__pictures"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$owner",
+      "permission": "ALLOW",
+      "property": "__get__pictures"
+    },
+    {
       "accessType": "READ",
       "principalType": "ROLE",
       "principalId": "authorized",
