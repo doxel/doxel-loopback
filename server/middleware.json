@@ -30,7 +30,5 @@
   },
   "final": {
     "./middleware/url-not-found-handler": {}
-  },
-  "final:after": {
   }
 }
