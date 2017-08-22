@@ -311,7 +311,19 @@
 
   } // getGPSCoords
 
-  Picture.download=function(what, sha256, segmentId, pictureId, timestamp_jpg, req, res, callback) {
+  Picture.download=function() {
+    return Picture._download.apply(this,['full'].concat(Array.prototype.slice.call(arguments)));
+  }
+
+  Picture.thumb=function(sha256, segmentId, pictureId, timestamp_jpg, req, res, callback) {
+    return Picture._download.apply(this,['thumb'].concat(Array.prototype.slice.call(arguments)));
+  }
+
+  Picture.exif=function() {
+    return Picture._download.apply(this,['exif'].concat(Array.prototype.slice.call(arguments)));
+  }
+
+  Picture._download=function(what, sha256, segmentId, pictureId, timestamp_jpg, req, res, callback) {
     var Role=app.models.role;
     var RoleMapping=app.models.roleMapping;
     var ACL=app.models.acl;
@@ -630,7 +642,6 @@
 
   Picture.remoteMethod('download',{
     accepts: [
-      {arg: 'what', type: 'string', required: false},
       {arg: 'sha256', type: 'string', required: true},
       {arg: 'segmentId', type: 'string', required: true},
       {arg: 'pictureId', type: 'string', required: true},
@@ -646,5 +657,42 @@
     }
 
   });
+
+  Picture.remoteMethod('thumb',{
+    accepts: [
+      {arg: 'sha256', type: 'string', required: true},
+      {arg: 'segmentId', type: 'string', required: true},
+      {arg: 'pictureId', type: 'string', required: true},
+      {arg: 'timestamp_jpg', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: {},
+    http: {
+      path: '/thumb/:sha256/:segmentId/:pictureId/:timestamp_jpg',
+      verb: 'get'
+    }
+
+  });
+
+  Picture.remoteMethod('exif',{
+    accepts: [
+      {arg: 'sha256', type: 'string', required: true},
+      {arg: 'segmentId', type: 'string', required: true},
+      {arg: 'pictureId', type: 'string', required: true},
+      {arg: 'timestamp_jpg', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: {},
+    http: {
+      path: '/exif/:sha256/:segmentId/:pictureId/:timestamp_jpg',
+      verb: 'get'
+    }
+
+  });
+
 
 };
