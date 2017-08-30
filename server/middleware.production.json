@@ -3,8 +3,6 @@
       "loopback#static": {
           "params": "$!../client/dist"
       }
-  },
-
-  "final:after": {
   }
+
 }
