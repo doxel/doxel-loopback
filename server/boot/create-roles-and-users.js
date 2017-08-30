@@ -55,6 +55,8 @@ module.exports = function(app) {
 
         }, function(err, role, created) {
             if (err) {
+              console.log(err);
+              return q.resolve();
                 throw err;
             }
             _created_admin_role=created;
