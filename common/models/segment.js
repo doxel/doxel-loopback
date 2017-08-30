@@ -416,10 +416,14 @@
 
       extrinsics_loop();
 
-      return q.promise;
+      return q.promise.then(segment.updateAttributes({
+        status: 'published',  // TODO: set it to processed !
+        status_timestamp: new Date()
+      }));
 
     })
-  }
+
+  } // Segment._injectPointcloud
 
   Segment.timestampToId=function(timestamp) {
     return Q.fcall(function(){
@@ -625,9 +629,9 @@
   });
 
   Segment._find=function(filter,req, res, callback) {
-    console.log(JSON.stringify(_filter,false,4));
-    // TODO: upgrade to loopback 3.0 so that we
-    // can filter with geo + something else "natively"
+//    console.log(JSON.stringify(_filter,false,4));
+
+    // TODO: filter with geo + something else "natively"
 
     var _filter=extend(true,{},filter);
     if (filter && filter.where && filter.where.geo) {
@@ -863,5 +867,184 @@
       return q.promise;
 
     }));
-  }
+
+  } // Segment._updateClassifiers
+
+  Segment.prototype.setStatus=function(status,callback) {
+    var segment=this;
+    if (status==segment.status) {
+      callback(null,segment.status,segment.status_timestamp);
+
+    } else {
+      segment.status=status;
+      segment.status_timestamp=Date.now();
+      Q(segment.save())
+      .then(function(){
+        // return new status
+        callback(null,status);
+      })
+      .catch(callback);
+    }
+
+  } // Segment.prototype.setStatus
+
+  Segment.prototype._proceed=function(forward,callback) {
+    var segment=this;
+
+    // undefined -> queued -> pending -> processing -> processed -> published
+
+    switch(segment.status) {
+      case undefined:
+        // discarded <- undefined -> queued
+        segment.setStatus((forward)?'queued':'discarded',callback);
+        break;
+
+      case 'discarded':
+       // discarded <- discarded -> undefined
+        segment.setStatus((forward)?'undefined':'discarded',callback);
+        break;
+
+     case 'queued':
+        // undefined <- queued -> pending
+        segment.setStatus((forward)?'pending':undefined,callback);
+        break;
+
+      case 'pending':
+        // queued <- pending -> processing
+        segment.setStatus((forward)?'processing':'queued',callback);
+        break;
+
+      case 'processing':
+        // cancel_pending <- processing -> processed
+        segment.setStatus((forward)?'processed':'cancel pending',callback);
+        break;
+
+      case 'cancel_pending':
+        // queued <- cancel_pending -> processing
+        segment.setStatus((forward)?'processing':'queued',callback);
+        break;
+
+      case 'processed':
+        // discarded <- processed -> published
+        segment.setStatus((forward)?'published':'discarded',callback);
+        break;
+
+      default:
+         // nothing to do
+         callback(null,segment.status,segment.status_timestamp);
+         break;
+    }
+  } // Segment.prototype._proceed
+
+  Segment.proceed=function(segmentId, status, timestamp, direction, req, res, callback) {
+
+    Segment.findById(segmentId, {}, function(err,segment){
+      if (err) {
+        return callback(err);
+      }
+      if (!segment) {
+        res.status(500).end('no such segment: '+segmentId);
+        return;
+      }
+
+      // check the current status match the client side one
+      if (segment.status!==status || segment.status_timestamp!=timestamp) {
+        res.status(500).end('status mismatch: '+segment.status+' '+segment.status_timestamp);
+        return;
+      }
+
+      var forward=['backward','forward'].indexOf(direction);
+      if (forward<0) {
+        res.status(500).end('invalid direction: '+direction);
+        return;
+      }
+
+      segment._proceed(forward,callback);
+
+    });
+
+  } // Segment.proceed
+
+  Segment.remoteMethod('proceed',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'status', type: 'string', required: true},
+      {arg: 'status_timestamp', type: 'string', required: true},
+      {arg: 'direction', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: [
+      {arg: 'status', type: 'string'},
+      {arg: 'status_timestamp', type: 'date'}
+
+    ],
+    http: {
+      path: '/proceed/:id/:status/:direction',
+      verb: 'get'
+    }
+  });
+
+/*
+  // worker
+  Segment.startProcessing=function(segmentId, data, req, res, callback) {
+    var segment;
+
+    Segment.findById(segmentId, {}, function(err,_segment){
+      if (err) {
+        return callback(err);
+      }
+      segment=_segment;
+      if (!segment) {
+        res.status(500).end('no such segment: '+segmentId);
+        return;
+      }
+      function setStatus(status) {
+        segment.status=status;
+        segment.status_timestamp=Date.now();
+        Q(segment.save())
+        .then(function(){
+          // return new status
+          callback(null,segment);
+        })
+        .catch(callback);
+      }
+
+      switch(segment.status) {
+
+        case 'queued':
+          // set new status
+          segment.processing=data;
+          setStatus('processing');
+          break;
+
+        default:
+          callback(null,segment)
+          break;
+      }
+
+    });
+
+  } // Segment.proceed
+
+  Segment.remoteMethod('startProcessing',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'data', type: 'object', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: [
+      {arg: 'segment', type: 'object'}
+
+    ],
+    http: {
+      path: '/startProcessing/:id',
+      verb: 'get'
+    }
+  });
+*/
+
 };
