@@ -183,6 +183,10 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
 
   app.all('/geoip', geoip.middleware.get);
 
+  app.get('/processing', function(req,res,next) {
+        res.cookie('debug', 1, {path: '/'});
+        res.redirect('/app/#!/processing');
+  });
 
   app.use(loopback.static(path.resolve(__dirname, '../../client/'+(process.env.production?'dist':'app'))));
 
