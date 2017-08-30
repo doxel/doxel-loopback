@@ -9,7 +9,7 @@
   "mixins": {
     "SetupRemoteMethods": {
       "disableAllExcept": [
-
+        "findById"
       ]
     }
   },

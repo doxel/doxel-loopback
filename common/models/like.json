@@ -5,6 +5,13 @@
   "options": {
     "validateUpsert": true
   },
+  "mixins": {
+    "SetupRemoteMethods": {
+      "disableAllExcept": [
+        "findById"
+      ]
+    }
+  },
   "properties": {
     "why": {
       "type": "string"
@@ -39,6 +46,12 @@
       "principalType": "ROLE",
       "principalId": "$owner",
       "permission": "ALLOW"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "findById"
     }
   ],
   "methods": {}

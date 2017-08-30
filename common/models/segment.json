@@ -12,7 +12,8 @@
   "mixins": {
     "SetupRemoteMethods": {
       "disableAllExcept": [
-        "find"
+        "find",
+        "findById"
       ]
     }
   },
@@ -40,6 +41,10 @@
       "type": "string",
       "required": false
     },
+    "status_updated": {
+      "type": "date",
+      "defaultFn": "now"
+    },
     "geo": {
       "type": "GeoPoint",
       "required": false,
@@ -58,6 +63,8 @@
       ]
     }
   },
+  "hidden": [
+  ],
   "validations": [],
   "relations": {
     "pictures": {
@@ -102,6 +109,13 @@
       "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "proceed"
     },
     {
       "accessType": "*",

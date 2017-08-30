@@ -7,7 +7,7 @@
     "validateUpsert": true
   },
   "mixins": {
-    "ClearBaseAcl": false
+    "ClearBaseAcl": true
   },
   "hidden": [
     "token",
@@ -48,8 +48,9 @@
   "relations": {
     "roles": {
       "type": "hasMany",
-      "model": "RoleMapping",
-      "foreignKey": "principalId"
+      "model": "role",
+      "foreignKey": "principalId",
+      "through": "roleMapping"
     },
     "accessTokens": {
       "type": "hasMany",
@@ -123,10 +124,11 @@
     },
     {
       "principalType": "ROLE",
-      "principalId": "$authenticated",
+      "principalId": "$owner",
       "permission": "ALLOW",
       "property": "updateProfile"
     }
+
   ],
   "methods": {}
 }

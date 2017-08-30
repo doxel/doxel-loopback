@@ -6,6 +6,13 @@
   "options": {
     "validateUpsert": true
   },
+  "mixins": {
+    "SetupRemoteMethods": {
+      "disableAllExcept": [
+        "findById"
+      ]
+    }
+  },
   "properties": {
     "poseCount": {
       "type": "number",
