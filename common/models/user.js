@@ -390,6 +390,7 @@ module.exports = function(User) {
   * @method User.signin
   */
   User.signin=function user_signin(options,req,callback) {
+    console.log('options',JSON.stringify(options));
     var where={};
 
     // need at least username or email
@@ -406,18 +407,25 @@ module.exports = function(User) {
       return;
     }
 
+    var accessToken;
     Q(User.login({
         username: options.username,
         email: options.email,
         password: options.password
 
-    })).then(function(accessToken){
-      return Q.fcall(function(){
-        User.prototype.getRoleNames.call({id: ObjectID(accessToken.userId)}).then(function(roles){
-          console.log('roles',roles);
-          callback(null,{session: accessToken, roles: roles});
-        });
+    })).then(function(_accessToken){
+      accessToken=_accessToken;
+      return Q(User.findById(accessToken.userId,{
+        include: 'roles'
+      }))
+    })
+    .then(function(user){
+      var roles={};
+      console.log(user);
+      user.roles().forEach(function(role){
+        roles[role.name]=true;
       });
+      callback(null,{session: accessToken, roles: roles});
 
     }).fail(function(err){
       console.log('login failed: '+JSON.stringify(options));
