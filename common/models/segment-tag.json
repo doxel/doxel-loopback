@@ -5,6 +5,14 @@
   "options": {
     "validateUpsert": true
   },
+  "mixins": {
+    "SetupRemoteMethods": {
+      "disableAllExcept": [
+        "find",
+        "findById"
+      ]
+    }
+  },
   "properties": {
     "score": {
       "type": "number",
