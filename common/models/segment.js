@@ -888,6 +888,7 @@
 
   } // Segment.prototype.setStatus
 
+
   Segment.prototype._proceed=function(forward,callback) {
     var segment=this;
 
@@ -947,9 +948,14 @@
         return;
       }
 
-      // check the current status match the client side one
-      if (segment.status!==status || segment.status_timestamp!=timestamp) {
-        res.status(500).end('status mismatch: '+segment.status+' '+segment.status_timestamp);
+      try {
+        // check the current status match the client side one
+        if ((segment.status||'new')!==status || (segment.status_timestamp && segment.status_timestamp.getTime()!=new Date(timestamp).getTime())) {
+          res.status(500).end('status mismatch: '+segment.status+' '+status+' '+segment.status_timestamp+' '+timestamp);
+          return;
+        }
+      } catch(e) {
+        res.status(500).end(JSON.stringify(e));
         return;
       }
 
@@ -969,7 +975,7 @@
     accepts: [
       {arg: 'id', type: 'string', required: true},
       {arg: 'status', type: 'string', required: true},
-      {arg: 'status_timestamp', type: 'string', required: true},
+      {arg: 'status_timestamp', type: 'date', required: true},
       {arg: 'direction', type: 'string', required: true},
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
@@ -981,7 +987,7 @@
 
     ],
     http: {
-      path: '/proceed/:id/:status/:direction',
+      path: '/proceed/:id/:status/:status_timestamp/:direction',
       verb: 'get'
     }
   });
@@ -1046,5 +1052,113 @@
     }
   });
 */
+
+  // merge and delete one segment
+  Segment.prototype.mergeOne=function(segment) {
+    var target=this;
+
+    if (segment.pointCloudId) {
+      return Q.reject(new Error('Cannot merge segment with poincloud yet, TODO: implement Segment hasMany PointClouds'));
+    }
+
+    // update ownership (userId) and segmentId of related models
+    return Q.fcall(function(){
+      return Q(segment.__update__pictures({},{
+        segmentId: target.id,
+        userId: target.userId
+      }));
+    })
+    .then(function(){
+      return Q(segment.__update__segmentTags({},{
+        segmentId: target.id,
+        userId: target.userId
+      }));
+    })
+    /*
+    .finally(function(){
+      // TODO: segment hasMany pointClouds
+      return Q(segment.__update__pointClouds({},{segmentId: target.id}));
+
+    })
+    */
+    // delete segment
+    .then(function(){
+      return Q(segment.destroy());
+    });
+  }
+
+  Segment.merge=function(segmentList,req,res,calback) {
+    if (segmentList.length<2){
+      res.status(500).end('Segment.merge needs at least two segment Ids');
+      return;
+    }
+
+    // fetch segments and sort by timestamp
+    function getSegments(segmentList) {
+      var segments=[];
+      return segmentList.reduce(function(promise,segmentId){
+        return promise.then(function(){
+          return Q(Segment.findById(segmentId,{}))
+          .then(function(segment){
+            if (segment) {
+              segments.push(segment);
+            } else {
+              throw new Error('no such segment: '+segmentId);
+            }
+          });
+        });
+      },Q.resolve())
+      .then(function(){
+        return segments.sort(function(a,b){
+          return a.timestamp<b.timestamp?-1:1;
+        });
+      });
+
+    } // get segments
+
+    // merge segments with the last one
+    function mergeSegments(segments) {
+      var target=segments.pop();
+      return segments.reduce(function(promise,segment){
+        return promise.then(function(){
+          return target.mergeOne(segment);
+        })
+      }, Q.resolve())
+      .then(function(){
+        return target;
+      });
+
+    } // mergeSegments
+
+
+    getSegments(segmentList)
+    .then(mergeSegments)
+    .then(function(segment){
+      callback(null,{segment:segment});
+    })
+    .catch(function(err){
+      console.log(err);
+      res.status(500).end(err.message||err)
+    })
+    .done();
+
+  }
+
+  Segment.remoteMethod('merge',{
+    accepts: [
+      {arg: 'segmentList', type: 'array', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: [
+      {arg: 'segment', type: 'object'}
+
+    ],
+    http: {
+      path: '/merge/:segmentList',
+      verb: 'get'
+    }
+  });
 
 };

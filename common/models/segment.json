@@ -41,7 +41,7 @@
       "type": "string",
       "required": false
     },
-    "status_updated": {
+    "status_timestamp": {
       "type": "date",
       "defaultFn": "now"
     },
@@ -109,6 +109,13 @@
       "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "merge"
     },
     {
       "accessType": "*",
