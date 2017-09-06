@@ -39,11 +39,13 @@
     },
     "status": {
       "type": "string",
-      "required": false
+      "required": false,
+      "default": "new"
     },
     "status_timestamp": {
-      "type": "date",
-      "defaultFn": "now"
+      "type": "number",
+      "required": false,
+      "default": 0
     },
     "geo": {
       "type": "GeoPoint",
@@ -52,7 +54,7 @@
     },
     "popularity": {
       "type": "number",
-      "required": "false",
+      "required": false,
       "default": 0
     },
     "tag": {
