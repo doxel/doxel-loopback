@@ -881,7 +881,7 @@
       Q(segment.save())
       .then(function(){
         // return new status
-        callback(null,status);
+        callback(null,status,segment.status_timestamp);
       })
       .catch(callback);
     }
@@ -895,19 +895,24 @@
     // undefined -> queued -> pending -> processing -> processed -> published
 
     switch(segment.status) {
-      case undefined:
-        // discarded <- undefined -> queued
+      case 'new':
+        // discarded <- new -> queued
         segment.setStatus((forward)?'queued':'discarded',callback);
         break;
 
       case 'discarded':
-       // discarded <- discarded -> undefined
-        segment.setStatus((forward)?'undefined':'discarded',callback);
+       if (segment.pointCloudId) {
+         // discarded <- discarded -> published
+          segment.setStatus((forward)?'published':'discarded',callback);
+       } else {
+         // discarded <- discarded -> new
+          segment.setStatus((forward)?'new':'discarded',callback);
+        }
         break;
 
      case 'queued':
-        // undefined <- queued -> pending
-        segment.setStatus((forward)?'pending':undefined,callback);
+        // new <- queued -> pending
+        segment.setStatus((forward)?'pending':'new',callback);
         break;
 
       case 'pending':
@@ -950,7 +955,7 @@
 
       try {
         // check the current status match the client side one
-        if ((segment.status||'new')!==status || (segment.status_timestamp && segment.status_timestamp.getTime()!=new Date(timestamp).getTime())) {
+        if ((segment.status||'new')!==status || (segment.status_timestamp && segment.status_timestamp!=timestamp)) {
           res.status(500).end('status mismatch: '+segment.status+' '+status+' '+segment.status_timestamp+' '+timestamp);
           return;
         }
@@ -975,7 +980,7 @@
     accepts: [
       {arg: 'id', type: 'string', required: true},
       {arg: 'status', type: 'string', required: true},
-      {arg: 'status_timestamp', type: 'date', required: true},
+      {arg: 'status_timestamp', type: 'number', required: true},
       {arg: 'direction', type: 'string', required: true},
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
@@ -983,7 +988,7 @@
     ],
     returns: [
       {arg: 'status', type: 'string'},
-      {arg: 'status_timestamp', type: 'date'}
+      {arg: 'status_timestamp', type: 'number'}
 
     ],
     http: {
@@ -1088,6 +1093,7 @@
   }
 
   Segment.merge=function(segmentList,req,res,calback) {
+
     if (segmentList.length<2){
       res.status(500).end('Segment.merge needs at least two segment Ids');
       return;
