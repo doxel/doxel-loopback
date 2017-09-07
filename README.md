@@ -85,7 +85,7 @@ You can then access the app object from the terminal with eg:
 ```
 and optionally start the webserver with
 ```
-> app.start(app.get('enableSSL');
+> app.start(app.get('enableSSL'));
 ```
 
 
