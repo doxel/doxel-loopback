@@ -11,12 +11,20 @@
   "restApiRoot": "/api",
   "host": "127.0.0.1",
   "port": 3000,
-  "admin": {
-    "remark": "override this in config.local.json",
-    "email": "admin@admin.org",
-    "user": "admin",
-    "pass": "admin"
-  },
+  "users": [
+    {
+      "remark": "override this in config.local.json",
+      "remark": "all properties but remark and roles will be saved",
+      "roles": ["admin"],
+      "username": "admin",
+      "email": "admin@doxel.org",
+      "pass": "admin"
+    },
+    {
+      "roles": ["worker"],
+      "username": "worker"
+    }
+  ],
   "remoting": {
     "context": false,
     "rest": {

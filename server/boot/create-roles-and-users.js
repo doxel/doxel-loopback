@@ -36,108 +36,92 @@
  var Q = require('q');
 
 module.exports = function(app) {
-    var Role = app.models.Role;
-    var User = app.models.User;
-    var RoleMapping = app.models.RoleMapping;
-    var q = new Q();
-    var extend=require('extend');
-    var _created_admin_role;
+  var debug=false;
+  var Role = app.models.role;
+  var User = app.models.user;
+  var RoleMapping = app.models.roleMapping;
+  var extend=require('extend');
+  var created_role={};
+  var path=require('path');
+  var toBeCreated=app.get('users');
 
-    q.then(function(){
+  toBeCreated.reduce(function(promise,_user){
+    var user_roles=_user.roles;
+    delete _user.roles;
+    delete _user.remark;
 
-        var q=Q.defer();
-        // add role "admin"
-        Role.findOrCreate({
-            where: { name: 'admin' }
+    return promise.then(function(){
+      if (debug) console.log(_user)
+      // create user's roles
+      return user_roles.reduce(function(promise,_role){
+        if (debug) console.log(_role);
+        return promise.then(function(){
+          return Q(Role.findOrCreate({
+            where: {name: _role}
+          }, {
+            name: _role
+          }))
+          .then(function(args) {
+            var role=args[0];
+            var created=args[1];
+            created_role[_role]|=created;
+            console.log((created?'Created':'Found')+' role:', role.name);
+          })
+        })
+        .catch(console.log);
 
-        }, {
-            name: 'admin'
+      },Q.resolve())
+      .then(function() {
+        // add or update user
+        return Q(User.upsertWithWhere({
+          username: _user.username
+        }, extend({
+          email: _user.username+'@doxel.org',
+          emailVerified: true,
+          password: _user.username,
+          fingerprint: 'dummy',
+          ip: '127.0.0.1'
+        }, _user)))
+      })
+      .then(function(user){
+        console.log(user);
 
-        }, function(err, role, created) {
-            if (err) {
-              console.log(err);
-              return q.resolve();
-                throw err;
-            }
-            _created_admin_role=created;
-            console.log('Found or created role:', role.name);
-            q.resolve();
-        });
-
-        return q.promise;
-
-    }).then(function(){
-
-        var q=Q.defer();
-        // add role "member"
-        Role.findOrCreate({
-            where: { name: 'member' }
-
-        }, {
-            name: 'member'
-
-        }, function(err, role) {
-            if (err) {
-                throw err;
-            }
-            console.log('Found or created role:', role.name);
-            q.resolve();
-
-        });
-        return q.promise;
-
-    }).then(function() {
-        // add member "admin"
-        var admin=extend({
-          user: 'admin',
-          pass: 'admin',
-          email: 'admin@doxel.org'
-        },app.get('admin'));
-
-        User.findOrCreate({
-            where: {
-              username: 'admin',
-            }
-
-        }, {
-            email: admin.email,
-            username: admin.user,
-            emailVerified: true,
-            password: admin.pass,
-            fingerprint: 'dummy',
-            ip: '127.0.0.1'
-
-        }, function(err, user, created) {
-            if (err) {
-                throw err;
-            }
-            console.log((created?'Created':'Found')+' user:', user.email);
-
-
-            if (created || _created_admin_role) Role.findOne({
+        // destroy all existing RoleMappings for user
+        return Q(RoleMapping.destroyAll({
+          principalType: RoleMapping.USER,
+          principalId: user.id.toString()
+        }))
+        .then(function(){
+          // get user's roles
+          return user_roles.reduce(function(promise,_role){
+            return promise.then(function(){
+              return Q(Role.findOne({
                 where: {
-                    name: 'admin'
+                  name: _role
                 }
+              }))
+              .then(function(role) {
+                // map role to user
+                return Q(role.principals.create({
+                  principalType: RoleMapping.USER,
+                  principalId: user.id
+                }))
+                .then(function(){
+                  console.log('> User '+user.email+' added to role '+ _role);
+                })
+              })
+            })
+            .catch(console.log);
 
-            }, function(err, role) {
-                if (err) {
-                    return;
-                }
+          },Q.resolve())
+        })
+      })
+    })
+    .catch(console.log);
 
-                role.principals.create({
-                    principalType: RoleMapping.USER,
-                    principalId: user.id
-
-                }, function(err, principal) {
-                    if (err) {
-                        throw err;
-                    }
-                    console.log('> User type set to ' + role.name);
-                });
-
-            });
-
-        });
-    });
-
+  },Q.resolve())
+  .then(function(){
+    console.log('Users created')
+  })
+  .catch(console.log);
 }
