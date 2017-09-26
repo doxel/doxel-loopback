@@ -14,11 +14,13 @@
   "users": [
     {
       "remark": "override this in config.local.json",
-      "remark": "all properties but remark and roles will be saved",
+      "remark": "all properties but remark, roles and forceUpdate will be saved",
       "roles": ["admin"],
+      "forceUpdate": false,
       "username": "admin",
       "email": "admin@doxel.org",
-      "pass": "admin"
+      "password": "admin"
+
     },
     {
       "roles": ["worker"],

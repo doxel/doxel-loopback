@@ -47,11 +47,26 @@ module.exports = function(app) {
 
   toBeCreated.reduce(function(promise,_user){
     var user_roles=_user.roles;
+    var forceUpdate=_user.forceUpdate;
     delete _user.roles;
     delete _user.remark;
+    delete _user.forceUpdate;
 
     return promise.then(function(){
       if (debug) console.log(_user)
+
+      // check for existing user
+      return Q(User.count({
+          username: _user.username
+      }))
+    })
+    .then(function(count){
+      if (count&&!forceUpdate) {
+        // skip as requested
+        if (debug) console.log('skipped')
+        return;
+      }
+
       // create user's roles
       return user_roles.reduce(function(promise,_role){
         if (debug) console.log(_role);
@@ -121,7 +136,7 @@ module.exports = function(app) {
 
   },Q.resolve())
   .then(function(){
-    console.log('Users created')
+    if (debug) console.log('Users created')
   })
   .catch(console.log);
 }
