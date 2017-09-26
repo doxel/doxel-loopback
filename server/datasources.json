@@ -6,7 +6,8 @@
     "name": "db",
     "connector": "mongodb",
     "allowExtendedOperators": true,
-    "enableGeoIndexing": false
+    "enableGeoIndexing": false,
+    "lazyConnect": true
   },
   "email": {
     "name": "email",
