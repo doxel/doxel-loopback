@@ -33,11 +33,10 @@
  *      Attribution" section of <http://doxel.org/license>.
  */
 
- var app = require('../../server/server');
-
  module.exports = function(Segment) {
+  var app = require('../../server/server');
   var loopback = require('loopback');
-      var path=require('path');
+  var path=require('path');
   var fs=require('fs');
   var Q=require('q');
   var upload=app.get('upload');
@@ -881,7 +880,7 @@
       Q(segment.save())
       .then(function(){
         // return new status
-        callback(null,status,segment.status_timestamp);
+        callback(null,segment.status,segment.status_timestamp);
       })
       .catch(callback);
     }
@@ -948,30 +947,32 @@
       if (err) {
         return callback(err);
       }
+      function errmsg(message) {
+        if (res) res.status(500).end(message);
+        else callback(new Error(message));
+      }
       if (!segment) {
-        res.status(500).end('no such segment: '+segmentId);
+        errmsg('no such segment: '+segmentId);
         return;
       }
 
       try {
         // check the current status match the client side one
         if ((segment.status||'new')!==status || (segment.status_timestamp && segment.status_timestamp!=timestamp)) {
-          res.status(500).end('status mismatch: '+segment.status+' '+status+' '+segment.status_timestamp+' '+timestamp);
+          errmsg('status mismatch: '+segment.status+' '+status+' '+segment.status_timestamp+' '+timestamp);
           return;
         }
       } catch(e) {
-        res.status(500).end(JSON.stringify(e));
+        errmsg(JSON.stringify(e));
         return;
       }
 
       var forward=['backward','forward'].indexOf(direction);
       if (forward<0) {
-        res.status(500).end('invalid direction: '+direction);
+        errmsg('invalid direction: '+direction);
         return;
       }
-
       segment._proceed(forward,callback);
-
     });
 
   } // Segment.proceed
