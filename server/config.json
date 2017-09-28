@@ -14,17 +14,23 @@
   "users": [
     {
       "remark": "override this in config.local.json",
-      "remark": "all properties but remark, roles and forceUpdate will be saved",
-      "roles": ["admin"],
+      "roles": [
+        "admin"
+      ],
       "forceUpdate": false,
-      "username": "admin",
-      "email": "admin@doxel.org",
-      "password": "admin"
-
+      "user": {
+        "username": "admin",
+        "email": "admin@doxel.org",
+        "password": "admin"
+      }
     },
     {
-      "roles": ["worker"],
-      "username": "worker"
+      "roles": [
+        "worker"
+      ],
+      "user": {
+        "username": "worker"
+      }
     }
   ],
   "remoting": {

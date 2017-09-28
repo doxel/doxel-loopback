@@ -530,7 +530,7 @@ module.exports = function(User) {
       }
   );
 
-  User.upsertList=function(toBeCreated) {
+  User.upsertList=function(list) {
     var debug=false;
     var app = this.app;
     var Role = app.models.role;
@@ -538,12 +538,10 @@ module.exports = function(User) {
     var RoleMapping = app.models.roleMapping;
     var created_role={};
 
-    toBeCreated.reduce(function(promise,_user){
-      var user_roles=_user.roles;
-      var forceUpdate=_user.forceUpdate;
-      delete _user.roles;
-      delete _user.remark;
-      delete _user.forceUpdate;
+    list.reduce(function(promise,item){
+      var user_roles=item.roles;
+      var forceUpdate=item.forceUpdate;
+      var _user=item.user;
 
       return promise.then(function(){
         if (debug) console.log(_user)
@@ -584,6 +582,7 @@ module.exports = function(User) {
           return Q(User.upsertWithWhere({
             username: _user.username
           }, extend({
+            // default values
             email: _user.username+'@doxel.org',
             emailVerified: true,
             password: _user.username,
