@@ -37,6 +37,8 @@ Read the [COPYRIGHT.md](https://github.com/doxel/doxel-loopback/blob/master/COPY
 
 ## installation
 
+The recommended way for developpers is to use the [doxel-dev docker container from the doxel-docker project](https://github.com/doxel/doxel-docker/blob/master/doxel-dev/README.md).
+
 ```
 
 sudo apt-get install build-essential cmake libexpat1-dev mongodb
