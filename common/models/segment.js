@@ -880,7 +880,7 @@
       Q(segment.save())
       .then(function(){
         // return new status
-        callback(null,segment.status,segment.status_timestamp);
+        callback(null,status,segment.status_timestamp);
       })
       .catch(callback);
     }
@@ -947,29 +947,29 @@
       if (err) {
         return callback(err);
       }
-      function errmsg(message) {
+      function abort(message) {
         if (res) res.status(500).end(message);
         else callback(new Error(message));
       }
       if (!segment) {
-        errmsg('no such segment: '+segmentId);
+        abort('no such segment: '+segmentId);
         return;
       }
 
       try {
         // check the current status match the client side one
         if ((segment.status||'new')!==status || (segment.status_timestamp && segment.status_timestamp!=timestamp)) {
-          errmsg('status mismatch: '+segment.status+' '+status+' '+segment.status_timestamp+' '+timestamp);
+          abort('status mismatch: '+segment.status+' '+status+' '+segment.status_timestamp+' '+timestamp);
           return;
         }
       } catch(e) {
-        errmsg(JSON.stringify(e));
+        abort(JSON.stringify(e));
         return;
       }
 
       var forward=['backward','forward'].indexOf(direction);
       if (forward<0) {
-        errmsg('invalid direction: '+direction);
+        abort('invalid direction: '+direction);
         return;
       }
       segment._proceed(forward,callback);
