@@ -3,14 +3,14 @@
 module.exports = function(Job) {
   var app=require('../../server/server');
   var Q=require('q');
-  var Segment=app.models.Segment;
   var extend=require('extend');
 
   // return a previously job not completed by the requesting user,
   // or assign him a new job
-  Job.getOne=function(options, req, res, callback) {
+  Job.get=function(req, res, callback) {
+    var Segment=Job.app.models.Segment;
 
-    // decompose steps as functions
+    /* decompose steps into functions */
     function findUnfinishedJob(){
       return Q(Job.findOne({
         where: {
@@ -60,7 +60,7 @@ module.exports = function(Job) {
       }));
     }
 
-
+    /* here we go */
     findUnfinishedJob()
     .then(function(job){
       if (job) {
@@ -83,22 +83,27 @@ module.exports = function(Job) {
   }
 
   Job.remoteMethod(
-    'getOne',
+    'get',
     {
       accepts: [
-        {arg: 'options', type: 'object', 'http': {source: 'body'}},
         {arg: 'req', type: 'object', 'http': {source: 'req'}},
         {arg: 'res', type: 'object', 'http': {source: 'res'}},
-    ],
-      returns: {arg: 'result', type: 'object'}
+      ],
+      returns: {arg: 'result', type: 'object'},
+      http: {
+        path: '/get',
+        verb: 'get'
+      }
     }
   );
 
-  Job.progress=function(options, req, res, callback) {
-    // decompose steps as functions
+  Job.progress=function(jobId, req, res, callback) {
+
+    /* decompose steps into functions */
     function findCurrentJob(){
       return Q(Job.findOne({
         where: {
+          jobId: jobId,
           userId: req.accessToken.userId,
           completed: {
             exists: false
@@ -108,6 +113,9 @@ module.exports = function(Job) {
     }
 
     function startJob(job) {
+      if (!job){
+        return Q.reject(new Error('no such running job: '+jobId));
+      }
       if (job.started) {
         return job;
 
@@ -136,6 +144,7 @@ module.exports = function(Job) {
       return Q(job.updateAttributes(attributes));
     }
 
+    /* here we go */
     findCurrentJob()
     .then(startJob)
     .then(updateJobProgress)
@@ -154,19 +163,25 @@ module.exports = function(Job) {
     'progress',
     {
       accepts: [
-        {arg: 'options', type: 'object', 'http': {source: 'body'}},
+        {arg: 'id', type: 'string', required: true},
         {arg: 'req', type: 'object', 'http': {source: 'req'}},
         {arg: 'res', type: 'object', 'http': {source: 'res'}},
     ],
-      returns: {arg: 'result', type: 'object'}
+      returns: {arg: 'result', type: 'object'},
+      http: {
+        path: '/progress/:id',
+        verb: 'get'
+      }
     }
   );
 
-  Job.complete=function(options, req, res, callback) {
-    // decompose steps as functions
+  Job.complete=function(jobId, req, res, callback) {
+
+    /* decompose steps into functions*/
     function findCurrentJob(){
       return Q(Job.findOne({
         where: {
+          id: jobId,
           userId: req.accessToken.userId,
           completed: {
             exists: false
@@ -188,7 +203,7 @@ module.exports = function(Job) {
 
     function setSegmentStatusToProcessed(job) {
       if (!job) {
-        return Q.reject();
+        return Q.reject(new Error('no such running job: '+jobId));
       }
       return Q(job.__get__segment())
       .then(function(segment){
@@ -202,6 +217,7 @@ module.exports = function(Job) {
       })
     }
 
+    /* here we go */
     findCurrentJob()
     .then(setJobStatusToCompleted)
     .then(setSegmentStatusToProcessed)
@@ -219,11 +235,15 @@ module.exports = function(Job) {
     'complete',
     {
       accepts: [
-        {arg: 'options', type: 'object', 'http': {source: 'body'}},
+        {arg: 'id', type: 'string', required: true},
         {arg: 'req', type: 'object', 'http': {source: 'req'}},
         {arg: 'res', type: 'object', 'http': {source: 'res'}},
     ],
-      returns: {arg: 'result', type: 'object'}
+      returns: {arg: 'result', type: 'object'},
+      http: {
+        path: '/complete/:id',
+        verb: 'get'
+      }
     }
   );
 

@@ -55,7 +55,7 @@
     { "accessType": "*",
       "principalType": "ROLE",
       "principalId": "worker",
-      "property": "getOne",
+      "method": "getOne",
       "permission": "ALLOW"
     },
     { "accessType": "*",
