@@ -1,0 +1,61 @@
+#!/bin/bash
+
+usage() {
+cat << EOF
+NAME
+       $(basename $0) - request a segment ID to process
+
+SYNOPSIS
+       $(basename $0) [OPTION]... URL
+
+DESCRIPTION
+       Request a segment to process. Returns a segment id.
+       The same segment id will be returned until the
+       job as been marked as 'completed'.
+
+       -h, --help
+
+       -a, --authorization
+             loopbackjs access token id
+
+       -n, --no-check-certificate
+
+EOF
+exit 1
+
+}
+
+
+# parse command line options
+if ! options=$(getopt -o ha:n -l help,authorization:,no-check-certificate -- "$@")
+then
+    # something went wrong, getopt will put out an error message for us
+    exit 1
+fi
+
+eval set -- "$options"
+
+while [ $# -gt 0 ] ; do
+    case $1 in
+    -h|--help) usage ;;
+    -a|--authorization) AUTHORIZATION=$2 ; shift ;;
+    -n|--no-check-certificate) NOCHECKCERTIFICATE=--no-check-certificate ;;
+    (--) shift; break;;
+    (-*) echo "$(basename $0): error - unrecognized option $1" 1>&2; exit 1;;
+    (*) break;;
+    esac
+    shift
+done
+
+if [ $# -ne 1 ] ; then
+  usage
+fi
+
+URL=$1
+set -x
+wget \
+  -q \
+  --header="authorization: $AUTHORIZATION" \
+  $NOCHECKCERTIFICATE \
+  $URL \
+  -O -
