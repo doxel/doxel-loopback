@@ -272,11 +272,13 @@
   }; // _path
 
   Segment.path=function(segmentId, req, res, callback){
-    var ip = req.headers['x-real-ip'] || req.ip;
+
+/*    var ip = req.headers['x-real-ip'] || req.ip;
     if (ip!='127.0.0.1' && ip!='::1') {
       res.status(404).end();
       return;
     }
+*/
 
     Segment.prototype._path.apply({id:segmentId},[function(err,path){
       if (err||!path||!path.length) {

@@ -183,7 +183,7 @@
     {
       "accessType": "*",
       "principalType": "ROLE",
-      "principalId": "$everyone",
+      "principalId": "worker",
       "permission": "ALLOW",
       "property": "path"
     },
