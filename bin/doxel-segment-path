@@ -1,0 +1,64 @@
+#!/bin/bash
+
+usage() {
+cat << EOF
+NAME
+       $(basename $0) - update doxel job progress
+
+SYNOPSIS
+       $(basename $0) [OPTION]... URL
+
+DESCRIPTION
+       Return the segment path for the given timestamp or segmentId
+
+       URL
+             the api endpoint eg "http://localhost:3001/api"
+
+       -h, --help
+
+       -a, --authorization
+             loopbackjs access token id
+
+       -n, --no-check-certificate
+
+       -s, --segment
+             the segment id or timestamp (mandatory)
+
+EOF
+exit 1
+
+}
+
+# parse command line options
+if ! options=$(getopt -o ha:ns: -l help,authorization:,no-check-certificate,segment -- "$@")
+then
+    # something went wrong, getopt will put out an error message for us
+    exit 1
+fi
+
+eval set -- "$options"
+
+while [ $# -gt 0 ] ; do
+    case $1 in
+    -h|--help) usage ;;
+    -a|--authorization) AUTHORIZATION=$2 ; shift ;;
+    -n|--no-check-certificate) NOCHECKCERTIFICATE=--no-check-certificate ;;
+    -s|--segment) SEGMENT="$2" ; shift ;;
+    (--) shift; break;;
+    (-*) echo "$(basename $0): error - unrecognized option $1" 1>&2; exit 1;;
+    (*) break;;
+    esac
+    shift
+done
+
+[ $# -ne 1 ] && usage
+
+URL=$1/Segments/path/$SEGMENT
+
+set -x
+wget \
+  -q \
+  --header="authorization: $AUTHORIZATION" \
+  $NOCHECKCERTIFICATE \
+  $URL \
+  -O -
