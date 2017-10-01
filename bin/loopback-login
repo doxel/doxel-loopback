@@ -12,6 +12,9 @@ DESCRIPTION
        Return the accesstoken json after successful login, using username or
        email, and password.
 
+       URL
+             the api endpoint eg "http://localhost:3001/api"
+
        -h, --help
 
        -u, --username
@@ -34,9 +37,9 @@ then
     # something went wrong, getopt will put out an error message for us
     exit 1
 fi
- 
+
 eval set -- "$options"
- 
+
 while [ $# -gt 0 ] ; do
     case $1 in
     -h|--help) usage ;;
@@ -52,7 +55,7 @@ while [ $# -gt 0 ] ; do
 done
 
 [ $# -ne 1 ] && usage
-URL=$1
+URL=$1/users/login
 
 [ -n "$USERNAME" ] && USERID="username=$USERNAME"
 [ -n "$EMAIL" ] && USERID="email=$EMAIL"
@@ -66,4 +69,3 @@ wget \
   $NOCHECKCERTIFICATE \
   $URL \
   -O -
-

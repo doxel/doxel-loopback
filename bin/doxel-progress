@@ -3,15 +3,15 @@
 usage() {
 cat << EOF
 NAME
-       $(basename $0) - request a segment ID to process
+       $(basename $0) - update doxel job progress
 
 SYNOPSIS
        $(basename $0) [OPTION]... URL
 
 DESCRIPTION
-       Request a segment to process. Returns a job record json.
-       The same job record will be returned until the
-       job as been marked as 'completed'.
+       Update a doxel job progress. Returns the updated job json.
+       The job progress timestamp will be updated the current server time,
+       The job progress details will be set to the value of -d, if specified.
 
        URL
              the api endpoint eg "http://localhost:3001/api"
@@ -23,13 +23,19 @@ DESCRIPTION
 
        -n, --no-check-certificate
 
+       -j, --job-id
+             the job id (mandatory)
+
+       -d, --details
+             progress details (optional)
+
 EOF
 exit 1
 
 }
 
 # parse command line options
-if ! options=$(getopt -o ha:n -l help,authorization:,no-check-certificate -- "$@")
+if ! options=$(getopt -o ha:nj:d: -l help,authorization:,no-check-certificate,job-id,details -- "$@")
 then
     # something went wrong, getopt will put out an error message for us
     exit 1
@@ -42,6 +48,8 @@ while [ $# -gt 0 ] ; do
     -h|--help) usage ;;
     -a|--authorization) AUTHORIZATION=$2 ; shift ;;
     -n|--no-check-certificate) NOCHECKCERTIFICATE=--no-check-certificate ;;
+    -j|--job-id) JOBID="$2" ; shift ;;
+    -d|--details) DETAILS="$2" ; shift ;;
     (--) shift; break;;
     (-*) echo "$(basename $0): error - unrecognized option $1" 1>&2; exit 1;;
     (*) break;;
@@ -51,7 +59,8 @@ done
 
 [ $# -ne 1 ] && usage
 
-URL=$1/jobs/get
+URL=$1/jobs/progress/$JOBID
+[ -n "$DETAILS" ] && URL=$URL/$DETAILS
 
 wget \
   -q \
