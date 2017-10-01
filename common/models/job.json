@@ -18,8 +18,8 @@
     "progressed": {
       "type": "number"
     },
-    "progress": {
-      "type": "string"
+    "history": {
+      "type": "array"
     },
     "completed": {
       "type": "number"

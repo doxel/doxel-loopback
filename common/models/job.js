@@ -97,7 +97,7 @@ module.exports = function(Job) {
     }
   );
 
-  Job.progress=function(jobId, req, res, callback) {
+  Job.progress=function(jobId, state, req, res, callback) {
 
     /* decompose steps into functions */
     function findCurrentJob(){
@@ -141,6 +141,10 @@ module.exports = function(Job) {
     function updateJobProgress(job) {
       var now=Date.now();
       var attributes={progressed: now};
+      if (state) {
+        job.history.push(state);
+        attributes.history=job.history;
+      }
       return Q(job.updateAttributes(attributes));
     }
 
@@ -164,12 +168,13 @@ module.exports = function(Job) {
     {
       accepts: [
         {arg: 'id', type: 'string', required: true},
+        {arg: 'state', type: 'string', required: false},
         {arg: 'req', type: 'object', 'http': {source: 'req'}},
         {arg: 'res', type: 'object', 'http': {source: 'res'}},
     ],
       returns: {arg: 'result', type: 'object'},
       http: {
-        path: '/progress/:id',
+        path: '/progress/:id/:state',
         verb: 'get'
       }
     }
