@@ -2,6 +2,7 @@
   "name": "job",
   "base": "PersistedModel",
   "idInjection": true,
+  "strictObjectIDCoercion": true,
   "options": {
     "validateUpsert": true
   },
@@ -35,8 +36,9 @@
       "model": "user"
     },
     "segment": {
-      "type": "hasOne",
-      "model": "segment"
+      "type": "belongsTo",
+      "model": "Segment",
+      "foreignKey": "segmentId"
     }
   },
   "acls": [

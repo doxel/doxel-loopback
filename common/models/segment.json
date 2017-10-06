@@ -3,6 +3,7 @@
   "plural": "Segments",
   "base": "PersistedModel",
   "idInjection": true,
+  "strictObjectIDCoercion": true,
   "options": {
     "validateUpsert": true,
     "mongodb": {
@@ -96,7 +97,11 @@
     "tags": {
       "type": "hasMany",
       "model": "Tag",
-      "through": "SegmentTag"
+      "through": "SegmentTag",
+      "jobs": {
+        "type": "hasMany",
+        "model": "job"
+      }
     }
   },
   "acls": [

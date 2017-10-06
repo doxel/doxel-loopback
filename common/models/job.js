@@ -4,6 +4,7 @@ module.exports = function(Job) {
   var app=require('../../server/server');
   var Q=require('q');
   var extend=require('extend');
+  var ObjectID = require('mongodb').ObjectID;
 
   // return a previously job not completed by the requesting user,
   // or assign him a new job
@@ -99,35 +100,36 @@ module.exports = function(Job) {
 
   Job.progress=function(jobId, state, req, res, callback) {
 
+console.log(jobId,req.accessToken.userId)
     /* decompose steps into functions */
     function findCurrentJob(){
       return Q(Job.findOne({
         where: {
-          jobId: jobId,
+          id: jobId,
           userId: req.accessToken.userId,
           completed: {
             exists: false
           }
-        }
+        },
+        include: 'segment'
       }));
     }
 
     function startJob(job) {
       if (!job){
-        return Q.reject(new Error('no such running job: '+jobId));
+        return Q.reject(new Error('no sucha running job: '+jobId));
       }
       if (job.started) {
         return job;
 
       } else {
         // set Segment status to 'processing'
-        return Q(job.__get__segment())
-        .then(function(segment){
-          if (segment.status!='pending') {
-            return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
-          }
-          return Q.nfCall(Segment.proceed,segment.status,segment.status_timestamp,'forward',null,null)
-        })
+        console.log('get segment')
+        var segment=job.segment();
+        if (segment.status!='pending') {
+          return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
+        }
+        return Q.nfcall(Job.app.models.Segment.proceed,segment.id,segment.status,segment.status_timestamp,'forward',null,null)
         .then(function(args){
           // set job started timestamp
           console.log('args[1]',args[1])
@@ -142,16 +144,27 @@ module.exports = function(Job) {
       var now=Date.now();
       var attributes={progressed: now};
       if (state) {
+        if (!job.history) job.history=[];
         job.history.push(state);
         attributes.history=job.history;
       }
       return Q(job.updateAttributes(attributes));
     }
 
+    function checkForCompletion(job) {
+      var data=JSON.parse(state);
+      if (data.completed) {
+        return Q,nfcall(Job.complete,jobId,data.completion_status,req,res);
+      } else {
+        return Q.resolve(job);
+      }
+    }
+
     /* here we go */
     findCurrentJob()
     .then(startJob)
     .then(updateJobProgress)
+    .then(checkForCompletion)
     .then(function(job){
       callback(null,{job: job});
     })
@@ -180,7 +193,7 @@ module.exports = function(Job) {
     }
   );
 
-  Job.complete=function(jobId, req, res, callback) {
+  Job.complete=function(jobId, status, req, res, callback) {
 
     /* decompose steps into functions*/
     function findCurrentJob(){
@@ -197,28 +210,23 @@ module.exports = function(Job) {
 
     function setJobStatusToCompleted(job) {
       if (!job) {
-        return Q.reject();
+        return Q.reject(new Error('no such running job: '+jobId));
       }
       var now=Date.now();
       var attributes={};
       attributes.completed=now;
-      attributes.completion_status=options.status||'ok';
+      attributes.completion_status=status||'ok';
       return Q(job.updateAttributes(attributes));
     }
 
     function setSegmentStatusToProcessed(job) {
-      if (!job) {
-        return Q.reject(new Error('no such running job: '+jobId));
+      var segment=job.segment();
+      if (segment.status!='processing') {
+        return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
       }
-      return Q(job.__get__segment())
-      .then(function(segment){
-        if (segment.status!='processing') {
-          return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
-        }
-        return Q.nfCall(Segment.proceed,segment.status,segment.status_timestamp,'forward',null,null)
-        .then(function(){
-          return job;
-        })
+      return Q.nfcall(Job.app.models.Segment.proceed,segment.id,segment.status,segment.status_timestamp,'forward',null,null)
+      .then(function(){
+        return job;
       })
     }
 
