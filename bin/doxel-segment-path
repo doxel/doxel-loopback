@@ -56,7 +56,6 @@ done
 
 URL=$1/Segments/path/$SEGMENT
 
-set -x
 wget \
   -q \
   --header="authorization: $AUTHORIZATION" \

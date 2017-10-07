@@ -56,7 +56,6 @@ done
 
 URL=$1/Segments/inject-pointcloud/$SEGMENT
 
-set -x
 wget \
   -q \
   --header="authorization: $AUTHORIZATION" \
