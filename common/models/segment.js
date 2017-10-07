@@ -272,21 +272,12 @@
   }; // _path
 
   Segment.path=function(segmentId, req, res, callback){
-
-/*    var ip = req.headers['x-real-ip'] || req.ip;
-    if (ip!='127.0.0.1' && ip!='::1') {
-      res.status(404).end();
-      return;
-    }
-*/
-
     Segment.prototype._path.apply({id:segmentId},[function(err,path){
       if (err||!path||!path.length) {
         return res.status(404).end()
       }
       res.status(200).end(path);
     }]);
-
   }
 
   Segment.remoteMethod('path',{
@@ -418,7 +409,7 @@
       extrinsics_loop();
 
       return q.promise.then(segment.updateAttributes({
-        status: 'published',  // TODO: set it to processed !
+        status: 'publishable',
         status_timestamp: new Date()
       }));
 
@@ -460,14 +451,6 @@
   }
 
   Segment.injectPointcloud=function(segmentId, req, res, callback) {
-    // only from localhost (or via ssh wget)
-    console.log(req.headers)
-    var ip = (req.headers && req.headers['x-real-ip']) || req.ip;
-    if (ip!='127.0.0.1' && ip!='::1') {
-      res.status(404).end();
-      return;
-    }
-
     var segment;
 
     Segment.timestampToId(segmentId)
@@ -893,7 +876,7 @@
   Segment.prototype._proceed=function(forward,callback) {
     var segment=this;
 
-    // undefined -> queued -> pending -> processing -> processed -> published
+    // undefined -> queued -> pending -> processing -> processed -> publishable -> published
 
     switch(segment.status) {
       case 'new':
@@ -922,19 +905,30 @@
         break;
 
       case 'processing':
-        // cancel_pending <- processing -> processed
-        segment.setStatus((forward)?'processed':'pending',callback);
-        break;
-
-      case 'cancel_pending':
-        // queued <- cancel_pending -> processing
-        segment.setStatus((forward)?'processing':'queued',callback);
+        // queued <- processing -> processed
+        segment.setStatus((forward)?'processed':'queued',callback);
         break;
 
       case 'processed':
-        // discarded <- processed -> published
-        segment.setStatus((forward)?'published':'discarded',callback);
+        if (segment.pointCloudId) {
+          // queued <- processed -> publishable
+          segment.setStatus((forward)?'publishable':'queued',callback);
+        } else {
+          // publishable cannot be set without pointcloud in db
+          // queued <- processed -> processed
+          segment.setStatus((forward)?'processed':'queued',callback);
+        }
         break;
+
+        case 'publishable':
+          if (segment.pointCloudId) {
+            // discarded <- publishable -> published
+            segment.setStatus((forward)?'published':'discarded',callback);
+          } else {
+            // discarded <- publishable -> processed
+            segment.setStatus((forward)?'processed':'discarded',callback);
+          }
+          break;
 
       default:
          // nothing to do
