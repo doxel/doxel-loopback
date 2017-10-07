@@ -154,7 +154,7 @@ console.log(jobId,req.accessToken.userId)
     function checkForCompletion(job) {
       var data=JSON.parse(state);
       if (data.completed) {
-        return Q,nfcall(Job.complete,jobId,data.completion_status,req,res);
+        return Q.nfcall(Job.complete,jobId,data.completion_status,req,res);
       } else {
         return Q.resolve(job);
       }
@@ -170,6 +170,10 @@ console.log(jobId,req.accessToken.userId)
     })
     .catch(function(err) {
       console.log(err);
+      if (res) {
+        res.status(500).end(JSON.stringify(err));
+        return;
+      }
       callback(err);
     })
     .done();
@@ -204,7 +208,8 @@ console.log(jobId,req.accessToken.userId)
           completed: {
             exists: false
           }
-        }
+        },
+        include: 'segment'
       }));
     }
 
@@ -239,6 +244,10 @@ console.log(jobId,req.accessToken.userId)
     })
     .catch(function(err) {
       console.log(err);
+      if (res) {
+        res.status(500).end(JSON.stringify(err));
+        return;
+      }
       callback(err);
     });
 
