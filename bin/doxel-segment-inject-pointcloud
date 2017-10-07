@@ -3,13 +3,13 @@
 usage() {
 cat << EOF
 NAME
-       $(basename $0) - update doxel job progress
+       $(basename $0) - inject a pointcloud in the database
 
 SYNOPSIS
        $(basename $0) [OPTION]... URL
 
 DESCRIPTION
-       Return the segment path for the given timestamp or segmentId
+       Inject a pointcloud in the database for the given timestamp or segmentId
 
        URL
              the api endpoint eg "http://localhost:3001/api"
@@ -54,7 +54,7 @@ done
 [ $# -ne 1 ] && usage
 [ -z "$SEGMENT" ] && usage
 
-URL=$1/Segments/path/$SEGMENT
+URL=$1/Segments/inject-pointcloud/$SEGMENT
 
 set -x
 wget \
