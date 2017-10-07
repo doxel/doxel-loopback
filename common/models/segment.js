@@ -923,7 +923,7 @@
 
       case 'processing':
         // cancel_pending <- processing -> processed
-        segment.setStatus((forward)?'processed':'cancel pending',callback);
+        segment.setStatus((forward)?'processed':'pending',callback);
         break;
 
       case 'cancel_pending':
