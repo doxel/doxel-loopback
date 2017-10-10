@@ -97,11 +97,11 @@
     "tags": {
       "type": "hasMany",
       "model": "Tag",
-      "through": "SegmentTag",
-      "jobs": {
-        "type": "hasMany",
-        "model": "job"
-      }
+      "through": "SegmentTag"
+    },
+    "jobs": {
+      "type": "hasMany",
+      "model": "job"
     }
   },
   "acls": [
@@ -130,6 +130,13 @@
       "principalId": "admin",
       "permission": "ALLOW",
       "property": "proceed"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "__get__jobs"
     },
     {
       "accessType": "*",
