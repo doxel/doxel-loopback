@@ -117,7 +117,7 @@ console.log(jobId,req.accessToken.userId)
 
     function startJob(job) {
       if (!job){
-        return Q.reject(new Error('no sucha running job: '+jobId));
+        return Q.reject(new Error('no such running job: '+jobId));
       }
       if (job.started) {
         return job;
@@ -132,7 +132,6 @@ console.log(jobId,req.accessToken.userId)
         return Q.nfcall(Job.app.models.Segment.proceed,segment.id,segment.status,segment.status_timestamp,'forward',null,null)
         .then(function(args){
           // set job started timestamp
-          console.log('args[1]',args[1])
           var attributes={};
           attributes.started=args[1];
           return Q(job.updateAttributes(attributes));
@@ -153,8 +152,8 @@ console.log(jobId,req.accessToken.userId)
 
     function checkForCompletion(job) {
       var data=JSON.parse(state);
-      if (data.completed) {
-        return Q.nfcall(Job.complete,jobId,data.completion_status,req,res);
+      if (data.completed || data.error) {
+        return Q.nfcall(Job.complete,jobId,data.msg,req,res);
       } else {
         return Q.resolve(job);
       }
