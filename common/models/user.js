@@ -425,7 +425,7 @@ module.exports = function(User) {
       user.roles().forEach(function(role){
         roles[role.name]=true;
       });
-      callback(null,{session: accessToken, roles: roles});
+      callback(null,{session: accessToken, {data: {roles: roles}});
 
     }).fail(function(err){
       console.log('login failed: '+JSON.stringify(options));
