@@ -71,10 +71,11 @@ if (app.get('html5Mode')) {
     '/doxel*',
     '/login*',
     '/logout*',
-    '/upload*'
+    '/upload*',
+    '/processing*',
   ].forEach(function(route){
     app.get(route,function(req,res,next){
-      res.redirect('/#!'+req.originalUrl);
+      res.redirect('/app/#!'+req.originalUrl);
     });
   });
 }
