@@ -73,6 +73,16 @@
       "foreignKey": "userId"
     }
   },
+  "scope": {
+    "include": {
+      "relation": "roles",
+      "scope": {
+        "fields": {
+          "name": true
+        }
+      }
+    }
+  },
   "acls": [
     {
       "accessType": "*",
@@ -127,7 +137,14 @@
       "principalId": "$owner",
       "permission": "ALLOW",
       "property": "updateProfile"
+    },
+    {
+      "accessType": "READ",
+      "principalType": "ROLE",
+      "principalId": "$owner",
+      "permission": "ALLOW"
     }
+
 
   ],
   "methods": {}
