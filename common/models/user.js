@@ -530,6 +530,119 @@ module.exports = function(User) {
       }
   );
 
+  User.grantRole = function(username,roleName,callback) {
+    var user=this;
+    var Role=User.app.models.role;
+    var RoleMapping=User.app.models.roleMapping;
+    var role;
+
+    Q(Role.find({
+      where: {
+        name: roleName
+      }
+    }))
+    .then(function(_role) {
+      role=_role;
+      if (!role || !role.id) {
+        return Q.reject(new Error('no such role: '+roleName));
+      }
+      return Q(user.findOne({
+        where: {
+          username: username
+        },
+        fields: {
+          id: true
+        }
+      }))
+    })
+    .then(function(user) {
+      if (!user || !user.id) {
+        return Q.reject(new Error('no such user: '+username));
+      }
+      return Q(RoleMapping.findOrCreate({
+        principalType: 'USER',
+        principalId: user.id,
+        roleId: role.id
+      }))
+    })
+    .then(function(roleMapping){
+      console.log('User '+userId+' added to role '+roleName);
+      callback(null, {roleMapping: roleMapping});
+    })
+    .catch(callback)
+    .done();
+
+  }
+
+  User.remoteMethod(
+    'grantRole',
+    {
+      accepts: [
+          {arg: 'username', type: 'string', 'http': {source: 'body'}},
+          {arg: 'roleName', type: 'string', 'http': {source: 'body'}}
+      ],
+      returns: { arg: 'result', type: 'object' }
+    }
+  );
+
+  User.revokeRole = function(username,roleName,callback) {
+    var user=this;
+    var Role=User.app.models.role;
+    var RoleMapping=User.app.models.roleMapping;
+    var role;
+
+    Q(Role.find({
+      where: {
+        name: roleName
+      },
+      fields: {
+        id: true
+      }
+    }))
+    .then(function(_role) {
+      role=_role;
+      if (!role || !role.id) {
+        return Q.reject(new Error('no such role: '+roleName));
+      }
+      return Q(user.findOne({
+        where: {
+          username: username
+        },
+        fields: {
+          id: true
+        }
+      }))
+    })
+    .then(function(user) {
+      if (!user || !user.id) {
+        return Q.reject(new Error('no such user: '+username));
+      }
+      return Q(RoleMapping.destroyAll({
+        principalType: 'USER',
+        principalId: user.id,
+        roleId: role.id
+      }))
+    })
+    .then(function(roleMapping){
+      console.log('User '+userId+' added to role '+roleName);
+      callback(null, {roleMapping: roleMapping});
+    })
+    .catch(callback)
+    .done();
+
+  }
+
+  User.remoteMethod(
+    'revokeRole',
+    {
+      accepts: [
+        {arg: 'username', type: 'string', 'http': {source: 'body'}},
+        {arg: 'roleName', type: 'string', 'http': {source: 'body'}}
+      ],
+      returns: { arg: 'result', type: 'object' }
+    }
+  );
+
   User.upsertList=function(list) {
     var debug=false;
     var app = this.app;

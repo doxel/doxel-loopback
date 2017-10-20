@@ -134,6 +134,13 @@
     {
       "accessType": "*",
       "principalType": "ROLE",
+      "principalId": "foreman",
+      "permission": "ALLOW",
+      "property": "proceed"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW",
       "property": "__get__jobs"
@@ -141,7 +148,21 @@
     {
       "accessType": "*",
       "principalType": "ROLE",
+      "principalId": "foreman",
+      "permission": "ALLOW",
+      "property": "__get__jobs"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
       "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "__get__pictures"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "foreman",
       "permission": "ALLOW",
       "property": "__get__pictures"
     },

@@ -54,6 +54,12 @@
       "principalId": "admin",
       "permission": "ALLOW"
     },
+    {
+      "accessType": "READ",
+      "principalType": "ROLE",
+      "principalId": "foreman",
+      "permission": "ALLOW"
+    },
     { "accessType": "*",
       "principalType": "ROLE",
       "principalId": "worker",
