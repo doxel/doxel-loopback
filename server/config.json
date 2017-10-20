@@ -31,6 +31,14 @@
       "user": {
         "username": "worker"
       }
+    },
+    {
+      "roles": [
+        "foreman"
+      ],
+      "user": {
+        "username": "foreman"
+      }
     }
   ],
   "remoting": {
