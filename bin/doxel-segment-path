@@ -3,7 +3,7 @@
 usage() {
 cat << EOF
 NAME
-       $(basename $0) - update doxel job progress
+       $(basename $0) - Get the segment directory path
 
 SYNOPSIS
        $(basename $0) [OPTION]... URL
