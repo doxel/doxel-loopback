@@ -152,7 +152,7 @@ console.log(jobId,req.accessToken.userId)
 
     function checkForCompletion(job) {
       var data=JSON.parse(state);
-      if (data.completed || data.error) {
+      if ((data.msg && data.msg=="completed") || data.error) {
         return Q.nfcall(Job.complete,jobId,data.msg,req,res);
       } else {
         return Q.resolve(job);
