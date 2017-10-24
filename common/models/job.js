@@ -35,6 +35,9 @@ module.exports = function(Job) {
       if (!segment) {
         return Q.reject();
       }
+      if (segment.status!='queued') {
+        return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
+      }
       var q=Q.defer();
       Segment.proceed(segment.id, segment.status, segment.status_timestamp, 'forward', null, null, function(err,status,timestamp){
         if (err) {
@@ -223,21 +226,9 @@ console.log(jobId,req.accessToken.userId)
       return Q(job.updateAttributes(attributes));
     }
 
-    function setSegmentStatusToProcessed(job) {
-      var segment=job.segment();
-      if (segment.status!='processing') {
-        return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
-      }
-      return Q.nfcall(Job.app.models.Segment.proceed,segment.id,segment.status,segment.status_timestamp,'forward',null,null)
-      .then(function(){
-        return job;
-      })
-    }
-
     /* here we go */
     findCurrentJob()
     .then(setJobStatusToCompleted)
-    .then(setSegmentStatusToProcessed)
     .then(function(job){
       callback(null,{job: job});
     })
