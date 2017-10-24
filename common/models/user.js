@@ -536,13 +536,14 @@ module.exports = function(User) {
     var RoleMapping=User.app.models.roleMapping;
     var role;
 
-    Q(Role.find({
+    Q(Role.findOne({
       where: {
         name: roleName
       }
     }))
     .then(function(_role) {
       role=_role;
+      console.log(arguments);
       if (!role || !role.id) {
         return Q.reject(new Error('no such role: '+roleName));
       }
@@ -566,8 +567,8 @@ module.exports = function(User) {
       }))
     })
     .then(function(roleMapping){
-      console.log('User '+userId+' added to role '+roleName);
-      callback(null, {roleMapping: roleMapping});
+      console.log('User '+username+' added to role '+roleName);
+      callback(null, {roleMapping: roleMapping&&roleMapping[0]});
     })
     .catch(callback)
     .done();
@@ -591,7 +592,7 @@ module.exports = function(User) {
     var RoleMapping=User.app.models.roleMapping;
     var role;
 
-    Q(Role.find({
+    Q(Role.findOne({
       where: {
         name: roleName
       },
@@ -623,9 +624,9 @@ module.exports = function(User) {
         roleId: role.id
       }))
     })
-    .then(function(roleMapping){
-      console.log('User '+userId+' added to role '+roleName);
-      callback(null, {roleMapping: roleMapping});
+    .then(function(result){
+      console.log('Revoked role '+roleName+' for user '+username);
+      callback(null, {result: result});
     })
     .catch(callback)
     .done();
