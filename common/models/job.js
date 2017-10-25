@@ -153,7 +153,7 @@ module.exports = function(Job) {
     function checkForCompletion(job) {
       var data=JSON.parse(state);
       if ((data.msg && data.msg=="completed") || data.error) {
-        return Q.nfcall(Job.complete,jobId,data.msg,req,res);
+        return Q.nfcall(Job.complete,jobId,data.completion_status,req,res);
       } else {
         return Q.resolve(job);
       }
@@ -265,12 +265,13 @@ module.exports = function(Job) {
     {
       accepts: [
         {arg: 'id', type: 'string', required: true},
+        {arg: 'status', type: 'string', required: false},
         {arg: 'req', type: 'object', 'http': {source: 'req'}},
         {arg: 'res', type: 'object', 'http': {source: 'res'}},
     ],
       returns: {arg: 'result', type: 'object'},
       http: {
-        path: '/complete/:id',
+        path: '/complete/:id/:status',
         verb: 'get'
       }
     }
