@@ -876,6 +876,11 @@
   Segment.prototype._proceed=function(forward,callback) {
     var segment=this;
 
+    if (forward==2) {
+      segment.setStatus('error',callback);
+      return;
+    }
+
     // undefined -> queued -> pending -> processing -> processed -> publishable -> published
 
     switch(segment.status) {
@@ -888,13 +893,18 @@
        if (segment.pointCloudId) {
          // discarded <- discarded -> published
           segment.setStatus((forward)?'published':'discarded',callback);
-       } else {
+        } else {
          // discarded <- discarded -> new
           segment.setStatus((forward)?'new':'discarded',callback);
         }
         break;
 
-     case 'queued':
+      case 'error':
+        // discarded <- error -> queued
+        segment.setStatus((forward)?'queued':'discarded',callback);
+        break;
+
+      case 'queued':
         // new <- queued -> pending
         segment.setStatus((forward)?'pending':'new',callback);
         break;
@@ -937,7 +947,7 @@
     }
   } // Segment.prototype._proceed
 
-  Segment.proceed=function(segmentId, status, timestamp, direction, req, res, callback) {
+  Segment.proceed=function(segmentId, status, timestamp, operation, req, res, callback) {
 
     Segment.findById(segmentId, {}, function(err,segment){
       if (err) {
@@ -963,9 +973,9 @@
         return;
       }
 
-      var forward=['backward','forward'].indexOf(direction);
+      var forward=['backward','forward','error'].indexOf(operation);
       if (forward<0) {
-        abort('invalid direction: '+direction);
+        abort('invalid operation: '+operation);
         return;
       }
       segment._proceed(forward,callback);
@@ -978,7 +988,7 @@
       {arg: 'id', type: 'string', required: true},
       {arg: 'status', type: 'string', required: true},
       {arg: 'status_timestamp', type: 'number', required: true},
-      {arg: 'direction', type: 'string', required: true},
+      {arg: 'operation', type: 'string', required: true},
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
@@ -989,7 +999,7 @@
 
     ],
     http: {
-      path: '/proceed/:id/:status/:status_timestamp/:direction',
+      path: '/proceed/:id/:status/:status_timestamp/:operation',
       verb: 'get'
     }
   });
