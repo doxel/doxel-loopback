@@ -74,7 +74,6 @@ module.exports = function(Job) {
         .then(setSegmentStatusToPending)
         .then(assignTheJob)
         .then(function(job){
-          console.log(job);
           callback(null,{job: job});
         })
       }
@@ -103,7 +102,6 @@ module.exports = function(Job) {
 
   Job.progress=function(jobId, state, req, res, callback) {
 
-console.log(jobId,req.accessToken.userId)
     /* decompose steps into functions */
     function findCurrentJob(){
       return Q(Job.findOne({
@@ -127,7 +125,6 @@ console.log(jobId,req.accessToken.userId)
 
       } else {
         // set Segment status to 'processing'
-        console.log('get segment')
         var segment=job.segment();
         if (segment.status!='pending') {
           return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
@@ -226,9 +223,29 @@ console.log(jobId,req.accessToken.userId)
       return Q(job.updateAttributes(attributes));
     }
 
+    function updateSegmentStatus(job) {
+      var segment=job.segment();
+      switch(segment.status) {
+        case 'publishable':
+          // pointcloud already inserted
+          return job;
+        case 'processing':
+          // When the job is set to 'completed' before pointcloud is inserted,
+          // then some error has been reported.
+          // Set segment status to 'error'
+          return Q.nfcall(Job.app.models.Segment.proceed,segment.id,segment.status,segment.status_timestamp,'error',null,null)
+          .then(function(){
+            return job;
+          });
+         default: 
+        return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
+      }
+    }
+
     /* here we go */
     findCurrentJob()
     .then(setJobStatusToCompleted)
+    .then(updateSegmentStatus)
     .then(function(job){
       callback(null,{job: job});
     })
