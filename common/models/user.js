@@ -530,7 +530,9 @@ module.exports = function(User) {
       }
   );
 
-  User.grantRole = function(username,roleName,callback) {
+  User.grantRole = function(options,callback) {
+    var username=options.username;
+    var roleName=options.roleName;
     var user=this;
     var Role=User.app.models.role;
     var RoleMapping=User.app.models.roleMapping;
@@ -579,14 +581,15 @@ module.exports = function(User) {
     'grantRole',
     {
       accepts: [
-          {arg: 'username', type: 'string', 'http': {source: 'body'}},
-          {arg: 'roleName', type: 'string', 'http': {source: 'body'}}
+          {arg: 'options', type: 'object', 'http': {source: 'body'}}
       ],
       returns: { arg: 'result', type: 'object' }
     }
   );
 
-  User.revokeRole = function(username,roleName,callback) {
+  User.revokeRole = function(options,callback) {
+    var username=options.username;
+    var roleName=options.roleName;
     var user=this;
     var Role=User.app.models.role;
     var RoleMapping=User.app.models.roleMapping;
@@ -637,8 +640,7 @@ module.exports = function(User) {
     'revokeRole',
     {
       accepts: [
-        {arg: 'username', type: 'string', 'http': {source: 'body'}},
-        {arg: 'roleName', type: 'string', 'http': {source: 'body'}}
+        {arg: 'options', type: 'object', 'http': {source: 'body'}}
       ],
       returns: { arg: 'result', type: 'object' }
     }
