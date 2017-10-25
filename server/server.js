@@ -147,7 +147,7 @@ app.use(function accessTokenProlongation(req, res, next) {
   if (!req.accessToken) {
     return next();
   }
-  var created=left=req.accessToken.created.getTime();
+  var created=req.accessToken.created.getTime();
   var now=Date.now();
   var left=created + req.accessToken.ttl*1000 - now;
   if (left<0 || left>1123200 /* 13 days */) {
