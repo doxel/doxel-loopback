@@ -84,17 +84,17 @@ if (app.get('html5Mode')) {
 app.use('/explorer', function(req,res,next) {
     req.access_token=req.signedCookies.access_token;
     app.models.User.authenticate(req)
-		.then(function(){
-			if (req.accessToken.user().username=='admin') {
-				next();
+    .then(function(){
+      if (req.accessToken.user().username=='admin') {
+        next();
 
-			} else {
-				res.status(401).end('Access to API explorer denied');
-			}
+      } else {
+        res.status(401).end('Access to API explorer denied');
+      }
 
-		}).fail(function(err){
-				res.status(401).end('Access to API explorer denied');
-		});
+    }).fail(function(err){
+        res.status(401).end('Access to API explorer denied');
+    });
 
 });
 
@@ -140,6 +140,20 @@ app.use(function setCurrentUser(req, res, next) {
     next(err);
   });
 
+});
+
+/* Access token sliding expiration */
+app.use(function accessTokenProlongation(req, res, next) {
+  if (!req.accessToken) {
+    return next();
+  }
+  var created=left=req.accessToken.created.getTime();
+  var now=Date.now();
+  var left=created + req.accessToken.ttl*1000 - now;
+  if (left<0 || left>1123200 /* 13 days */) {
+    return next();
+  }
+  token.updateAttribute('ttl', Math.floor((now + 1209600000 /*14 days*/ - created) / 1000), next);
 });
 
 app.use(compression());
