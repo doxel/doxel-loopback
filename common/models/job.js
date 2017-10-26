@@ -152,8 +152,11 @@ module.exports = function(Job) {
 
     function checkForCompletion(job) {
       var data=JSON.parse(state);
-      if ((data.msg && data.msg=="completed") || data.error) {
-        return Q.nfcall(Job.complete,jobId,data.completion_status,req,res);
+      if (data.completed) {
+        return Q.nfcall(Job.complete,jobId,data.msg,req,res,callback);
+      } else {
+      if (data.error) {
+        return Q.nfcall(Job.complete,jobId,data.msg||'error',req,res,callback);
       } else {
         return Q.resolve(job);
       }
