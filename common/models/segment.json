@@ -3,7 +3,7 @@
   "plural": "Segments",
   "base": "PersistedModel",
   "idInjection": true,
-  "strictObjectIDCoercion": true,
+  "strictObjectIDCoercion": false,
   "options": {
     "validateUpsert": true,
     "mongodb": {
