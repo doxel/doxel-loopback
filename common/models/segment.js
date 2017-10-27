@@ -454,8 +454,32 @@
     var segment;
 
     Segment.timestampToId(segmentId)
+    .then(function(_segmentId){
+      segmentId=_segmentId;
+      return segmentId;
+    })
     .then(Segment._injectPointcloud)
-    .fail(function(err){
+    .then(function(){
+      // set segment.status to 'published'  when user is admin
+      if (req.accessToken && req.accessToken.userId) {
+        return Q(app.models.user.findById(req.accessToken.userId))
+        .then(function(user){
+          var isAdmin=user.roles().find(function(role){return role.name=='admin'});
+          if (isAdmin) {
+            return Q(Segment.findById(segmentId))
+            .then(function(segment){
+              return Q(segment.updateAttributes({
+                status: 'published'
+              }))
+              .then(function(segment){
+                console.log(JSON.stringify(segment));
+              })
+            });
+          }
+        })
+      }
+    })
+    .catch(function(err){
       console.log(err.message,err.stack);
       res.status(500).end('ERROR: could not inject cloud for segment '+segmentId+' : '+err.message);
     })
