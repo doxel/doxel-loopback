@@ -10,6 +10,7 @@ module.exports = function(Job) {
   // or assign him a new job
   Job.get=function(req, res, callback) {
     var Segment=Job.app.models.Segment;
+    var segmentId=req.params.s;
 
     /* decompose steps into functions */
     function findUnfinishedJob(){
@@ -27,7 +28,8 @@ module.exports = function(Job) {
       return Q(Segment.findOne({
         where: {
           status: 'queued'
-        }
+        },
+        order: 'created DESC'
       }))
     }
 
@@ -67,16 +69,49 @@ module.exports = function(Job) {
     /* here we go */
     findUnfinishedJob()
     .then(function(job){
-      if (job) {
-        callback(null,{job: job});
+      var promise;
+      if (segmentId) {
+        // requested a specific segment to process
+        if (job) {
+          throw new Error('this worker has already a job');
+
+        } else {
+          // get segment info
+          promise=Q(Segment.findOne({
+            where: { or: [{segmentId: segmentId},{timestamp: segmentId}] }
+          }))
+          .then(function(segment){
+            // check segment status
+            if (segment.status=='pending' || segment.status=='processing') {
+              throw new Error('segment status is '+segment.status);
+            }
+            return Q(segment.updateAttributes({
+              status: 'pending',
+              status_timestamp: Date.now()
+            }))
+            .then(function(){
+              return null;
+            })
+          })
+        }
+
       } else {
-        return findOneQueuedSegment()
-        .then(setSegmentStatusToPending)
-        .then(assignTheJob)
-        .then(function(job){
+        if (job) {
           callback(null,{job: job});
-        })
+          return;
+
+        } else {
+          promise=findOneQueuedSegment()
+          .then(setSegmentStatusToPending);
+
+        }
       }
+      return promise
+      .then(assignTheJob)
+      .then(function(job){
+        callback(null,{job: job});
+      })
+
     })
     .catch(function(err){
       console.log(err);
