@@ -153,7 +153,7 @@ app.use(function accessTokenProlongation(req, res, next) {
   if (left<0 || left>1123200 /* 13 days */) {
     return next();
   }
-  token.updateAttribute('ttl', Math.floor((now + 1209600000 /*14 days*/ - created) / 1000), next);
+  req.accessToken.updateAttribute('ttl', Math.floor((now + 1209600000 /*14 days*/ - created) / 1000), next);
 });
 
 app.use(compression());
