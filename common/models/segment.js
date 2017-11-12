@@ -564,6 +564,12 @@
       }));
     })
     .then(function(){
+      // destroy jobs
+      return Q(app.models.Job.destroyAll({
+        segmentId: segmentId
+      }));
+    })
+    .then(function(){
       if (keepSegment) {
         return Q.resolve();
       }
