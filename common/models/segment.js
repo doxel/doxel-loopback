@@ -903,13 +903,15 @@
   } // Segment.prototype.setStatus
 
 
-  Segment.prototype._proceed=function(forward,callback) {
+  Segment.prototype._proceed=function(operationIndex,callback) {
     var segment=this;
 
-    if (forward==2) {
+    if (operationIndex==2) {
       segment.setStatus('error',callback);
       return;
     }
+
+    var forward=(operationIndex==1):
 
     // undefined -> queued -> pending -> processing -> processed -> publishable -> published
 
@@ -970,6 +972,13 @@
           }
           break;
 
+        case 'published':
+          // discarded <- published
+          if (!forward) {
+            segment.setStatus('discarded',callback);
+            break;
+          }
+
       default:
          // nothing to do
          callback(null,segment.status,segment.status_timestamp);
@@ -1003,12 +1012,12 @@
         return;
       }
 
-      var forward=['backward','forward','error'].indexOf(operation);
-      if (forward<0) {
+      var operationIndex=['backward','forward','error'].indexOf(operation);
+      if (operationIndex<0) {
         abort('invalid operation: '+operation);
         return;
       }
-      segment._proceed(forward,callback);
+      segment._proceed(operationIndex,callback);
     });
 
   } // Segment.proceed
