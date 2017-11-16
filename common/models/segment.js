@@ -911,7 +911,7 @@
       return;
     }
 
-    var forward=(operationIndex==1):
+    var forward=(operationIndex==1);
 
     // undefined -> queued -> pending -> processing -> processed -> publishable -> published
 
