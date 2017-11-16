@@ -420,12 +420,8 @@ module.exports = function(User) {
       }))
     })
     .then(function(user){
-      var roles={};
       console.log(user);
-      user.roles().forEach(function(role){
-        roles[role.name]=true;
-      });
-      callback(null,{session: accessToken, data: {roles: roles}});
+      callback(null,{session: accessToken, user: user});
 
     }).fail(function(err){
       console.log('login failed: '+JSON.stringify(options));
