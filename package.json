@@ -27,6 +27,7 @@
     "har-schema": "^2.0.0",
     "helmet": "^3.8.1",
     "jshint": "^2.9.5",
+    "klaw": "^2.1.1",
     "loopback": "^3.9.0",
     "loopback-boot": "^2.25.0",
     "loopback-component-admin": "0.0.7",
