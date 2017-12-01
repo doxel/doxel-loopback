@@ -122,6 +122,20 @@
       "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW",
+      "property": "files"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "foreman",
+      "permission": "ALLOW",
+      "property": "files"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
       "property": "merge"
     },
     {

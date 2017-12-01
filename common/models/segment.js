@@ -44,6 +44,7 @@
   var viewerPath=path.join(process.cwd(),app.get('viewerPath'));
   var loopbackFilters=require('loopback-filters');
   var extend=require('extend');
+  var klaw=require('klaw');
 
   Segment.prototype.getUnixTimestamp=function(timestamp){
     if (timestamp===undefined) {
@@ -1209,6 +1210,47 @@
     ],
     http: {
       path: '/merge/:segmentList',
+      verb: 'get'
+    }
+  });
+
+  Segment.files=function(id, req, res, callback) {
+    Q(Segment.findById(id,{include: 'user'}))
+    .then(function(segment){
+      segment.path=path.join(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+      return segment;
+    })
+    .then(function(segment){
+      if (segment.path && segment.path.length) {
+        var items=[];
+        klaw(segment.path)
+        .on('readable', function(){
+          var item;
+          while(item=this.read()) items.push(item);
+        })
+        .on('end', function(){
+          callback(null,items);
+        })
+        .on('error', function(err, item){
+          console.log('ERROR',item.path,err);
+        })
+      }
+    })
+  }
+
+  Segment.remoteMethod('files',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: [
+      {arg: 'files', type: 'array'}
+
+    ],
+    http: {
+      path: '/segment/:id/files',
       verb: 'get'
     }
   });
