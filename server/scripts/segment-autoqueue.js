@@ -66,7 +66,7 @@ module.exports=function(app){
     function segment_loop(){
       if (segment_idx>=segments.length) {
         console.log('segment_loop: DONE');
-        return;
+        process.exit(0);
       }
       var segment=segments[segment_idx++];
 
