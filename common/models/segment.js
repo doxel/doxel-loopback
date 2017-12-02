@@ -45,6 +45,7 @@
   var loopbackFilters=require('loopback-filters');
   var extend=require('extend');
   var klaw=require('klaw');
+  var magic = require('stream-mmmagic');
 
   Segment.prototype.getUnixTimestamp=function(timestamp){
     if (timestamp===undefined) {
@@ -1226,7 +1227,12 @@
         klaw(segment.path)
         .on('readable', function(){
           var item;
-          while(item=this.read()) items.push(item);
+          while(item=this.read()) {
+            if (!item.stats.isDirectory()) {
+              item.path=item.path.substr(segment.path.length+1);
+              items.push(item);
+            }
+          }
         })
         .on('end', function(){
           callback(null,items);
@@ -1250,7 +1256,75 @@
 
     ],
     http: {
-      path: '/segment/:id/files',
+      path: '/:id/files',
+      verb: 'get'
+    }
+  });
+
+  Segment.download=function(id, what, req, res, callback) {
+    Q(Segment.findById(id,{include: 'user'}))
+    .then(function(segment){
+      segment.path=path.join(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
+      return segment;
+    })
+    .then(function(segment){
+      if (segment.path && segment.path.length) {
+
+        var filename=path.join(segment.path,what);
+        console.log(filename);
+
+        return streamFile(filename);
+
+        function streamFile(filename) {
+          var q=Q.defer();
+
+          fs.stat(filename,function(err,stats){
+            if (err) {
+              q.reject(err);
+              return
+            }
+
+            var input=fs.createReadStream(data.filename);
+
+            magic(input, function(err,mime,output){
+              if (err) return q.reject(err);
+
+              res
+                .set('Content-Type',mime.type)
+                .set('Content-Disposition','attachment;filename='+filename)
+                .set('Content-Transfer-Encoding','binary')
+                .set('Cache-Control','public, max-age=0')
+                .set('Content-Size', stats.size);
+
+              output
+              .on('end',q.resolve)
+              .on('error',q.reject)
+              .pipe(res);
+
+            });
+
+          });
+
+          return q.promise;
+
+        } // streamFile
+
+      }
+    })
+  }
+
+  Segment.remoteMethod('download',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'what', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: [
+    ],
+    http: {
+      path: '/:id/download/:what',
       verb: 'get'
     }
   });

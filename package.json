@@ -58,6 +58,7 @@
     "shelljs": "^0.7.8",
     "socket.io": "latest",
     "socketio-auth": "latest",
+    "stream-mmmagic": "^2.0.0",
     "strong-error-handler": "^2.2.0"
   },
   "devDependencies": {
