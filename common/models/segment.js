@@ -1269,7 +1269,6 @@
     })
     .then(function(segment){
       if (segment.path && segment.path.length) {
-
         var filename=path.join(segment.path,what);
         console.log(filename);
 
@@ -1284,7 +1283,7 @@
               return
             }
 
-            var input=fs.createReadStream(data.filename);
+            var input=fs.createReadStream(filename);
 
             magic(input, function(err,mime,output){
               if (err) return q.reject(err);
@@ -1320,8 +1319,6 @@
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
-    ],
-    returns: [
     ],
     http: {
       path: '/:id/download/:what',
