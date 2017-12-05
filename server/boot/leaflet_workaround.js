@@ -40,7 +40,8 @@
    var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', 'app') };
 
     [
-      'bower_components/leaflet/dist/images'
+      'bower_components/leaflet/dist/images',
+      'styles/images'
 
     ].forEach(function(folder){
       app.all('/'+folder+'/*', function(req,res,next){
