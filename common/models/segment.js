@@ -46,6 +46,7 @@
   var extend=require('extend');
   var klaw=require('klaw');
   var magic = require('stream-mmmagic');
+  var childProcess = require('child_process');
 
   Segment.prototype.getUnixTimestamp=function(timestamp){
     if (timestamp===undefined) {
@@ -1261,67 +1262,129 @@
     }
   });
 
-  Segment.download=function(id, what, req, res, callback) {
+  Segment.download=function(id, requestedPath, req, res, callback) {
+    // fetch segment and user
     Q(Segment.findById(id,{include: 'user'}))
     .then(function(segment){
+      // get segment path
       segment.path=path.join(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
       return segment;
+
     })
     .then(function(segment){
-      if (segment.path && segment.path.length) {
-        var filename=path.join(segment.path,what);
+      if (!segment.path || !segment.path.length) {
+        throw new Error('cannot find segment path');
+      }
+
+      var q=Q.defer();
+
+      // requested path
+      fs.realpath(path.join(segment.path,requestedPath),function(err,filename){
+        if (err) return q.reject(err);
         console.log(filename);
 
-        return streamFile(filename);
+        // assert base directory is uploadRootDir
+        if (filename.substr(0,uploadRootDir.length)!=uploadRootDir) {
+          return q.reject(new Error('unauthorized'));
+        }
 
-        function streamFile(filename) {
-          var q=Q.defer();
+        // stream file or folder.tar.gz
+        createReadStream(filename)
+        .then(streamIt)
+        .then(q.resolve)
+        .catch(q.reject)
+      });
 
-          fs.stat(filename,function(err,stats){
-            if (err) {
-              q.reject(err);
-              return
-            }
+      return q.promise;
 
-            var input=fs.createReadStream(filename);
+      //
+      function createReadStream(filename) {
+        var q=Q.defer();
 
-            magic(input, function(err,mime,output){
-              if (err) return q.reject(err);
+        // what are we going to serve ?
+        fs.stat(filename,function(err,stats){
+          if (err) {
+            q.reject(err);
+            return
+          }
 
-              res
-                .set('Content-Type',mime.type)
-                .set('Content-Disposition','attachment;filename='+filename)
-                .set('Content-Transfer-Encoding','binary')
-                .set('Cache-Control','public, max-age=0')
-                .set('Content-Size', stats.size);
+          var basename=filename.substr(uploadRootDir.length+1);
 
-              output
-              .on('end',q.resolve)
-              .on('error',q.reject)
-              .pipe(res);
-
+          if (stats.isDirectory()) {
+            // stream a tar archive
+            var child=childProcess.spawn('tar',['-C',uploadRootDir,'-zc',basename]);
+            child.on('error',q.reject);
+            q.resolve({
+              stats: stats,
+              basename: basename+'.tar.gz',
+              stream: child.stdout
             });
 
-          });
+          } else {
+            // stream a file
+            q.resolve({
+              stats: stats,
+              basename: basename,
+              stream: fs.createReadStream(filename),
+            });
+          }
 
-          return q.promise;
+        });
 
-        } // streamFile
+        return q.promise;
 
-      }
+      } // createReadStream
+
+      function streamIt(options) {
+        var q=Q.defer();
+
+        // get mime time from file content
+        magic(options.stream, function(err,mime,output){
+          if (err) {
+            q.reject(err);
+            return;
+          }
+
+          // set http headers
+          res
+          .set('Content-Type',mime.type)
+          .set('Content-Disposition','attachment;filename='+options.basename)
+          .set('Content-Transfer-Encoding','binary')
+          .set('Cache-Control','public, max-age=0');
+
+          if (!options.stats.isDirectory()) {
+            res.set('Content-Size', options.stats.size);
+          }
+
+          // stream body
+          output
+          .on('end',q.resolve)
+          .on('error',q.reject)
+          .pipe(res);
+
+        });
+
+        return q.promise;
+
+      } // streamIt
+
     })
+    .catch(function(err){
+      console.log(err);
+      res.status(500).end(err.message);
+    });
   }
 
   Segment.remoteMethod('download',{
     accepts: [
       {arg: 'id', type: 'string', required: true},
-      {arg: 'what', type: 'string', required: true},
+      {arg: 'requestedPath', type: 'string', required: true},
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
     ],
     http: {
-      path: '/:id/download/:what',
+      path: '/:id/download/:requestedPath',
       verb: 'get'
     }
   });
