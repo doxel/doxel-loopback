@@ -196,8 +196,23 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
        '..',
        'client',
        (app.get('production')&&!req.cookies.debug)?'dist':'app'
-     )
+      )
     );
+
+    return staticServe(req,res,next);
+  });
+
+  app.use(function(req,res,next){
+    var staticServe=loopback.static(
+      path.resolve(
+        __dirname,
+       '..',
+       '..',
+       'client',
+       'app'
+      )
+    );
+
     return staticServe(req,res,next);
   });
 
