@@ -142,22 +142,7 @@ app.use(function setCurrentUser(req, res, next) {
 
 });
 
-/* Access token sliding expiration */
-app.use(function accessTokenProlongation(req, res, next) {
-  if (!req.accessToken) {
-    return next();
-  }
-  var created=req.accessToken.created.getTime();
-  var now=Date.now();
-  var left=created + req.accessToken.ttl*1000 - now;
-  if (left<0 || left>1123200 /* 13 days */) {
-    return next();
-  }
-  req.accessToken.updateAttribute('ttl', Math.floor((now + 1209600000 /*14 days*/ - created) / 1000), next);
-});
-
 app.use(compression());
-
 
 app.enable('trust proxy', '127.0.0.1');
 
