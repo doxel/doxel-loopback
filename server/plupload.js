@@ -59,11 +59,8 @@ module.exports=function(app) {
   }));
   */
 
-  // upload directory
-  var uploadDir=path.join.apply(path,[process.cwd()].concat(upload.directory))+(process.env.production?'':'_dev');
-
   // upload temporary directory
-  var tmpDir=path.join(uploadDir,'tmp');
+  var tmpDir=path.join(upload.directory,'tmp');
 
   // Remove old files
   var cleanupTmpDir=upload.cleanupTmpDir;
@@ -149,7 +146,7 @@ module.exports=function(app) {
 
       // get free space
       df({
-        file: uploadDir
+        file: upload.directory
 
       }, function(err, reply) {
         if (err) {
@@ -538,7 +535,7 @@ module.exports=function(app) {
 
           // move the temporary file to the segment directory
           var destDir=path.join(
-            req.segment.getPath(uploadDir,req.accessToken.user().token,upload.segmentDigits),
+            req.segment.getPath(upload.directory,req.accessToken.user().token,upload.segmentDigits),
             'original_images'
           );
 

@@ -40,7 +40,7 @@
   var fs=require('fs');
   var Q=require('q');
   var upload=app.get('upload');
-  var uploadRootDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
+  var uploadRootDir=upload.directory;
   var viewerPath=path.join(process.cwd(),app.get('viewerPath'));
   var loopbackFilters=require('loopback-filters');
   var extend=require('extend');

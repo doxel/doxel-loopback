@@ -38,7 +38,7 @@
   var app=require(path.join('..','..','/server/server.js'));
   var Q=require('q');
   var upload=app.get('upload');
-  var uploadRootDir=path.join.apply(path,[__dirname,'..','..'].concat(upload.directory));
+  var uploadRootDir=upload.directory;
   var fs=require('fs');
   var loopback=require('loopback');
   var exiv2=require('exiv2');
