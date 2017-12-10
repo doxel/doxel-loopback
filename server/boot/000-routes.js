@@ -188,6 +188,17 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
         res.redirect('/app/#!/processing');
   });
 
-  app.use(loopback.static(path.resolve(__dirname, '../../client/'+(process.env.production?'dist':'app'))));
+  app.use(function(req,res,next){
+    var staticServe=loopback.static(
+      path.resolve(
+        __dirname,
+       '..',
+       '..',
+       'client',
+       (app.get('production')&&!req.cookies.debug)?'dist':'app'
+     )
+    );
+    return staticServe(req,res,next);
+  });
 
 }

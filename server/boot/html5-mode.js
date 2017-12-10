@@ -44,12 +44,11 @@
 
   function html5Mode_support() {
 
-    var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', app.get('production')?'dist':'app') };
-
     app.all('/*', function(req, res, next) {
       if (req.url.substr(0,5)=='/api/') {
         return next();
       }
+      var _documentRoot={ root: path.resolve(__dirname, '..', '..', 'client', (app.get('production')&&!req.cookies.debug)?'dist':'app') };
       res.sendFile('index.html', _documentRoot);
     });
   }
