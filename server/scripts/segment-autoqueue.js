@@ -42,56 +42,73 @@
 
 */
 module.exports=function(app){
-  var Segment=app.models.Segment;
-  var yesterday=Date.now()-86400000;
+  process.nextTick(function(){
 
-  Segment.find({
-    where: {
-      or: [
-        { status: 'new' },
-        { status: { exists: false } }
-      ],
-    },
-    include: {
-      relation: 'pictures',
-      scope: {
-        fields: ['created'],
-      }
-    }
+    var Segment=app.models.Segment;
+    var yesterday=Date.now()-86400000;
 
-  }, function(err,segments){
-    var segment_idx=0;
-    segment_loop();
-
-    function segment_loop(){
-      if (segment_idx>=segments.length) {
-        console.log('segment_loop: DONE');
-        process.exit(0);
-      }
-      var segment=segments[segment_idx++];
-
-      var pictures=segment.pictures();
-
-      var fresh=pictures.some(function(p){
-        return p.created>yesterday;
-      });
-
-      if (fresh) {
-        process.nextTick(segment_loop);
-
-      } else {
-        if (pictures.length>1) {
-          console.log('set segment '+segment.id+' status to "queued"');
-          segment.setStatus('queued',function(err,status,status_timestamp){
-            if (err) console.log('failed !"',err);
-            process.nextTick(segment_loop);
-          });
-        } else {
-          process.nextTick(segment_loop);
+    Segment.find({
+      where: {
+        or: [
+          { status: 'new' },
+          { status: { exists: false } }
+        ],
+      },
+      include: {
+        relation: 'pictures',
+        scope: {
+          fields: ['created'],
         }
       }
 
-    } // segment_loop
+    }, function(err,segments){
+
+      if (err) {
+        console.log('autoqueue:',err.message);
+        return;
+      }
+      console.log('autoqueue: '+segments.length+' new segments');
+
+      var segment_idx=0;
+      segment_loop();
+
+      function segment_loop(){
+        if (segment_idx>=segments.length) {
+          console.log('segment_loop: DONE');
+          process.exit(0);
+        }
+        var segment=segments[segment_idx++];
+
+        var pictures=segment.pictures();
+
+        var fresh=pictures.some(function(p){
+          return p.created>yesterday;
+        });
+
+        if (fresh) {
+          //console.log('too fresh', yesterday, segment);
+          process.nextTick(segment_loop);
+
+        } else {
+          if (pictures.length>1) {
+            console.log('set segment '+segment.id+' status to "queued"');
+            segment.setStatus('queued',function(err,status,status_timestamp){
+              if (err) console.log('failed !"',err);
+              process.nextTick(segment_loop);
+            });
+          } else {
+            // console.log('no picture pairs', segment);
+            //TODO
+            // segment.purge()
+            process.nextTick(segment_loop);
+          }
+        }
+
+      } // segment_loop
+
+    });
 
   });
 }
+
+
