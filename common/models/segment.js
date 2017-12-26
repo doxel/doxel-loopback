@@ -47,6 +47,37 @@
   var klaw=require('klaw');
   var magic = require('stream-mmmagic');
   var childProcess = require('child_process');
+  var geolib=require('geolib');
+
+  function getCenterAndBounds(pictures) {
+    var coords=[];
+    var geo;
+    var bounds;
+    pictures.forEach(function(picture){
+      if (picture.geo) {
+        coords.push({
+          latitude: picture.geo.lat,
+          longitude: picture.geo.lng
+        });
+      }
+    });
+
+    if (coords.length) {
+      var center=geolib.getCenter(coords);
+      geo=new loopback.GeoPoint({lat: center.latitude, lng: center.longitude});
+
+      bounds=geolib.getBounds(coords);
+      bounds={
+         min: new loopback.GeoPoint({lat: bounds.minLat, lng: bounds.minLng}),
+         max: new loopback.GeoPoint({lat: bounds.maxLat, lng: bounds.maxLng})
+      };
+    }
+
+    return {
+      geo: geo,
+      bounds: bounds
+    }
+  }
 
   Segment.prototype.getUnixTimestamp=function(timestamp){
     if (timestamp===undefined) {
@@ -1212,6 +1243,77 @@
     ],
     http: {
       path: '/merge/:segmentList',
+      verb: 'get'
+    }
+  });
+
+// should not split yet segment with pointcloud or with tags
+  Segment.split=function(segmentId, timestamp, req, res, callback){
+    Q(Segment.findById(segmentId,{
+      include: {
+        relation: 'pictures',
+        scope: {
+          fields: {
+            id: true,
+            timestamp: true,
+            geo: true
+          },
+          where: {
+            timestamp: {
+              gte: timestamp
+            }
+          },
+          order: 'timestamp ASC'
+        }
+      }
+    }))
+    .then(function(segment){
+      var pictures=segment.pictures();
+      if (!pictures || !pictures.length) {
+        throw new Error('cannot split segment '+segment.id+' at '+timestamp+' (no matching pictures)');
+      }
+
+      return Q(Segment.create(
+        extend({
+          userId: segment.userId,
+          timestamp: pictures[0].timestamp
+        }, getCenterAndBounds(pictures))
+      ));
+
+    })
+    .then(function(segment){
+      return Q(app.models.Picture.updateAll({
+        segmentId: segmentId,
+        timestamp: {gte: timestamp}
+      }, {
+        segmentId: segment.id
+
+      }))
+    })
+    .then(function(info){
+      console.log(info);
+    })
+    .catch(function(err){
+      console.log(err);
+      res.status(500).end(err.message||err);
+    })
+    .done();
+  }
+
+  Segment.remoteMethod('split',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'timestamp', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: [
+      {arg: 'segment', type: 'object'}
+
+    ],
+    http: {
+      path: '/:id/split/:timestamp',
       verb: 'get'
     }
   });
