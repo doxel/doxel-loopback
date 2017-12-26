@@ -57,6 +57,7 @@
     "sharp": "0.17.3",
     "shelljs": "^0.7.8",
     "socket.io": "latest",
+    "socket.io-redis": "^5.2.0",
     "socketio-auth": "latest",
     "stream-mmmagic": "^2.0.0",
     "strong-error-handler": "^2.2.0"
