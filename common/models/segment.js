@@ -1249,8 +1249,17 @@
 
 // should not split yet segment with pointcloud or with tags
   Segment.split=function(segmentId, timestamp, req, res, callback){
+    var segments=[];
+
     Q(Segment.findById(segmentId,{
-      include: {
+      include: [{
+        relation: 'user',
+        scope: {
+          fields: {
+            token: true
+          }
+        }
+      }, {
         relation: 'pictures',
         scope: {
           fields: {
@@ -1265,9 +1274,11 @@
           },
           order: 'timestamp ASC'
         }
-      }
+      }]
     }))
     .then(function(segment){
+      segments[0]=segment;
+      segment.path=path.join(segment.getPath(uploadRootDir,segments[0].user().token,upload.segmentDigits));
       var pictures=segment.pictures();
       if (!pictures || !pictures.length) {
         throw new Error('cannot split segment '+segment.id+' at '+timestamp+' (no matching pictures)');
@@ -1282,16 +1293,60 @@
 
     })
     .then(function(segment){
+      segments[1]=segment;
+      segment.path=path.join(segment.getPath(uploadRootDir,segments[0].user().token,upload.segmentDigits));
+
+      // create segment directory
+      return Q.nfcall(fs.mkdir,segments[1].path);
+
+    })
+    .then(function(){
+      // create pictures directory
+      return Q.nfcall(fs.mkdir,path.join(segments[1].path,'original_images'));
+
+    })
+    .then(function(){
+      // move pictures
+      var pictureIndex=0;
+      var q=Q.defer();
+      var fromPath=path.join(segments[0].path,'original_images');
+      var toPath=path.join(segments[1].path,'original_images');
+
+      var pictures=segment[0].pictures();
+      (function loop(){
+        if (pictureIndex>=pictures.count) {
+          return q.resolve();
+        }
+        var picture=pictures[pictureIndex++];
+        picture.filename=picture.id+'.jpeg';
+        nfcall(fs.rename,path.join(fromPath,picture.filename),path.join(toPath,picture.filename))
+        .catch(function(err){
+          console.log(err);
+          q.reject(err);
+        })
+        .finally(function(){
+          process.nextTick(loop);
+        })
+        .done();
+
+      })()
+
+      return q.promise;
+
+    })
+    .then(function(){
+      // update pictures segmentId
       return Q(app.models.Picture.updateAll({
         segmentId: segmentId,
         timestamp: {gte: timestamp}
       }, {
-        segmentId: segment.id
+        segmentId: segments[1].id
 
       }))
     })
     .then(function(info){
       console.log(info);
+
     })
     .catch(function(err){
       console.log(err);
