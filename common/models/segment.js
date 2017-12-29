@@ -1143,7 +1143,7 @@
     var target=this;
 
     if (segment.pointCloudId) {
-      return Q.reject(new Error('Cannot merge segment with poincloud yet, TODO: implement Segment hasMany PointClouds'));
+      return Q.reject(new Error('Cannot merge segment '+segment.id+' with poincloud yet, TODO: implement Segment hasMany PointClouds'));
     }
 
     // update ownership (userId) and segmentId of related models
@@ -1172,7 +1172,7 @@
     });
   }
 
-  Segment.merge=function(segmentList,req,res,calback) {
+  Segment.merge=function(segmentList,req,res,callback) {
 
     if (segmentList.length<2){
       res.status(500).end('Segment.merge needs at least two segment Ids');
@@ -1204,9 +1204,12 @@
 
     // merge segments with the last one
     function mergeSegments(segments) {
-      var target=segments.pop();
+      console.log(segments);
+      var target=segments.shift();
+      console.log('target',target.id);
       return segments.reduce(function(promise,segment){
         return promise.then(function(){
+          console.log(segment.id);
           return target.mergeOne(segment);
         })
       }, Q.resolve())
@@ -1251,6 +1254,17 @@
   Segment.split=function(segmentId, timestamp, req, res, callback){
     var segments=[];
 
+    if (
+      !segmentId
+      || !segmentId.match
+      || !segmentId.match(/^[0-9a-z]{24}$/)
+      || !timestamp
+      || !timestamp.match
+      || !timestamp.match(/^[0-9]{24}_[0-9]{6}$/)
+    ) {
+      throw new Error('Invalid parameter');
+    }
+
     Q(Segment.findById(segmentId,{
       include: [{
         relation: 'user',
@@ -1277,17 +1291,26 @@
       }]
     }))
     .then(function(segment){
-      segments[0]=segment;
-      segment.path=path.join(segment.getPath(uploadRootDir,segments[0].user().token,upload.segmentDigits));
+      if (!segment) {
+        throw new Error('cannot split segment '+segment.id+' at '+timestamp+' (no such segment)');
+      }
       var pictures=segment.pictures();
-      if (!pictures || !pictures.length) {
+      if (!pictures || !pictures.length || !timestamp || !pictures.find(function(){return this.timestamp==timestamp})) {
         throw new Error('cannot split segment '+segment.id+' at '+timestamp+' (no matching pictures)');
       }
+      if (timestamp==pictures[0].timestamp) {
+        throw new Error('cannot split segment '+segment.id+' at '+timestamp+' (cannot split at first picture)');
+      }
+
+      segments[0]=segment;
+      segment.path=path.join(segment.getPath(uploadRootDir,segments[0].user().token,upload.segmentDigits));
+
 
       return Q(Segment.create(
         extend({
           userId: segment.userId,
-          timestamp: pictures[0].timestamp
+          timestamp: pictures[0].timestamp,
+          previewId: pictures[0].id
         }, getCenterAndBounds(pictures))
       ));
 
@@ -1312,14 +1335,15 @@
       var fromPath=path.join(segments[0].path,'original_images');
       var toPath=path.join(segments[1].path,'original_images');
 
-      var pictures=segment[0].pictures();
+      var pictures=segments[0].pictures();
       (function loop(){
-        if (pictureIndex>=pictures.count) {
+        if (pictureIndex>=pictures.length) {
           return q.resolve();
         }
         var picture=pictures[pictureIndex++];
-        picture.filename=picture.id+'.jpeg';
-        nfcall(fs.rename,path.join(fromPath,picture.filename),path.join(toPath,picture.filename))
+        console.log(pictures);
+        picture.filename=picture.timestamp+'.jpeg';
+        Q.nfcall(fs.rename,path.join(fromPath,picture.filename),path.join(toPath,picture.filename))
         .catch(function(err){
           console.log(err);
           q.reject(err);
@@ -1346,6 +1370,8 @@
     })
     .then(function(info){
       console.log(info);
+      delete segments[1].path;
+      callback(null,segments[1]);
 
     })
     .catch(function(err){
