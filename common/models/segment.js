@@ -1258,11 +1258,16 @@
       !segmentId
       || !segmentId.match
       || !segmentId.match(/^[0-9a-z]{24}$/)
-      || !timestamp
-      || !timestamp.match
-      || !timestamp.match(/^[0-9]{24}_[0-9]{6}$/)
     ) {
-      throw new Error('Invalid parameter');
+      throw new Error('Segment.split: Invalid segmentId '+segmentId);
+    }
+
+    if (
+      !timestamp
+      || !timestamp.match
+      || !timestamp.match(/^[0-9]{10}_[0-9]{6}$/)
+    ) {
+      throw new Error('Segment.split: Invalid timestamp '+timestamp);
     }
 
     Q(Segment.findById(segmentId,{
