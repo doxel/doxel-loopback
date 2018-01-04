@@ -1300,10 +1300,11 @@
         throw new Error('cannot split segment '+segment.id+' at '+timestamp+' (no such segment)');
       }
       var pictures=segment.pictures();
-      if (!pictures || !pictures.length || !timestamp || !pictures.find(function(){return this.timestamp==timestamp})) {
+      console.log(JSON.stringify(pictures,false,4));
+      if (!pictures || !pictures.length || !timestamp || !pictures.find(function(picture){return picture.timestamp==timestamp})) {
         throw new Error('cannot split segment '+segment.id+' at '+timestamp+' (no matching pictures)');
       }
-      if (timestamp==pictures[0].timestamp) {
+      if (timestamp==segment.timestamp) {
         throw new Error('cannot split segment '+segment.id+' at '+timestamp+' (cannot split at first picture)');
       }
 
