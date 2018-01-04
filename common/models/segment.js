@@ -48,6 +48,7 @@
   var magic = require('stream-mmmagic');
   var childProcess = require('child_process');
   var geolib=require('geolib');
+  var shell=require('shelljs');
 
   function getCenterAndBounds(pictures) {
     var coords=[];
@@ -1326,7 +1327,7 @@
       segment.path=path.join(segment.getPath(uploadRootDir,segments[0].user().token,upload.segmentDigits));
 
       // create segment directory
-      return Q.nfcall(fs.mkdir,segments[1].path);
+      return Q.nfcall(shell.exec('mkdir -p '+segments[1].path));
 
     })
     .then(function(){
