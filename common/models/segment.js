@@ -1327,7 +1327,7 @@
       segment.path=path.join(segment.getPath(uploadRootDir,segments[0].user().token,upload.segmentDigits));
 
       // create segment directory
-      return Q.nfcall(shell.exec('mkdir -p '+segments[1].path));
+      return Q.nfcall(shell.exec,'mkdir -p '+segments[1].path);
 
     })
     .then(function(){
