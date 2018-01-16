@@ -50,6 +50,7 @@
   var geolib=require('geolib');
   var shell=require('shelljs');
   const Transform = require('stream').Transform;
+  const openGraph = app.get('openGraph').join('');
 
   function getCenterAndBounds(pictures) {
     var coords=[];
@@ -245,9 +246,11 @@
         .then(function(segment){
           var ogImageMetaInject = new Transform();
           var picture=segment.preview();
+
           ogImageMetaInject._transform=function(data,encoding,done){
             picture.url='api/Pictures/thumb/'+picture.sha256+'/'+segment.id+'/'+picture.id+'/'+picture.timestamp+'.jpg';
-            const str = data.toString().replace('{{og:image}}', picture.url);
+            const metas=openGraph.replace('{{og:image}}', picture.url);
+            const str=data.toString().replace('</head>',metas+'</head>')
             this.push(str);
             done();
           };
