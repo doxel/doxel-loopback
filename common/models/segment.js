@@ -49,6 +49,7 @@
   var childProcess = require('child_process');
   var geolib=require('geolib');
   var shell=require('shelljs');
+  const Transform = require('stream').Transform;
 
   function getCenterAndBounds(pictures) {
     var coords=[];
@@ -197,6 +198,7 @@
 
 
   Segment.viewer=function(req, res, callback){
+    var segment;
     var q=Q.defer();
     var folder=req.params[0].split('/');
     if (app.get('viewer').folders.indexOf(folder[0])>=0) {
@@ -210,7 +212,8 @@
       } else {
         // serve segment related potree viewer files from upload directory
         // TODO: maybe we should cache results if not done at lower level
-        app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,segment){
+        app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,_segment){
+          segment=_segment;
           if (err || !segment || segment.timestamp!=req.params.timestamp) {
             if (err) console.log(err.message,err.stack);
             return res.status(404).end()
@@ -235,9 +238,39 @@
 //      if (req.params[0].match(/\.php/)) {
 //        php.cgi(url);
 //      } else {
-      res.sendFile(url,{
-        maxAge: 3153600000000 // 10 years
-      });
+
+      if (req.params[0]=='viewer.html') {
+        // inject thumbnail url in meta og:image of viewer index
+        Q(app.models.Segment.findById(req.params.segmentId,{include: 'preview'}))
+        .then(function(segment){
+          var ogImageMetaInject = new Transform();
+          var picture=segment.preview();
+          ogImageMetaInject._transform=function(data,encoding,done){
+            picture.url='api/Pictures/thumb/'+picture.sha256+'/'+segment.id+'/'+picture.id+'/'+picture.timestamp+'.jpg';
+            const str = data.toString().replace('{{og:image}}', picture.url);
+            this.push(str);
+            done();
+          };
+
+          res
+          .set('Content-Type','text/html')
+          .set('Cache-Control','public, max-age=3153600000000');
+
+          fs.createReadStream(url)
+          .pipe(ogImageMetaInject)
+          .pipe(res)
+
+        }).catch(function(err){
+          console.log(err);
+          res.status(500).end();
+
+        }).done();
+
+      } else {
+        res.sendFile(url,{
+          maxAge: 3153600000000 // 10 years
+        });
+      }
     }).done();
 
   }
