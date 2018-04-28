@@ -108,5 +108,14 @@
         ]
       }
     }
-  }
+  },
+  "openGraph_example": [
+    "<meta property=\"fb:app_id\" content=\"457781937746762\" />",
+    "<meta property=\"og:title\" content=\"DOXEL.ORG\" />",
+    "<meta property=\"og:url\" content=\"{{og:url}}\" />",
+    "<meta property=\"og:image\" content=\"{{og:image}}\" />",
+    "<meta property=\"og:image:type\" content=\"image/jpg\" />",
+    "<meta property=\"og:description\" content=\"Upload your own photo footage to have a 3D reconstruction, or view existent 3D in your browser.\" />"
+  ]
+
 }

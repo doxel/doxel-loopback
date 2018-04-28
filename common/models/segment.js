@@ -50,7 +50,12 @@
   var geolib=require('geolib');
   var shell=require('shelljs');
   const Transform = require('stream').Transform;
-  const openGraph = app.get('openGraph').join('');
+  try {
+    const openGraph = app.get('openGraph').join('');
+  } catch(e) {
+    console.log('WARNING: openGraph is not defined, check example in server/config*.json');
+  }
+
 
   function getCenterAndBounds(pictures) {
     var coords=[];
@@ -244,24 +249,34 @@
         // inject thumbnail url in meta og:image of viewer index
         Q(app.models.Segment.findById(req.params.segmentId,{include: 'preview'}))
         .then(function(segment){
-          var ogImageMetaInject = new Transform();
           var picture=segment.preview();
-
-          ogImageMetaInject._transform=function(data,encoding,done){
-            picture.url='api/Pictures/thumb/'+picture.sha256+'/'+segment.id+'/'+picture.id+'/'+picture.timestamp+'.jpg';
-            const metas=openGraph.replace('{{og:image}}', picture.url);
-            const str=data.toString().replace('</head>',metas+'</head>')
-            this.push(str);
-            done();
-          };
 
           res
           .set('Content-Type','text/html')
           .set('Cache-Control','public, max-age=3153600000000');
 
-          fs.createReadStream(url)
+          var stream=fs.createReadStream(url);
+
+          if (!openGraph) {
+            stream.pipe(res);
+            return;
+          }
+
+          var ogImageMetaInject = new Transform();
+          ogImageMetaInject._transform=function(data,encoding,done){
+            picture.url='/api/Pictures/thumb/'+picture.sha256+'/'+segment.id+'/'+picture.id+'/'+picture.timestamp+'.jpg';
+            var metas=openGraph
+              .replace('{{og:url}}',req.url)
+              .replace('{{og:image}}',picture.url);
+
+            const str=data.toString().replace('<head>','<head>'+metas)
+            this.push(str);
+            done();
+          };
+
+          stream
           .pipe(ogImageMetaInject)
-          .pipe(res)
+          .pipe(res);
 
         }).catch(function(err){
           console.log(err);
