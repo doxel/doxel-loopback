@@ -51,8 +51,9 @@
   var shell=require('shelljs');
   const Transform = require('stream').Transform;
   try {
-    const openGraph = app.get('openGraph').join('');
+    var openGraph = app.get('openGraph').join('');
   } catch(e) {
+    var openGraph=null;
     console.log('WARNING: openGraph is not defined, check example in server/config*.json');
   }
 
@@ -1503,7 +1504,8 @@
     }
   });
 
-  Segment.download=function(id, requestedPath, req, res, callback) {
+  Segment.download=function(id, requestedPath, req, res, callback, options) {
+    options=options||{};
     // fetch segment and user
     Q(Segment.findById(id,{include: 'user'}))
     .then(function(segment){
@@ -1524,8 +1526,8 @@
         if (err) return q.reject(err);
         console.log(filename);
 
-        // assert base directory is uploadRootDir
-        if (filename.substr(0,uploadRootDir.length)!=uploadRootDir) {
+        // assert base directory is segment.path
+        if (filename.substr(0,segment.path.length)!=segment.path) {
           return q.reject(new Error('unauthorized'));
         }
 
@@ -1552,12 +1554,22 @@
           var basename=filename.substr(uploadRootDir.length+1);
 
           if (stats.isDirectory()) {
+            var root;
+
+            if (options.shortPath) {
+              root=path.dirname(filename);
+              basename=path.basename(filename);
+
+            } else {
+              root=uploadRootDir;
+            }
+
             // stream a tar archive
-            var child=childProcess.spawn('tar',['-C',uploadRootDir,'-zc',basename]);
+            var child=childProcess.spawn('tar',['-C',root,'-zc',basename]);
             child.on('error',q.reject);
             q.resolve({
               stats: stats,
-              basename: basename+'.tar.gz',
+              basename: basename+(options.shortPath?'-'+id:'')+'.tar.gz',
               stream: child.stdout
             });
 
@@ -1626,6 +1638,23 @@
     ],
     http: {
       path: '/:id/download/:requestedPath',
+      verb: 'get'
+    }
+  });
+
+  Segment.ply=function(id, req, res, callback) {
+    Segment.download(id, 'PMVS/models', req, res, callback, {shortPath: true});
+  }
+
+  Segment.remoteMethod('ply',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    http: {
+      path: '/:id/ply',
       verb: 'get'
     }
   });

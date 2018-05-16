@@ -183,6 +183,13 @@
     {
       "accessType": "*",
       "principalType": "ROLE",
+      "principalId": "$authenticated",
+      "permission": "ALLOW",
+      "property": "ply"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW",
       "property": "merge"
