@@ -989,7 +989,6 @@
 
   } // Segment.prototype.setStatus
 
-
   Segment.prototype._proceed=function(operationIndex,callback) {
     var segment=this;
 
@@ -1041,7 +1040,40 @@
       case 'processed':
         if (segment.pointCloudId) {
           // queued <- processed -> publishable
-          segment.setStatus((forward)?'publishable':'queued',callback);
+          segment.setStatus((forward)?'publishable':'queued',function(err,status,statusTimestamp){
+            if (status=='publishable') {
+              function replace(url,data){
+                for (p in data) {
+                  if (data hasOwnProperty p) {
+                    url=url.replace(':'+p,data[p]);
+                  }
+                }
+                return url;
+              }
+              process.nextTick(function(){
+                app.models.role.notify({
+                  role: ['admin','foreman'],
+                  from: 'noreply@doxel.org',
+                  subject: 'Segment '+segment.id+' is publishable',
+                  html:  (function(){
+                    var html=[];
+                    var user=segment.user();
+                    html.push('<div>Segment '+segment.id+' uploaded by '+user.username+' ('+user.email+') is publishable</div>');
+                    var href=replace('https://doxel.org/api/segments/viewer/:id/:timestamp/viewer.html',segment);
+                    html.push('<div>View pointcloud: <a href="'+href+'">'+href+'</a></div>');
+                    href=replace('https://doxel.org/api/segments/:id/pictures',segment);
+                    html.push('<div>View pictures: <a href="'+href+'">'+href+'</a></div>');
+                    href=replace('https://doxel.org/api/segments/proceed/:id/:status/:status_timestamp/:operation',extend({},segment,{
+                      operation: 'forward'
+                    }));
+                    html.push('<div>Publish: <a href="'+href+'">'+href+'</a></div>');
+                    return html.join('');
+                  })()
+                });
+              });
+            }
+            callback(err,status,statusTimestamp);
+          });
         } else {
           // publishable cannot be set without pointcloud in db
           // queued <- processed -> processed
@@ -1075,7 +1107,7 @@
 
   Segment.proceed=function(segmentId, status, timestamp, operation, req, res, callback) {
 
-    Segment.findById(segmentId, {}, function(err,segment){
+    Segment.findById(segmentId, {include: 'user'}, function(err,segment){
       if (err) {
         return callback(err);
       }
