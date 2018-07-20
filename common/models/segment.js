@@ -1044,7 +1044,7 @@
             if (status=='publishable') {
               function replace(url,data){
                 for (p in data) {
-                  if (data hasOwnProperty p) {
+                  if (data.hasOwnProperty(p)) {
                     url=url.replace(':'+p,data[p]);
                   }
                 }
