@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = function(POI) {
 
   POI.observe('before delete', function(ctx, next) {

@@ -1,7 +1,7 @@
 /*
  * picture.js
  *
- * Copyright (c) 2016 ALSENET SA - http://doxel.org
+ * Copyright (c) 2015-2018 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
  *
  * Author(s):
@@ -32,6 +32,7 @@
  *      You are required to attribute the work as explained in the "Usage and
  *      Attribution" section of <http://doxel.org/license>.
  */
+'use strict';
 
  module.exports = function(Picture) {
   var path=require('path');
