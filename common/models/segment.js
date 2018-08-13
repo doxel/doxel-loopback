@@ -1792,7 +1792,7 @@
               subject: 'Pointcloud published',
               html: html.join('')
             });
-          )
+           })
           .finally(function(){
             return Q(segment.updateAttributes({
               userNotified: true
