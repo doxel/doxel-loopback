@@ -1,7 +1,7 @@
 /*
  * user.js
  *
- * Copyright (c) 2015-2016 ALSENET SA - http://doxel.org
+ * Copyright (c) 2015-2018 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
  *
  * Author(s):
@@ -32,7 +32,7 @@
  *      You are required to attribute the work as explained in the "Usage and
  *      Attribution" section of <http://doxel.org/license>.
  */
-
+'use strict';
 
 module.exports = function(User) {
 
@@ -743,5 +743,24 @@ module.exports = function(User) {
       if (debug) console.log('Users created')
     })
     .catch(console.log);
+  }
+
+  User.prototype.sendMail=function(options){
+    var user=this;
+    return Q.resolve().then(function(){
+      if (user.email.split('@')[1]=='anonymous') {
+        throw new Error('user did not specify an email address');
+      }
+      return Q(app.models.Email.send(extend({},options,{
+        to: user.email
+      })))
+      .then(function(){
+        console.log('sending mail to:', user.email, user.id);
+      })
+      .catch(function(err){
+        console.log('sending mail failed !');
+        return console.log(err);
+      });
+    });
   }
 };

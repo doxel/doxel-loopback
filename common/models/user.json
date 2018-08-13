@@ -3,6 +3,7 @@
   "plural": "users",
   "base": "User",
   "idInjection": true,
+  "restrictResetPasswordTokenScope": true,
   "options": {
     "validateUpsert": true
   },
@@ -149,6 +150,12 @@
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "changePassword"
+    },
+    {
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "reset"
     },
     {
       "principalType": "ROLE",

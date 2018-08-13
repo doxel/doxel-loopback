@@ -39,7 +39,7 @@ var https = require('https');
 var http = require('http');
 var path = require('path');
 var sslConfig = require(path.join(__dirname,'ssl-config.js'));
-var compression = require('compression');
+//var compression = require('compression');
 var helmet = require('helmet');
 
 
@@ -48,6 +48,12 @@ if (process.env.TRACE) console.log=console.trace;
 //var php=require('node-php');
 
 var app = module.exports = loopback();
+
+if (process.env.DEBUG)
+app.use(function(req,res,next){
+  console.log(req.url);
+  next();
+});
 
 app.use(helmet({
   noCache: false
@@ -142,7 +148,7 @@ app.use(function setCurrentUser(req, res, next) {
 
 });
 
-app.use(compression());
+//app.use(compression());
 
 app.enable('trust proxy', '127.0.0.1');
 
@@ -179,7 +185,7 @@ app.start = function(enableSSL) {
 
 
   // start the web server
-  server.listen(app.get('port'),function() {
+  server.listen(app.get('port'),'127.0.0.1',function() {
     var baseUrl = (enableSSL? 'https://' : 'http://') + app.get('host') + ':' + app.get('port');
     app.emit('started', baseUrl);
     console.log('Web server listening at: %s/', baseUrl);

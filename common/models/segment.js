@@ -1,7 +1,7 @@
 /*
  * segment.js
  *
- * Copyright (c) 2016 ALSENET SA - http://doxel.org
+ * Copyright (c) 2015-2018 ALSENET SA - http://doxel.org
  * Please read <http://doxel.org/license> for more information.
  *
  * Author(s):
@@ -32,8 +32,20 @@
  *      You are required to attribute the work as explained in the "Usage and
  *      Attribution" section of <http://doxel.org/license>.
  */
+'use strict';
 
  module.exports = function(Segment) {
+  var validStatus=[
+    'new',
+    'queued',
+    'pending',
+    'processing',
+    'error',
+    'processed',
+    'publishable',
+    'published',
+    'discarded'
+  ];
   var app = require('../../server/server');
   var loopback = require('loopback');
   var path=require('path');
@@ -57,6 +69,17 @@
     console.log('WARNING: openGraph is not defined, check example in server/config*.json');
   }
 
+  function replace(url,data){
+    var _url=[];
+    url.split('/').forEach(function(elem){
+      if (elem.substr(0,1)==':') {
+        _url.push(data[elem.substr(1)]);
+      } else {
+        _url.push(elem);
+      }
+    });
+    return _url.join('/');
+  }
 
   function getCenterAndBounds(pictures) {
     var coords=[];
@@ -495,11 +518,7 @@
 
       extrinsics_loop();
 
-      return q.promise.then(segment.updateAttributes({
-        status: 'publishable',
-        status_timestamp: new Date()
-      }));
-
+      return q.promise.then(Q.nfcall(segment.setStatus,'publishable'));
     })
 
   } // Segment._injectPointcloud
@@ -553,13 +572,14 @@
         .then(function(user){
           var isAdmin=user.roles().find(function(role){return role.name=='admin'});
           if (isAdmin) {
-            return Q(Segment.findById(segmentId))
+            return Q(Segment.findById(segmentId,{include: 'user'}))
             .then(function(segment){
               return Q(segment.updateAttributes({
-                status: 'published'
+                status: 'published',
+                status_timestamp: Date.now()
               }))
               .then(function(segment){
-                console.log(JSON.stringify(segment));
+                Segment.sendMail(segment); // do not return error (promise)
               })
             });
           }
@@ -977,12 +997,15 @@
       callback(null,segment.status,segment.status_timestamp);
 
     } else {
-      segment.status=status;
-      segment.status_timestamp=Date.now();
-      Q(segment.save())
-      .then(function(){
+      var timestamp=new Date.now();
+      Q(segment.updateAttributes({
+        status: status,
+        status_timestamp: timestamp
+      }))
+      .then(function(segment){
+        Segment.sendMail(segment).catch(console.log);
         // return new status
-        callback(null,status,segment.status_timestamp);
+        callback(null,status,timestamp);
       })
       .catch(callback);
     }
@@ -1040,40 +1063,7 @@
       case 'processed':
         if (segment.pointCloudId) {
           // queued <- processed -> publishable
-          segment.setStatus((forward)?'publishable':'queued',function(err,status,statusTimestamp){
-            if (status=='publishable') {
-              function replace(url,data){
-                for (p in data) {
-                  if (data.hasOwnProperty(p)) {
-                    url=url.replace(':'+p,data[p]);
-                  }
-                }
-                return url;
-              }
-              process.nextTick(function(){
-                app.models.role.notify({
-                  role: ['admin','foreman'],
-                  from: 'noreply@doxel.org',
-                  subject: 'Segment '+segment.id+' is publishable',
-                  html:  (function(){
-                    var html=[];
-                    var user=segment.user();
-                    html.push('<div>Segment '+segment.id+' uploaded by '+user.username+' ('+user.email+') is publishable</div>');
-                    var href=replace('https://doxel.org/api/segments/viewer/:id/:timestamp/viewer.html',segment);
-                    html.push('<div>View pointcloud: <a href="'+href+'">'+href+'</a></div>');
-                    href=replace('https://doxel.org/api/segments/:id/pictures',segment);
-                    html.push('<div>View pictures: <a href="'+href+'">'+href+'</a></div>');
-                    href=replace('https://doxel.org/api/segments/proceed/:id/:status/:status_timestamp/:operation',extend({},segment,{
-                      operation: 'forward'
-                    }));
-                    html.push('<div>Publish: <a href="'+href+'">'+href+'</a></div>');
-                    return html.join('');
-                  })()
-                });
-              });
-            }
-            callback(err,status,statusTimestamp);
-          });
+          segment.setStatus((forward)?'publishable':'queued',callback);
         } else {
           // publishable cannot be set without pointcloud in db
           // queued <- processed -> processed
@@ -1161,6 +1151,43 @@
       verb: 'get'
     }
   });
+
+   /*
+  Segment.updateStatus(id,status,status_timestamp,req,res,callback) {
+    Q(Segment.findById(id))
+    .then(function(segment){
+      if (segment.status_timestamp!=status_timestamp){
+        callback(new Error('status timestamp mismatch'));
+      } else {
+        if (validStatus.indexOf(status)<0) {
+          throw new Error('Invalid status: '+ status);
+        }
+        segment.setStatus(status,callback);
+      }
+    })
+    .catch(callback);
+  }
+
+  Segment.remoteMethod('update-status',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'status', type: 'string', required: true},
+      {arg: 'status_timestamp', type: 'number', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    returns: [
+      {arg: 'status', type: 'string'},
+      {arg: 'status_timestamp', type: 'number'}
+
+    ],
+    http: {
+      path: '/set-status/:id/:status/:status_timestamp',
+      verb: 'get'
+    }
+  });
+  */
 
 /*
   // worker
@@ -1690,5 +1717,111 @@
       verb: 'get'
     }
   });
+
+  Segment.sendMail=function(segment,segmentId){
+    var q;
+
+    if (segment){
+      q=Q.resolve(segment);
+
+    } else {
+      q=Q(Segment.findById(segmentId,{include: 'user'}));
+    }
+
+    return q.then(function(segment){
+      if (segment.user) {
+        return segment;
+
+      } else {
+        return Q(Segment.app.models.user.findById(segment.userId))
+        .then(function(user){
+          segment.user=function(){return user};
+          return segment;
+        })
+      }
+    })
+    .then(function(segment){
+      console.log(JSON.stringify(segment));
+      var user=segment.user();
+      var html=[];
+
+      switch(segment.status){
+        case 'publishable':
+          html.push('<div>Segment '+segment.id+' uploaded by '+user.username+' ('+user.email+') is publishable</div>');
+          html.push('<br />');
+          var href=replace('https://doxel.org/api/segments/viewer/:id/:timestamp/viewer.html',segment);
+          html.push('<div>View pointcloud: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          href=replace('https://doxel.org/app/#!/segment/:id/pictures',segment);
+          html.push('<div>View pictures: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          href=replace('https://doxel.org/api/segments/proceed/:id/:status/:status_timestamp/:operation',extend({},segment,{
+            operation: 'forward'
+          }));
+          html.push('<div>Publish: <a href="'+href+'">'+href+'</a></div>');
+
+          return app.models.role.sendMail({
+            role: ['admin','foreman'],
+            from: 'noreply@doxel.org',
+            subject: 'Segment '+segment.id+' is publishable',
+            html: html.join('')
+          });
+          break;
+
+        case 'published':
+          if (!segment.userNotified) {
+            html.push('<div>The pointcloud for the segment '+segment.id+' you uploaded has been published</div>');
+            html.push('<br />');
+            var href=replace('https://doxel.org/app/#!/doxel/viewer/:id',segment);
+            html.push('<div>You can view it here : <a href="'+href+'">'+href+'</a></div>');
+            html.push('<br />');
+            var href=replace('https://doxel.org/api/segments/viewer/:id/:timestamp/viewer.html',segment);
+            html.push('<div>or here (standalone): <a href="'+href+'">'+href+'</a></div>');
+            html.push('<br />');
+            href=replace('https://doxel.org/api/segments/:id/ply',segment);
+            html.push('<div>You can download the PLY(s) here: <a href="'+href+'">'+href+'</a></div>');
+            html.push('<br />');
+//            html.push(emailFooter);
+          }
+
+          return Q(function(){
+            return app.models.Email.send({
+              from: 'noreply@doxel.org',
+  //            to: ((user.email.split('@')[1]!='anonymous')?user.email:undefined),
+              to: 'luc.deschenaux@freesurf.ch',
+              subject: 'Pointcloud published',
+              html: html.join('')
+            });
+          })
+          .finally(function(){
+            return Q(segment.updateAttributes({
+              userNotified: true
+            }));
+          });
+          break;
+
+        case 'error':
+          html.push('<div>The processing of segment '+segment.id+' uploaded by '+user.username+' ('+user.email+') did fail.</div>');
+          html.push('<br />');
+          var href=replace('https://doxel.org/app/#!/segment/:id/joblogs',segment);
+          html.push('<div>You can view the log here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          var href=replace('https://doxel.org/app/#!/segment/:id/pictures',segment);
+          html.push('<div>You can view the pictures here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+
+          return app.models.role.sendMail({
+            role: ['admin','foreman'],
+            from: 'noreply@doxel.org',
+            subject: 'Error while processing segment '+segment.id,
+            html: html.join('')
+          });
+          break;
+
+        default:
+          break;
+      }
+    });
+  }
 
 };
