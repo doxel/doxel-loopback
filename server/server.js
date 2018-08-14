@@ -79,6 +79,15 @@ if (app.get('html5Mode')) {
     '/logout*',
     '/upload*',
     '/processing*',
+    '/home*',
+    '/doxel*',
+    '/gallery*',
+    '/map*',
+    '/viewer*',
+    "/reset-password-form*",
+    "/classifiers*",
+    "/tos*",
+    "/segment*",
   ].forEach(function(route){
     app.get(route,function(req,res,next){
       res.redirect('/app/#!'+req.originalUrl);
