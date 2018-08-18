@@ -997,7 +997,7 @@
       callback(null,segment.status,segment.status_timestamp);
 
     } else {
-      var timestamp=new Date.now();
+      var timestamp=Date.now();
       Q(segment.updateAttributes({
         status: status,
         status_timestamp: timestamp
@@ -1752,7 +1752,7 @@
           var href=replace('https://doxel.org/api/segments/viewer/:id/:timestamp/viewer.html',segment);
           html.push('<div>View pointcloud: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
-          href=replace('https://doxel.org/app/#!/segment/:id/pictures',segment);
+          href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>View pictures: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
           href=replace('https://doxel.org/api/segments/proceed/:id/:status/:status_timestamp/:operation',extend({},segment,{
@@ -1772,7 +1772,7 @@
           if (!segment.userNotified) {
             html.push('<div>The pointcloud for the segment '+segment.id+' you uploaded has been published</div>');
             html.push('<br />');
-            var href=replace('https://doxel.org/app/#!/doxel/viewer/:id',segment);
+            var href=replace('https://doxel.org/doxel/viewer/:id',segment);
             html.push('<div>You can view it here : <a href="'+href+'">'+href+'</a></div>');
             html.push('<br />');
             var href=replace('https://doxel.org/api/segments/viewer/:id/:timestamp/viewer.html',segment);
@@ -1803,10 +1803,10 @@
         case 'error':
           html.push('<div>The processing of segment '+segment.id+' uploaded by '+user.username+' ('+user.email+') did fail.</div>');
           html.push('<br />');
-          var href=replace('https://doxel.org/app/#!/segment/:id/joblogs',segment);
+          var href=replace('https://doxel.org/segment/:id/joblogs',segment);
           html.push('<div>You can view the log here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
-          var href=replace('https://doxel.org/app/#!/segment/:id/pictures',segment);
+          var href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>You can view the pictures here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
 
