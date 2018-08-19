@@ -993,6 +993,8 @@
 
   Segment.prototype.setStatus=function(status,callback) {
     var segment=this;
+    if (!callback) callback=console.log;
+
     if (status==segment.status) {
       callback(null,segment.status,segment.status_timestamp);
 
@@ -1720,6 +1722,7 @@
 
   Segment.sendMail=function(segment,segmentId){
     var q;
+    var user;
 
     if (segment){
       q=Q.resolve(segment);
@@ -1729,20 +1732,20 @@
     }
 
     return q.then(function(segment){
-      if (segment.user) {
+      if (segment.user()) {
+        user=segment.user();
         return segment;
 
       } else {
         return Q(Segment.app.models.user.findById(segment.userId))
-        .then(function(user){
-          segment.user=function(){return user};
+        .then(function(_user){
+          user=_user;
           return segment;
         })
       }
     })
     .then(function(segment){
       console.log(JSON.stringify(segment));
-      var user=segment.user();
       var html=[];
 
       switch(segment.status){
