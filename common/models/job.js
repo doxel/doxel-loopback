@@ -268,24 +268,9 @@ module.exports = function(Job) {
           return job;
         case 'processing':
           if (segment.pointCloudId) {
-            // when the job is completed and the pointCloud inserted, set segment status to 'processed'
-            return Q.nfcall(Job.app.models.Segment.proceed,segment.id,segment.status,segment.status_timestamp,'forward',null,null)
-            .then(function(status,status_timestamp){
-              if (status=='processed') {
-                // since there is no user decision policy, set the segment status to 'publishable'
-                return Q.nfcall(Job.app.models.Segment.proceed,segment.id,status,status_timestamp,'forward',null,null)
-                .then(function(){
-                  return job;
-                });
-              } else {
-                return job;
-              }
-            });
-          } else {
-            // When the job is set to 'completed' before pointcloud is inserted,
-            // then some error has been reported.
-            // Set segment status to 'error'
-            return Q.nfcall(Job.app.models.Segment.proceed,segment.id,segment.status,segment.status_timestamp,'error',null,null)
+            // when the job is completed and the pointCloud inserted, and
+            // since there is no user decision policy, set the segment status to 'publishable' (should be 'processed' otherwise)
+            return Q.nfcall(segment.setStatus,'publishable')
             .then(function(){
               return job;
             });
