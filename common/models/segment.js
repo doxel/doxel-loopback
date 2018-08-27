@@ -996,18 +996,18 @@
     if (!callback) callback=console.log;
 
     if (status==segment.status) {
-      callback(null,segment.status,segment.status_timestamp);
+      return callback(null,segment.status,segment.status_timestamp);
 
     } else {
       var timestamp=Date.now();
-      Q(segment.updateAttributes({
+      return Q(segment.updateAttributes({
         status: status,
         status_timestamp: timestamp
       }))
       .then(function(segment){
         Segment.sendMail(segment).catch(console.log);
         // return new status
-        callback(null,status,timestamp);
+        return callback(null,status,timestamp);
       })
       .catch(callback);
     }

@@ -270,11 +270,17 @@ module.exports = function(Job) {
           if (segment.pointCloudId) {
             // when the job is completed and the pointCloud inserted, and
             // since there is no user decision policy, set the segment status to 'publishable' (should be 'processed' otherwise)
-            return Q.nfcall(segment.setStatus,'publishable')
+            return segment.setStatus('publishable')
+            .then(function(){
+              return job;
+            });
+          } else {
+            return segment.setStatus('error')
             .then(function(){
               return job;
             });
           }
+          break;
         default:
           return Q.reject(new Error('segment '+segment.id+' status is '+segment.status));
       }
