@@ -194,7 +194,7 @@ app.start = function(enableSSL) {
 
 
   // start the web server
-  server.listen(app.get('port'),'127.0.0.1',function() {
+  server.listen(app.get('port'),app.get('interface'),function() {
     var baseUrl = (enableSSL? 'https://' : 'http://') + app.get('host') + ':' + app.get('port');
     app.emit('started', baseUrl);
     console.log('Web server listening at: %s/', baseUrl);
