@@ -642,15 +642,14 @@ module.exports = function(User) {
     }
   );
 
-  User.upsertList=function(list) {
-    var debug=false;
+  User.upsertList=function(list,debug) {
     var app = this.app;
     var Role = app.models.role;
     var User = app.models.user;
     var RoleMapping = app.models.roleMapping;
     var created_role={};
 
-    list.reduce(function(promise,item){
+    return list.reduce(function(promise,item){
       var user_roles=item.roles;
       var forceUpdate=item.forceUpdate;
       var _user=item.user;
@@ -666,7 +665,7 @@ module.exports = function(User) {
       .then(function(count){
         if (count&&!forceUpdate) {
           // skip as requested
-          if (debug) console.log('skipped')
+          if (debug) console.log('forceUpdate is not set, skipping user: '+_user.username)
           return;
         }
 
@@ -691,6 +690,7 @@ module.exports = function(User) {
         },Q.resolve())
         .then(function() {
           // add or update user
+          if (debug) console.log('add or update user: '+_user.username)
           return Q(User.upsertWithWhere({
             username: _user.username
           }, extend({
@@ -739,9 +739,6 @@ module.exports = function(User) {
       .catch(console.log);
 
     },Q.resolve())
-    .then(function(){
-      if (debug) console.log('Users created')
-    })
     .catch(console.log);
   }
 
