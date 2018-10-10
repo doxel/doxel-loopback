@@ -338,6 +338,13 @@
       "principalId": "$everyone",
       "permission": "ALLOW",
       "property": "count"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$everyone",
+      "permission": "ALLOW",
+      "property": "__get__tags"
     }
   ],
   "methods": {}
