@@ -28,6 +28,7 @@
     "helmet": "^3.8.1",
     "hoek": "^4.2.1",
     "jshint": "^2.9.5",
+    "json-stable-stringify": "^1.0.1",
     "klaw": "^2.1.1",
     "loopback": "^3.9.0",
     "loopback-boot": "^2.25.0",
