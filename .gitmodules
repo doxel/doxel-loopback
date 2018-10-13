@@ -10,3 +10,6 @@
 [submodule "jpeg_metadata_size"]
 	path = jpeg_metadata_size
 	url = https://github.com/bugdanov/jpeg_metadata_size
+[submodule "loopback-connector-mongodb"]
+	path = loopback-connector-mongodb
+	url = https://github.com/luxigo/loopback-connector-mongodb
