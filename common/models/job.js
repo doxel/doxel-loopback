@@ -90,7 +90,7 @@ module.exports = function(Job) {
             segment.status_timestamp=Date.now();
             return Q(segment.updateAttributes({
               status: segment.status,
-              status_timestamp: segment.status_timestamp;
+              status_timestamp: segment.status_timestamp
             }));
           })
         }
