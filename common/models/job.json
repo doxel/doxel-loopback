@@ -27,6 +27,9 @@
     },
     "completion_status": {
       "type": "string"
+    },
+    "config": {
+      "type": "object"
     }
   },
   "validations": [],
