@@ -59,10 +59,10 @@ module.exports = function(Job) {
     function assignTheJob(segment){
       // create and assign the job
       return Q(Job.create({
-        type: 'full',
         assigned: Date.now(),
         userId: req.accessToken.userId,
-        segmentId: segment.id
+        segmentId: segment.id,
+        config: (segment.params && segment.params.jobConfig) || app.get('jobConfig')
       }));
     }
 
@@ -73,6 +73,7 @@ module.exports = function(Job) {
       if (segmentId) {
         // requested a specific segment to process
         if (job) {
+          // TODO: reserve the job for this worker ?
           throw new Error('this worker has already a job');
 
         } else {
@@ -85,13 +86,12 @@ module.exports = function(Job) {
             if (segment.status=='pending' || segment.status=='processing') {
               throw new Error('segment status is '+segment.status);
             }
+            segment.status='pending'; // ensure updateAttributes return the updated segment
+            segment.status_timestamp=Date.now();
             return Q(segment.updateAttributes({
-              status: 'pending',
-              status_timestamp: Date.now()
-            }))
-            .then(function(){
-              return null;
-            })
+              status: segment.status,
+              status_timestamp: segment.status_timestamp;
+            }));
           })
         }
 
