@@ -64,6 +64,10 @@
           "type": "object"
         }
       ]
+    },
+    "params": {
+      "type": "object",
+      "required": "false"
     }
   },
   "hidden": [
