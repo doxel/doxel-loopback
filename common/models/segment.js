@@ -1565,10 +1565,9 @@
     }
   });
 
-  Segment.download=function(id, requestedPath, req, res, callback, options) {
-    options=options||{};
+  Segment.getFilePath=function(id, requestedPath) {
     // fetch segment and user
-    Q(Segment.findById(id,{include: 'user'}))
+    return Q(Segment.findById(id,{include: 'user'}))
     .then(function(segment){
       // get segment path
       segment.path=path.join(segment.getPath(uploadRootDir,segment.user().token,upload.segmentDigits));
@@ -1583,110 +1582,113 @@
       var q=Q.defer();
 
       // requested path
-      fs.realpath(path.join(segment.path,requestedPath),function(err,filename){
+      fs.realpath(path.join(segment.path,requestedPath),function(err,pathname){
         if (err) return q.reject(err);
-        console.log(filename);
+        console.log(pathname);
 
         // assert base directory is segment.path
-        if (filename.substr(0,segment.path.length)!=segment.path) {
+        if (pathname.substr(0,segment.path.length)!=segment.path) {
           return q.reject(new Error('unauthorized'));
+        } else {
+          return q.resolve(pathname);
         }
-
-        // stream file or folder.tar.gz
-        createReadStream(filename)
-        .then(streamIt)
-        .then(q.resolve)
-        .catch(q.reject)
-      });
+      })
 
       return q.promise;
+    });
 
-      //
-      function createReadStream(filename) {
-        var q=Q.defer();
+  } // getFilePath
 
-        // what are we going to serve ?
-        fs.stat(filename,function(err,stats){
-          if (err) {
-            q.reject(err);
-            return
-          }
+  Segment.download=function(id, requestedPath, req, res, callback, options) {
+    options=options||{};
 
-          var basename=filename.substr(uploadRootDir.length+1);
-
-          if (stats.isDirectory()) {
-            var root;
-
-            if (options.shortPath) {
-              root=path.dirname(filename);
-              basename=path.basename(filename);
-
-            } else {
-              root=uploadRootDir;
-            }
-
-            // stream a tar archive
-            var child=childProcess.spawn('tar',['-C',root,'-zc',basename]);
-            child.on('error',q.reject);
-            q.resolve({
-              stats: stats,
-              basename: basename+(options.shortPath?'-'+id:'')+'.tar.gz',
-              stream: child.stdout
-            });
-
-          } else {
-            // stream a file
-            q.resolve({
-              stats: stats,
-              basename: basename,
-              stream: fs.createReadStream(filename),
-            });
-          }
-
-        });
-
-        return q.promise;
-
-      } // createReadStream
-
-      function streamIt(options) {
-        var q=Q.defer();
-
-        // get mime time from file content
-        magic(options.stream, function(err,mime,output){
-          if (err) {
-            q.reject(err);
-            return;
-          }
-
-          // set http headers
-          res
-          .set('Content-Type',mime.type)
-          .set('Content-Disposition','attachment;filename='+options.basename)
-          .set('Content-Transfer-Encoding','binary')
-          .set('Cache-Control','public, max-age=0');
-
-          if (!options.stats.isDirectory()) {
-            res.set('Content-Size', options.stats.size);
-          }
-
-          // stream body
-          output
-          .on('end',q.resolve)
-          .on('error',q.reject)
-          .pipe(res);
-
-        });
-
-        return q.promise;
-
-      } // streamIt
-
-    })
+    return Segment.getFilePath(id,requestedPath)
+    .then(createReadStream)
+    .then(streamIt)
     .catch(function(err){
       console.log(err);
       res.status(500).end(err.message);
     });
+
+    function createReadStream(pathname) {
+      var q=Q.defer();
+
+      // what are we going to serve ?
+      fs.stat(pathname,function(err,stats){
+        if (err) {
+          q.reject(err);
+          return
+        }
+
+        var basename=pathname.substr(uploadRootDir.length+1);
+
+        if (stats.isDirectory()) {
+          var root;
+
+          if (options.shortPath) {
+            root=path.dirname(pathname);
+            basename=path.basename(pathname);
+
+          } else {
+            root=uploadRootDir;
+          }
+
+          // stream a tar archive
+          var child=childProcess.spawn('tar',['-C',root,'-zc',basename]);
+          child.on('error',q.reject);
+          q.resolve({
+            stats: stats,
+            basename: basename+(options.shortPath?'-'+id:'')+'.tar.gz',
+            stream: child.stdout
+          });
+
+        } else {
+          // stream a file
+          q.resolve({
+            stats: stats,
+            basename: basename,
+            stream: fs.createReadStream(pathname),
+          });
+        }
+
+      });
+
+      return q.promise;
+
+    } // createReadStream
+
+    function streamIt(options) {
+      var q=Q.defer();
+
+      // get mime time from file content
+      magic(options.stream, function(err,mime,output){
+        if (err) {
+          q.reject(err);
+          return;
+        }
+
+        // set http headers
+        res
+        .set('Content-Type',mime.type)
+        .set('Content-Disposition','attachment;filename='+options.basename)
+        .set('Content-Transfer-Encoding','binary')
+        .set('Cache-Control','public, max-age=0');
+
+        if (!options.stats.isDirectory()) {
+          res.set('Content-Size', options.stats.size);
+        }
+
+        // stream body
+        output
+        .on('end',q.resolve)
+        .on('error',q.reject)
+        .pipe(res);
+
+      });
+
+      return q.promise;
+
+    } // streamIt
   }
 
   Segment.remoteMethod('download',{
@@ -1704,7 +1706,15 @@
   });
 
   Segment.ply=function(id, req, res, callback) {
-    Segment.download(id, 'PMVS/models', req, res, callback, {shortPath: true});
+    var ply;
+    Segment.getFilePath(id,'viewer/doxel.json')
+    .then(function(pathname){
+      var data=require(pathname);
+      ply=data.ply;
+    })
+    .finally(function(){
+      Segment.download(id, ply||'PMVS/models', req, res, callback, {shortPath: true});
+    })
   }
 
   Segment.remoteMethod('ply',{
