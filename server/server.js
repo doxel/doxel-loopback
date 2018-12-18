@@ -204,6 +204,7 @@ app.start = function(enableSSL) {
     }
   });
 
+  server.setTimeout(app.get('serverTimeout'));
   return server;
 
 };
