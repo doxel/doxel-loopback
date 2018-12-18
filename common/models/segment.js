@@ -1709,6 +1709,7 @@
     var ply;
     Segment.getFilePath(id,'viewer/doxel.json')
     .then(function(pathname){
+      try { delete require.cache[require.resolve(pathname)] } catch(e) {} 
       var data=require(pathname);
       ply=data.ply;
     })
