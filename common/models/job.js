@@ -190,7 +190,7 @@ module.exports = function(Job) {
       if (data.completed) {
         return Q.nfcall(Job.complete,jobId,data.msg,req,res,callback);
       } else if (data.error) {
-        return Q.nfcall(Job.complete,jobId,data.msg||'error',req,res,callback);
+        return Q.nfcall(Job.complete,jobId,'error',req,res,callback);
       } else {
         return Q.resolve(job);
       }
