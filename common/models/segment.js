@@ -1769,6 +1769,9 @@
           href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>View pictures: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
+          href=replace('https://doxel.org/segment/:id/files',segment);
+          html.push('<div>Browse and download files: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
           href=replace('https://doxel.org/api/segments/proceed/:id/:status/:status_timestamp/:operation',extend({},segment,{
             operation: 'forward'
           }));
@@ -1819,6 +1822,9 @@
           html.push('<br />');
           var href=replace('https://doxel.org/segment/:id/joblogs',segment);
           html.push('<div>You can view the log here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          var href=replace('https://doxel.org/api/segments/:id/download/LOG',segment);
+          html.push('<div>You can download the full log here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
           var href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>You can view the pictures here: <a href="'+href+'">'+href+'</a></div>');
