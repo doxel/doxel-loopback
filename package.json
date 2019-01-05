@@ -14,7 +14,7 @@
     "connect-redis": "^3.3.0",
     "cookie-parser": "^1.4.3",
     "cors": "^2.8.4",
-    "event-stream": "^3.3.4",
+    "event-stream": "^4.0.1",
     "exiv2": "file:exiv2node",
     "express-flash": "latest",
     "express-plupload": "file:express-plupload",
