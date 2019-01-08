@@ -57,12 +57,13 @@ module.exports = function(Job) {
     }
 
     function assignTheJob(segment){
+      var jobConfig=require('../../server/job-config.json');
       // create and assign the job
       return Q(Job.create({
         assigned: Date.now(),
         userId: req.accessToken.userId,
         segmentId: segment.id,
-        config: (segment.params && segment.params.jobConfig) || app.get('jobConfig')
+        config: (segment.params && segment.params.jobConfig) || jobConfig.defaults
       }));
     }
 
