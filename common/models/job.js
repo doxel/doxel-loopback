@@ -63,7 +63,7 @@ module.exports = function(Job) {
         assigned: Date.now(),
         userId: req.accessToken.userId,
         segmentId: segment.id,
-        config: (segment.params && segment.params.jobConfig) || jobConfig.defaults
+        config: (segment.params && segment.params.jobConfig && extend(true,{},jobConfig.defaults,segment.params.jobConfig) || jobConfig.defaults
       }));
     }
 
