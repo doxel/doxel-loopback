@@ -1177,7 +1177,7 @@
 
     ],
     http: {
-      path: '/updateStatus/:id/:status',
+      path: '/:id/updateStatus/:status',
       verb: 'get'
     }
   });
