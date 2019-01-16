@@ -1154,7 +1154,7 @@
     }
   });
 
-  Segment.updateStatus(segmentId,status,callback) {
+  Segment.updateStatus=function(segmentId,status,callback) {
     Q(Segment.findById(segmentId))
     .then(function(segment){
         if (validStatus.indexOf(status)<0) {
