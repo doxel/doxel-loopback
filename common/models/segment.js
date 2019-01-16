@@ -1154,29 +1154,21 @@
     }
   });
 
-   /*
-  Segment.updateStatus(id,status,status_timestamp,req,res,callback) {
-    Q(Segment.findById(id))
+  Segment.updateStatus(segmentId,status,callback) {
+    Q(Segment.findById(segmentId))
     .then(function(segment){
-      if (segment.status_timestamp!=status_timestamp){
-        callback(new Error('status timestamp mismatch'));
-      } else {
         if (validStatus.indexOf(status)<0) {
           throw new Error('Invalid status: '+ status);
         }
         segment.setStatus(status,callback);
-      }
     })
     .catch(callback);
   }
 
-  Segment.remoteMethod('update-status',{
+  Segment.remoteMethod('updateStatus',{
     accepts: [
       {arg: 'id', type: 'string', required: true},
-      {arg: 'status', type: 'string', required: true},
-      {arg: 'status_timestamp', type: 'number', required: true},
-      {arg: 'req', type: 'object', 'http': {source: 'req'}},
-      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+      {arg: 'status', type: 'string', required: true}
 
     ],
     returns: [
@@ -1185,11 +1177,10 @@
 
     ],
     http: {
-      path: '/set-status/:id/:status/:status_timestamp',
+      path: '/updateStatus/:id/:status',
       verb: 'get'
     }
   });
-  */
 
 /*
   // worker
