@@ -1,0 +1,507 @@
+{
+  "defaults": {
+    "densification_method": "smvs",
+    "sfm_imagelisting": {
+      "focal": null,
+      "intrinsics": null,
+      "camera_model": null,
+      "group_camera_model": null,
+      "use_pose_prior": null,
+      "prior_weights": null,
+      "gps_to_xyz_method": null
+    },
+    "computefeatures": {
+      "describer_method": "SIFT",
+      "upright": null,
+      "describer_preset": "HIGH",
+      "threads": null
+    },
+    "computematches": {
+      "ratio": null,
+      "geometric_model": "e",
+      "video_mode_matching": 12,
+      "nearest_matching_method": null,
+      "guided_matching": null,
+      "cache_size": null
+    },
+    "globalsfm": {
+      "rotation_averaging": null,
+      "translation_averaging": null,
+      "refine_intrinsics": null
+    },
+    "compute_structure_from_known_poses": {
+      "bundle_adjustment": null,
+      "residual_threshold": null,
+      "cache_size": null
+    },
+    "openmvg2pmvs": {
+      "resolution": null,
+      "use_vis_data": null,
+      "cpu": null
+    },
+    "cmvs": {
+      "max_image": 80,
+      "cpu": null
+    },
+    "pmvs": {
+      "level": 1,
+      "csize": 2,
+      "threshold": 0.7,
+      "wsize": 7,
+      "min_image_num": 3,
+      "cpu": null
+    },
+    "smvsrecon": {
+      "alpha": null,
+      "scale": null,
+      "output_scale": null,
+      "threads": null,
+      "shading": null,
+      "no_cut": null,
+      "neighbors": null,
+      "min_neighbors": null,
+      "no_sgm": null,
+      "force_sgm": null,
+      "sgm_scale": null,
+      "full_opt": null
+    },
+    "fssrecon":  {
+      "scale_factor": null,
+      "refine_octree": null,
+      "min_scale": null,
+      "max_scale": null,
+      "interpolation": null
+    },
+    "meshclean": {
+      "threshold": null,
+      "percentile": null,
+      "component_size": null,
+      "no_clean": null
+    }
+  },
+
+  "schema": {
+    "type": "object",
+    "properties": {
+      "openMVG": {
+        "type": "object",
+        "properties": {
+          "sfm_imagelisting": {
+            "title": "openMVG_SfMInit_ImageListing",
+            "type": "object",
+            "properties": {
+              "focal": {"type": "number", "x-schema-form": {"placeholder": "focal length in pixels"}},
+              "intrinsics": {
+                "type": "string",
+                "pattern": "^([0-9\\.]+;){8}[0-9\\.]+$",
+                "x-schema-form": {"placeholder": "Kmatrix: \"f;0;ppx;0;f;ppy;0;0;1\""}
+              },
+              "camera_model": {
+                "title": "camera model",
+                "type": "number",
+                "enum": [1, 2, 3, 4, 5],
+                "default": 3,
+                "x-schema-form": {
+                  "type": "select",
+                  "titleMap": [
+                    { "name": "Pinhole", "value": 1},
+                    { "name": "Pinhole radial 1", "value": 2},
+                    { "name": "Pinhole radial 3", "value": 3},
+                    { "name": "Pinhole brown 2", "value": 4},
+                    { "name": "Pinhole with a simple Fish-eye", "value": 5}
+                  ]
+                }
+              },
+              "group_camera_model": {
+                "title": "group camera model",
+                "type": "number",
+                "enum": [0, 1],
+                "default": 1,
+                "x-schema-form": {
+                  "type": "select",
+                  "titleMap": [
+                    { "name": "each view have it's own camera intrinsic parameters", "value": 0},
+                    { "name": "view can share some camera intrinsic parameters", "value": 1}
+                  ]
+                }
+              },
+              "use_pose_prior": {
+                "type": "boolean",
+                "default": false,
+                "title": "Use pose prior if GPS EXIF pose is available"
+              },
+              "prior_weights": {
+                "title": "prior weights",
+                "description": "pose prior dimension weights",
+                "type": "string",
+                "pattern": "^([0-9\\.]+;){3}$",
+                "x-schema-form": {"placeholder": "x;y;z;"}
+              },
+              "gps_to_xyz_method": {
+                "title": "gps to xyz method",
+                "description": "coordinate system",
+                "type": "number",
+                "enum": [0, 1],
+                "default": 0,
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "ECEF", "value": 0},
+                    { "name": "UTM", "value": 1}
+                  ]
+                }
+              }
+            }
+          },
+          "computefeatures": {
+            "type": "object",
+            "title": "openMVG_main_ComputeFeatures",
+            "properties": {
+              "describer_method": {
+                "title": "describer method",
+                "type": "string",
+                "enum": ["SIFT", "SIFT_ANATOMY", "AKAZE_FLOAT", "AKAZE_MLDB"],
+                "default": "SIFT"
+              },
+              "upright": {
+                "type": "number",
+                "enum": [0, 1],
+                "default": 0,
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "No", "value": 0},
+                    { "name": "Yes", "value": 1}
+                  ]
+                }
+              },
+              "describer_preset": {
+                "title": "describer preset",
+                "type": "string",
+                "enum": ["NORMAL", "HIGH", "ULTRA"],
+                "default": "NORMAL"
+              }
+            }
+          },
+          "computematches": {
+            "type": "object",
+            "title": "openMVG_main_ComputeMatches",
+            "properties": {
+              "ratio": {
+                "type": "number",
+                "default": 0.8,
+                "title": "Distance ratio to discard non meaningful matches"
+              },
+              "geometric_model": {
+                "title": "geometric model",
+                "type": "string",
+                "enum": ["e","f","h"],
+                "default": "e",
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "Fundamental matrix", "value": "f"},
+                    { "name": "Essential matrix", "value": "e"},
+                    { "name": "Homography matrix", "value": "h"}
+                  ]
+                }
+              },
+              "video_mode_matching": {
+                "title": "video mode matching",
+                "description": "Image overlap count",
+                "type": "number"
+              },
+              "nearest_matching_method": {
+                "title": "nearest matching method",
+                "type": "string",
+                "eval": ["AUTO", "BRUTEFORCEL2", "ANNL2", "CASCADEHASHINGL2", "FASTCASCADEHASHINGL2", "BRUTEFORCEHAMMING"],
+                "default": "FASTCASCADEHASHINGL2"
+              },
+              "guided_matching": {
+                "type": "number",
+                "eval": [0, 1],
+                "title": "guided matching",
+                "description": "Use the found model to improve the pairwise correspondences.",
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "Yes", "value": 1},
+                    { "name": "No", "value": 0}
+                  ]
+                }
+              },
+              "cache_size": {
+                "title": "cache size",
+                "type": "number"
+              }
+            }
+          },
+          "globalsfm": {
+            "type": "object",
+            "title": "openMVG_main_GloblSfM",
+            "properties": {
+              "rotation_averaging": {
+                "type": "number",
+                "enum": [1,2],
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "L1 minimization", "value": 1},
+                    { "name": "L2 minimization", "value": 2}
+                  ]
+                }
+              },
+              "translation_averaging": {
+                "type": "number",
+                "enum": [1,2],
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "L1 minimization", "value": 1},
+                    { "name": "L2 minimization", "value": 2}
+                  ]
+                }
+              },
+              "refine_intrinsics": {
+                "type": "string",
+                "enum": ["ADJUST_ALL", "NONE", "ADJUST_FOCAL_LENGTH", "ADJUST_PRINCIPAL_POINT", "ADJUST_DISTORTION"],
+                "title": "refine intrinsics",
+                "description": "Intrinsic parameters refinement option",
+                "x-schema-form": {
+                  "type": "checkboxes"
+                }
+              },
+              "prior_usage": {
+                "type": "number",
+                "eval": [0, 1],
+                "default": 0,
+                "title": "prior usage",
+                "description": "Enable usage of motion priors (ie: GPS positions).",
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "Yes", "value": 1},
+                    { "name": "No", "value": 0}
+                  ]
+                }
+              }
+            }
+          },
+          "compute_structure_from_known_poses": {
+            "type": "object",
+            "title": "openMVG_main_ComputeStructureFromKnownPoses",
+            "properties": {
+              "bundle_adjustment": {
+                "title": "perform a bundle adjustment on the scene",
+                "type": "boolean",
+                "default": false
+              },
+              "residual_threshold": {
+                "type": "number",
+                "title": "residual threshold",
+                "description": "maximal pixels reprojection error that will be considered for triangulations",
+                "default": 4.0
+              },
+              "cache_size": {
+                "type": "number",
+                "title": "cache size",
+                "description": "if specified, only cache_size regions will be stored in memory"
+              }
+            }
+          },
+          "openmvg2pmvs": {
+            "type": "object",
+            "title": "openMVG_main_openMVG2PMVS",
+            "properties": {
+              "resolution": {
+                "type": "number",
+                "description": "divide image coefficient"
+              },
+              "use_vis_data": {
+                "type": "number",
+                "eval": [0,1],
+                "default": 0,
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "Yes", "value": 1},
+                    { "name": "No", "value": 0}
+                  ]
+                }
+              },
+              "cpu": {
+                "type": "number",
+                "description": "max threads"
+              }
+            }
+          }
+        }
+      },
+      "cmvspmvs": {
+        "type": "object",
+        "title": "CMVSPMVS",
+        "properties": {
+
+          "cmvs": {
+            "type": "object",
+            "title": "CMVS",
+            "properties": {
+              "max_image": {
+                "type": "number",
+                "default": 80,
+                "title": "max images"
+              },
+              "cpu": {
+                "type": "number",
+                "title": "max threads"
+              }
+            }
+          },
+          "pmvs": {
+            "type": "object",
+            "title": "PMVS",
+            "properties": {
+              "level": {
+                "type": "number",
+                "default": 1
+              },
+              "csize": {
+                "type": "number",
+                "default": 2
+              },
+              "threshold": {
+                "type": "number",
+                "default": 0.7
+              },
+              "wsize": {
+                "type": "number",
+                "default": 7
+              },
+              "min_image_num": {
+                "type": "number",
+                "default": 3
+              },
+              "cpu": {
+                "type": "number",
+                "default": 0
+              }
+            }
+          }
+        }
+      },
+      "smvs": {
+        "type": "object",
+        "title": "SMVS",
+        "properties": {
+          "smvsrecon": {
+            "type": "object",
+            "properties": {
+              "alpha": {
+                "type": "number",
+                "description": "Regularization parameter, a higher alpha leads to smoother surfaces [1]"
+              },
+              "scale": {
+                "type": "number",
+                "description": "Scale of input images [estimated to reduce images to a maximum of ~1.5MP]"
+              },
+              "output_scale": {
+                "type": "number",
+                "title": "output scale",
+                "description": "Scale of output depth [2]"
+              },
+              "threads": {
+                "type": "number",
+                "description": "Number of threads [Num CPU cores]. Peak memory requirement is ~1GB per thread and 2 megapixel image resolution"
+              },
+              "shading": {
+                "type": "boolean",
+                "title": "Use shading-based optimization. [off]"
+              },
+              "no_cut": {
+                "type": "boolean",
+                "title": "Turn off surface cutting and export fill pointcloud from all depth values. [on]"
+              },
+              "neighbors": {
+                "type": "integer",
+                "description": "Number of neighbors for recon [6]"
+              },
+              "min_neighbors": {
+                "type": "integer",
+                "title": "min neighbors",
+                "description": "Minimal number of neighbors for reconstruction. [3]"
+              },
+              "no_sgm": {
+                "type": "boolean",
+                "title": "Turn off semi-global matching."
+              },
+              "force_sgm": {
+                "type": "boolean",
+                "title": "Force reconstruction of SGM embeddings"
+              },
+              "sgm_scale": {
+                "type": "number",
+                "title": "Scale of reconstruction of SGM embeddings relative to input scale. [1]"
+              },
+              "full_opt": {
+                "type": "boolean",
+                "title": "Run full optimization on all nodes (otherwise it only runs on non converged nodes) [off]"
+              }
+            }
+          },
+          "fssrecon":  {
+            "type": "object",
+            "properties": {
+              "scale_factor": {
+                "type": "number",
+                "title": "scale factor",
+                "description": "Multiply sample scale with factor [1.0]"
+              },
+              "refine_octree": {
+                "type": "integer",
+                "title": "refine octree",
+                "description": "Refines octree with N levels [0]"
+              },
+              "min_scale": {
+                "type": "number",
+                "title": "min scale",
+                "description": "smaller samples are clamped"
+              },
+              "max_scale": {
+                "type": "number",
+                "title": "max scale",
+                "description": "larger samples are ignored"
+              },
+              "interpolation": {
+                "type": "string",
+                "enum": ["linear", "scaling", "lsderiv", "cubic"],
+                "default": "cubic"
+              }
+            }
+          },
+          "meshclean": {
+            "type": "object",
+            "properties": {
+              "threshold": {
+                "type": "number",
+                "description": "Threshold on the geometry confidence [1.0]"
+              },
+              "percentile": {
+                "type": "number",
+                "description": "Use the nth percentile (0 - 100) as confidence threshold [disabled]"
+              },
+              "component_size": {
+                "type": "number",
+                "title": "component size",
+                "description": "Minimum number of vertices per component [1000]"
+              },
+              "no_clean": {
+                "type": "boolean",
+                "title": "Prevents cleanup of degenerated faces"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
