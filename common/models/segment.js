@@ -1767,6 +1767,13 @@
       }
     })
     .then(function(segment){
+      return segment.jobs.findOne({order: 'completed DESC'}).then(function(job){
+        segment.job=job;
+        segment.jobId=job.id;
+        return segment;
+      })
+    })
+    .then(function(segment){
       console.log(JSON.stringify(segment));
       var html=[];
 
@@ -1777,8 +1784,17 @@
           var href=replace('https://doxel.org/api/segments/viewer/:id/:timestamp/viewer.html',segment);
           html.push('<div>View pointcloud: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
+          href=replace('https://doxel.org/api/segments/:id/ply',segment);
+          html.push('<div>You can download the PLY(s) here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
           href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>View pictures: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          var href=replace('https://doxel.org/api/segments/:id/download/job/:jobId/LOG.txt',segment);
+          html.push('<div>You can download the job log here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          href=replace('https://doxel.org/segment/:id/download/job/:jobId/script.sh',segment);
+          html.push('<div>You can download the job script here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
           href=replace('https://doxel.org/segment/:id/files',segment);
           html.push('<div>Browse and download files: <a href="'+href+'">'+href+'</a></div>');
@@ -1832,10 +1848,13 @@
           html.push('<div>The processing of segment '+segment.id+' uploaded by '+user.username+' ('+user.email+') did fail.</div>');
           html.push('<br />');
           var href=replace('https://doxel.org/segment/:id/joblogs',segment);
-          html.push('<div>You can view the log here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<div>You can view the log history here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
-          var href=replace('https://doxel.org/api/segments/:id/download/LOG',segment);
-          html.push('<div>You can download the full log here: <a href="'+href+'">'+href+'</a></div>');
+          var href=replace('https://doxel.org/api/segments/:id/download/job/:jobId/LOG.txt',segment);
+          html.push('<div>You can download the job log here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          href=replace('https://doxel.org/segment/:id/download/job/:jobId/script.sh',segment);
+          html.push('<div>You can download the job script here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
           var href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>You can view the pictures here: <a href="'+href+'">'+href+'</a></div>');
