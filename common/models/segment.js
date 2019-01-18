@@ -78,7 +78,16 @@
         _url.push(elem);
       }
     });
-    return _url.join('/');
+    url=_url.join('/');
+    _url=[];
+    url.split('%2F').forEach(function(elem){
+      if (elem.substr(0,1)==':') {
+        _url.push(data[elem.substr(1)]);
+      } else {
+        _url.push(elem);
+      }
+    });
+    return _url.join('%2F');
   }
 
   function getCenterAndBounds(pictures) {
@@ -1163,7 +1172,8 @@
         var html=[
           '<html>',
           '<body>',
-          '<a href="'+req.protocol + '://' + req.get('host') + req.originalUrl.replace(status,segment.status_timestamp+'/'+status)+'">Set segment '+segmentId+' status to '+status+'</a>',
+          '<div>Segment '+segmentId+' status is '+segment.status+' since '+new Date(segment.status_timestamp)+'</div>',
+          '<div><a href="'+req.protocol + '://' + req.get('host') + req.originalUrl.replace(status,segment.status_timestamp+'/'+status)+'">Set segment '+segmentId+' status to '+status+'</a></div>',
           '</body>',
           '</html>'
         ].join('');
@@ -1627,6 +1637,8 @@
   Segment.download=function(id, requestedPath, req, res, callback, options) {
     options=options||{};
 
+    var method=req.route.path.split('/')[2];
+
     return Segment.getFilePath(id,requestedPath)
     .then(createReadStream)
     .then(streamIt)
@@ -1693,10 +1705,11 @@
         }
 
         // set http headers
-        res
-        .set('Content-Type',mime.type)
-        .set('Content-Disposition','attachment;filename='+options.basename)
-        .set('Content-Transfer-Encoding','binary')
+        res.set('Content-Type',mime.type);
+        if (method=='download' || options.stats.isDirectory()) {
+         res.set('Content-Disposition','attachment;filename='+options.basename);
+        }
+        res.set('Content-Transfer-Encoding','binary')
         .set('Cache-Control','public, max-age=0');
 
         if (!options.stats.isDirectory()) {
@@ -1724,10 +1737,13 @@
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
     ],
-    http: {
+    http: [{
       path: '/:id/download/:requestedPath',
       verb: 'get'
-    }
+    },{
+      path: '/:id/open/:requestedPath',
+      verb: 'get'
+    }]
   });
 
   Segment.ply=function(id, req, res, callback) {
@@ -1804,10 +1820,10 @@
           href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>View pictures: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
-          var href=replace('https://doxel.org/api/segments/:id/download/job/:jobId/LOG.txt',segment);
+          var href=replace('https://doxel.org/api/segments/:id/open/job%2F:jobId%2FLOG.txt',segment);
           html.push('<div>You can download the job log here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
-          href=replace('https://doxel.org/segment/:id/download/job/:jobId/script.sh',segment);
+          href=replace('https://doxel.org/api/segments/:id/open/job%2F:jobId%2Fscript.sh',segment);
           html.push('<div>You can download the job script here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
           href=replace('https://doxel.org/segment/:id/files',segment);
@@ -1864,10 +1880,10 @@
           var href=replace('https://doxel.org/segment/:id/joblogs',segment);
           html.push('<div>You can view the log history here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
-          var href=replace('https://doxel.org/api/segments/:id/download/job/:jobId/LOG.txt',segment);
+          var href=replace('https://doxel.org/api/segments/:id/open/job%2F:jobId%2FLOG.txt',segment);
           html.push('<div>You can download the job log here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
-          href=replace('https://doxel.org/segment/:id/download/job/:jobId/script.sh',segment);
+          href=replace('https://doxel.org/api/segments/:id/open/job%2F:jobId%2Fscript.sh',segment);
           html.push('<div>You can download the job script here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
           var href=replace('https://doxel.org/segment/:id/pictures',segment);
