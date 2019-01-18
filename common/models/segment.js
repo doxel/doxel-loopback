@@ -996,7 +996,7 @@
     if (!callback) callback=console.log;
 
     if (status==segment.status) {
-      return callback(null,segment.status,segment.status_timestamp);
+      return Q(callback(null,segment.status,segment.status_timestamp));
 
     } else {
       var timestamp=Date.now();
@@ -1154,21 +1154,36 @@
     }
   });
 
-  Segment.updateStatus=function(segmentId,status,callback) {
-    Q(Segment.findById(segmentId))
+  Segment.getOrUpdateStatus=function(segmentId,timestamp,status) {
+    return Q(Segment.findById(segmentId))
     .then(function(segment){
+      if (!timestamp||timestamp=='{timestamp}') {
+        return [segment.status, segment.status_timestamp];
+      } else {
         if (validStatus.indexOf(status)<0) {
           throw new Error('Invalid status: '+ status);
         }
-        segment.setStatus(status,callback);
+        if (segment.status_timestamp!=timestamp) {
+          throw new Error('Timestamp mismatch !');
+        }
+        return segment.setStatus(status,function(err,status,timestamp){
+          if (err) throw err;
+          return [segment.status, segment.status_timestamp];
+        });
+      }
     })
-    .catch(callback);
+    .catch(function(err){
+      console.log(err);
+    });
   }
 
-  Segment.remoteMethod('updateStatus',{
+  Segment.remoteMethod('getOrUpdateStatus',{
     accepts: [
       {arg: 'id', type: 'string', required: true},
-      {arg: 'status', type: 'string', required: true}
+      {arg: 'timestamp', type: 'string', required: false},
+      {arg: 'status', type: 'string', required: false},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
     ],
     returns: [
@@ -1176,10 +1191,15 @@
       {arg: 'status_timestamp', type: 'number'}
 
     ],
-    http: {
-      path: '/:id/updateStatus/:status',
+    http: [
+    {
+      path: '/:id/status',
+      verb: 'get'
+    }, {
+      path: '/:id/status/:timestamp/:status',
       verb: 'get'
     }
+    ]
   });
 
 /*

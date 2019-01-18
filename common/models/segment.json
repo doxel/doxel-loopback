@@ -321,7 +321,7 @@
       "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW",
-      "property": "updateStatus"
+      "property": "getOrUpdateStatus"
     },
     {
       "accessType": "*",
