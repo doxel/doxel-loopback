@@ -1154,11 +1154,22 @@
     }
   });
 
-  Segment.getOrUpdateStatus=function(segmentId,timestamp,status) {
+  Segment.getOrUpdateStatus=function(segmentId,timestamp,status,req,res) {
     return Q(Segment.findById(segmentId))
     .then(function(segment){
-      if (!timestamp||timestamp=='{timestamp}') {
+      if (!timestamp && !status) {
         return [segment.status, segment.status_timestamp];
+      } else if (!timestamp && validStatus.indexOf(status)>=0) {
+        var html=[
+          '<html>',
+          '<body>',
+          '<a href="'+req.protocol + '://' + req.get('host') + req.originalUrl.replace(status,segment.status_timestamp+'/'+status)+'">Set segment '+segmentId+' status to '+status+'</a>',
+          '</body>',
+          '</html>'
+        ].join('');
+        res.set('Content-Type','text/html');
+        res.set('Content-Size',html.length);
+        res.status(200).end(html);
       } else {
         if (validStatus.indexOf(status)<0) {
           throw new Error('Invalid status: '+ status);
@@ -1194,6 +1205,9 @@
     http: [
     {
       path: '/:id/status',
+      verb: 'get'
+    }, {
+      path: '/:id/status/:status',
       verb: 'get'
     }, {
       path: '/:id/status/:timestamp/:status',
