@@ -240,12 +240,21 @@
     var segment;
     var q=Q.defer();
     var folder=req.params[0].split('/');
-    if (app.get('viewer').folders.indexOf(folder[0])>=0) {
+    var suffix='';
+    //console.log(req.originalUrl,folder)
+    if (folder[0].match(/[0-9]+/)) {
+      suffix='.'+folder.shift();
+    }
 
-//console.log(folder);
-      if (folder[0]=='potree' && folder[2]!='pointclouds'/*potree/resources/pointclouds*/ && folder[2]!='potree.js'/*potree/examples/potree.js*/) {
+    var isJobRelatedFolder=app.get('viewer').folders.indexOf(folder[0])>=0;
+    var isJobRelatedPotreeFile=(folder[0]=='potree' && (folder[2]=='pointclouds' || folder[2]=='potree.js'));
+    var isOtherJobRelatedFile=(folder[0]!='potree' && folder[0]!='PMVS' && isJobRelatedFolder); // TODO: PMVS could be job related - just a workaround here waiting for better job-related results storage
+
+    if (isJobRelatedFolder) {
+
+      var isNotJobRelatedPotreeFile=(folder[0]=='potree' && folder[2]!='pointclouds'/*potree/resources/pointclouds*/ && folder[2]!='potree.js'/*potree/examples/potree.js*/);
+      if (isNotJobRelatedPotreeFile) {
           // serve common files from common potree viewer folder
- //         console.log('common',req.params[0]);
           q.resolve(process.cwd()+'/client');
 
       } else {
@@ -272,13 +281,18 @@
     }
 
     q.promise.then(function(baseUrl){
-      var url=(baseUrl+'/'+req.params[0]);
+      var url;
+      if ((isJobRelatedPotreeFile||isOtherJobRelatedFile)) {
+        url=baseUrl+'/'+folder[0]+suffix+req.params[0].substr(folder[0].length+suffix.length);
+      } else {
+        url=(baseUrl+'/'+folder.join('/'));
+      }
 //      console.log(url);
 //      if (req.params[0].match(/\.php/)) {
 //        php.cgi(url);
 //      } else {
 
-      if (req.params[0]=='viewer.html') {
+      if (folder[0]=='viewer.html') {
         // inject thumbnail url in meta og:image of viewer index
         Q(app.models.Segment.findById(req.params.segmentId,{include: 'preview'}))
         .then(function(segment){
@@ -318,6 +332,7 @@
         }).done();
 
       } else {
+        //console.log(url);
         res.sendFile(url,{
           maxAge: 3153600000000 // 10 years
         });
