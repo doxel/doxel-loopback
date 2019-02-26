@@ -239,9 +239,14 @@
   Segment.viewer=function(req, res, callback){
     var segment;
     var q=Q.defer();
+
+    if (req.route.path=='/:id/viewer' || req.originalUrl.match(/\/viewer\/$/)) {
+      res.redirect(301,path.join(req.originalUrl,'viewer.html'));
+      return;
+    }
+
     var folder=req.params[0].split('/');
     var suffix='';
-    //console.log(req.originalUrl,folder)
     if (folder[0].match(/[0-9]+/)) {
       suffix='.'+folder.shift();
     }
@@ -262,7 +267,7 @@
         // TODO: maybe we should cache results if not done at lower level
         app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,_segment){
           segment=_segment;
-          if (err || !segment || segment.timestamp!=req.params.timestamp) {
+          if (err || !segment || (req.params.timestamp && (segment.timestamp!=req.params.timestamp))) {
             if (err) console.log(err.message,err.stack);
             return res.status(404).end()
           }
@@ -335,6 +340,12 @@
         //console.log(url);
         res.sendFile(url,{
           maxAge: 3153600000000 // 10 years
+        },
+        function(err){
+          if(err){
+            console.log(err);
+            res.status(err.status).end()
+          }
         });
       }
     }).done();
@@ -348,10 +359,16 @@
 
     ],
     returns: {},
-    http: {
+    http: [{
       path: '/viewer/:segmentId/:timestamp/*',
       verb: 'get'
-    }
+    },{
+      path: '/:segmentId/viewer/*',
+      verb: 'get'
+    },{
+      path: '/:segmentId/viewer',
+      verb: 'get'
+    }]
 
   });
 
@@ -718,7 +735,7 @@
     console.log(req.headers)
     var ip = (req.headers && req.headers['x-real-ip']) || req.ip;
     if (ip!='127.0.0.1' && ip!='::1') {
-      res.status(404).end();
+      res.status(500).end('ERROR: only from localhost or via ssh wget');
       return;
     }
 
@@ -1652,6 +1669,15 @@
   Segment.download=function(id, requestedPath, req, res, callback, options) {
     options=options||{};
 
+    console.log(req.originalUrl);
+    if (typeof(requestedPath)=='undefined') {
+      if (req.route.path=='/:id/download') {
+        requestedPath='./';
+      } else {
+        throw new Error('requestedPath is a required argument');
+      }
+    }
+
     var method=req.route.path.split('/')[2];
 
     return Segment.getFilePath(id,requestedPath)
@@ -1659,6 +1685,7 @@
     .then(streamIt)
     .catch(function(err){
       console.log(err);
+      if (process.env.NODE_ENV=='production') throw err;
       res.status(500).end(err.message);
     });
 
@@ -1747,13 +1774,16 @@
   Segment.remoteMethod('download',{
     accepts: [
       {arg: 'id', type: 'string', required: true},
-      {arg: 'requestedPath', type: 'string', required: true},
+      {arg: 'requestedPath', type: 'string', required: false},
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
     ],
     http: [{
       path: '/:id/download/:requestedPath',
+      verb: 'get'
+    },{
+      path: '/:id/download',
       verb: 'get'
     },{
       path: '/:id/open/:requestedPath',
@@ -1765,6 +1795,7 @@
     var ply;
     Segment.getFilePath(id,'viewer/doxel.json')
     .then(function(pathname){
+      // clear the cache
       try { delete require.cache[require.resolve(pathname)] } catch(e) {} 
       var data=require(pathname);
       ply=data.ply;
