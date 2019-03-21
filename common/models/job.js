@@ -57,12 +57,13 @@ module.exports = function(Job) {
     }
 
     function assignTheJob(segment){
+      var jobConfig=require('../../server/job-config.json');
       // create and assign the job
       return Q(Job.create({
         assigned: Date.now(),
         userId: req.accessToken.userId,
         segmentId: segment.id,
-        config: (segment.params && segment.params.jobConfig) || app.get('jobConfig')
+        config: (segment.params && segment.params.jobConfig && extend(true,{},jobConfig.defaults,segment.params.jobConfig)) || jobConfig.defaults
       }));
     }
 
@@ -187,10 +188,10 @@ module.exports = function(Job) {
 
     function checkForCompletion(job) {
       var data=JSON.parse(state);
-      if (data.completed) {
-        return Q.nfcall(Job.complete,jobId,data.msg,req,res,callback);
-      } else if (data.error) {
+      if (data.error) {
         return Q.nfcall(Job.complete,jobId,'error',req,res,callback);
+      } else if (data.completed) {
+        return Q.nfcall(Job.complete,jobId,data.msg,req,res,callback);
       } else {
         return Q.resolve(job);
       }
@@ -233,7 +234,7 @@ module.exports = function(Job) {
     }
   );
 
-  Job.complete=function(jobId, status, req, res, callback) {
+  Job.complete=function(jobId, jobStatus, req, res, callback) {
 
     /* decompose steps into functions*/
     function findCurrentJob(){
@@ -256,7 +257,7 @@ module.exports = function(Job) {
       var now=Date.now();
       var attributes={};
       attributes.completed=now;
-      attributes.completion_status=status||'ok';
+      attributes.completion_status=jobStatus||'ok';
       return Q(job.updateAttributes(attributes));
     }
 
@@ -267,7 +268,7 @@ module.exports = function(Job) {
           // pointcloud already inserted
           return job;
         case 'processing':
-          if (segment.pointCloudId) {
+          if (jobStatus!="error" && segment.pointCloudId) {
             // when the job is completed and the pointCloud inserted, and
             // since there is no user decision policy, set the segment status to 'publishable' (should be 'processed' otherwise)
             return segment.setStatus('publishable')

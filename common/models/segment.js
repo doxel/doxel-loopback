@@ -78,7 +78,16 @@
         _url.push(elem);
       }
     });
-    return _url.join('/');
+    url=_url.join('/');
+    _url=[];
+    url.split('%2F').forEach(function(elem){
+      if (elem.substr(0,1)==':') {
+        _url.push(data[elem.substr(1)]);
+      } else {
+        _url.push(elem);
+      }
+    });
+    return _url.join('%2F');
   }
 
   function getCenterAndBounds(pictures) {
@@ -230,13 +239,27 @@
   Segment.viewer=function(req, res, callback){
     var segment;
     var q=Q.defer();
-    var folder=req.params[0].split('/');
-    if (app.get('viewer').folders.indexOf(folder[0])>=0) {
 
-//console.log(folder);
-      if (folder[0]=='potree' && folder[2]!='pointclouds'/*potree/resources/pointclouds*/ && folder[2]!='potree.js'/*potree/examples/potree.js*/) {
+    if (req.route.path=='/:id/viewer' || req.originalUrl.match(/\/viewer\/$/)) {
+      res.redirect(301,path.join(req.originalUrl,'viewer.html'));
+      return;
+    }
+
+    var folder=req.params[0].split('/');
+    var suffix='';
+    if (folder[0].match(/[0-9]+/)) {
+      suffix='.'+folder.shift();
+    }
+
+    var isJobRelatedFolder=app.get('viewer').folders.indexOf(folder[0])>=0;
+    var isJobRelatedPotreeFile=(folder[0]=='potree' && (folder[2]=='pointclouds' || folder[2]=='potree.js'));
+    var isOtherJobRelatedFile=(folder[0]!='potree' && folder[0]!='PMVS' && isJobRelatedFolder); // TODO: PMVS could be job related - just a workaround here waiting for better job-related results storage
+
+    if (isJobRelatedFolder) {
+
+      var isNotJobRelatedPotreeFile=(folder[0]=='potree' && folder[2]!='pointclouds'/*potree/resources/pointclouds*/ && folder[2]!='potree.js'/*potree/examples/potree.js*/);
+      if (isNotJobRelatedPotreeFile) {
           // serve common files from common potree viewer folder
- //         console.log('common',req.params[0]);
           q.resolve(process.cwd()+'/client');
 
       } else {
@@ -244,7 +267,7 @@
         // TODO: maybe we should cache results if not done at lower level
         app.models.Segment.findById(req.params.segmentId,{include: 'user'},function(err,_segment){
           segment=_segment;
-          if (err || !segment || segment.timestamp!=req.params.timestamp) {
+          if (err || !segment || (req.params.timestamp && (segment.timestamp!=req.params.timestamp))) {
             if (err) console.log(err.message,err.stack);
             return res.status(404).end()
           }
@@ -263,13 +286,18 @@
     }
 
     q.promise.then(function(baseUrl){
-      var url=(baseUrl+'/'+req.params[0]);
+      var url;
+      if ((isJobRelatedPotreeFile||isOtherJobRelatedFile)) {
+        url=baseUrl+'/'+folder[0]+suffix+req.params[0].substr(folder[0].length+suffix.length);
+      } else {
+        url=(baseUrl+'/'+folder.join('/'));
+      }
 //      console.log(url);
 //      if (req.params[0].match(/\.php/)) {
 //        php.cgi(url);
 //      } else {
 
-      if (req.params[0]=='viewer.html') {
+      if (folder[0]=='viewer.html') {
         // inject thumbnail url in meta og:image of viewer index
         Q(app.models.Segment.findById(req.params.segmentId,{include: 'preview'}))
         .then(function(segment){
@@ -309,8 +337,15 @@
         }).done();
 
       } else {
+        //console.log(url);
         res.sendFile(url,{
           maxAge: 3153600000000 // 10 years
+        },
+        function(err){
+          if(err){
+            console.log(err);
+            res.status(err.status).end()
+          }
         });
       }
     }).done();
@@ -324,10 +359,16 @@
 
     ],
     returns: {},
-    http: {
+    http: [{
       path: '/viewer/:segmentId/:timestamp/*',
       verb: 'get'
-    }
+    },{
+      path: '/:segmentId/viewer/*',
+      verb: 'get'
+    },{
+      path: '/:segmentId/viewer',
+      verb: 'get'
+    }]
 
   });
 
@@ -694,7 +735,7 @@
     console.log(req.headers)
     var ip = (req.headers && req.headers['x-real-ip']) || req.ip;
     if (ip!='127.0.0.1' && ip!='::1') {
-      res.status(404).end();
+      res.status(500).end('ERROR: only from localhost or via ssh wget');
       return;
     }
 
@@ -996,7 +1037,7 @@
     if (!callback) callback=console.log;
 
     if (status==segment.status) {
-      return callback(null,segment.status,segment.status_timestamp);
+      return Q(callback(null,segment.status,segment.status_timestamp));
 
     } else {
       var timestamp=Date.now();
@@ -1154,27 +1195,46 @@
     }
   });
 
-   /*
-  Segment.updateStatus(id,status,status_timestamp,req,res,callback) {
-    Q(Segment.findById(id))
+  Segment.getOrUpdateStatus=function(segmentId,timestamp,status,req,res) {
+    return Q(Segment.findById(segmentId))
     .then(function(segment){
-      if (segment.status_timestamp!=status_timestamp){
-        callback(new Error('status timestamp mismatch'));
+      if (!timestamp && !status) {
+        return [segment.status, segment.status_timestamp];
+      } else if (!timestamp && validStatus.indexOf(status)>=0) {
+        var html=[
+          '<html>',
+          '<body>',
+          '<div>Segment '+segmentId+' status is '+segment.status+' since '+new Date(segment.status_timestamp)+'</div>',
+          '<div><a href="'+req.protocol + '://' + req.get('host') + req.originalUrl.replace(status,segment.status_timestamp+'/'+status)+'">Set segment '+segmentId+' status to '+status+'</a></div>',
+          '</body>',
+          '</html>'
+        ].join('');
+        res.set('Content-Type','text/html');
+        res.set('Content-Size',html.length);
+        res.status(200).end(html);
       } else {
         if (validStatus.indexOf(status)<0) {
           throw new Error('Invalid status: '+ status);
         }
-        segment.setStatus(status,callback);
+        if (segment.status_timestamp!=timestamp) {
+          throw new Error('Timestamp mismatch !');
+        }
+        return segment.setStatus(status,function(err,status,timestamp){
+          if (err) throw err;
+          return [segment.status, segment.status_timestamp];
+        });
       }
     })
-    .catch(callback);
+    .catch(function(err){
+      console.log(err);
+    });
   }
 
-  Segment.remoteMethod('update-status',{
+  Segment.remoteMethod('getOrUpdateStatus',{
     accepts: [
       {arg: 'id', type: 'string', required: true},
-      {arg: 'status', type: 'string', required: true},
-      {arg: 'status_timestamp', type: 'number', required: true},
+      {arg: 'timestamp', type: 'string', required: false},
+      {arg: 'status', type: 'string', required: false},
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
@@ -1184,12 +1244,19 @@
       {arg: 'status_timestamp', type: 'number'}
 
     ],
-    http: {
-      path: '/set-status/:id/:status/:status_timestamp',
+    http: [
+    {
+      path: '/:id/status',
+      verb: 'get'
+    }, {
+      path: '/:id/status/:status',
+      verb: 'get'
+    }, {
+      path: '/:id/status/:timestamp/:status',
       verb: 'get'
     }
+    ]
   });
-  */
 
 /*
   // worker
@@ -1602,11 +1669,23 @@
   Segment.download=function(id, requestedPath, req, res, callback, options) {
     options=options||{};
 
+    console.log(req.originalUrl);
+    if (typeof(requestedPath)=='undefined') {
+      if (req.route.path=='/:id/download') {
+        requestedPath='./';
+      } else {
+        throw new Error('requestedPath is a required argument');
+      }
+    }
+
+    var method=req.route.path.split('/')[2];
+
     return Segment.getFilePath(id,requestedPath)
     .then(createReadStream)
     .then(streamIt)
     .catch(function(err){
       console.log(err);
+      if (process.env.NODE_ENV=='production') throw err;
       res.status(500).end(err.message);
     });
 
@@ -1668,10 +1747,11 @@
         }
 
         // set http headers
-        res
-        .set('Content-Type',mime.type)
-        .set('Content-Disposition','attachment;filename='+options.basename)
-        .set('Content-Transfer-Encoding','binary')
+        res.set('Content-Type',mime.type);
+        if (method=='download' || options.stats.isDirectory()) {
+         res.set('Content-Disposition','attachment;filename='+options.basename);
+        }
+        res.set('Content-Transfer-Encoding','binary')
         .set('Cache-Control','public, max-age=0');
 
         if (!options.stats.isDirectory()) {
@@ -1694,22 +1774,29 @@
   Segment.remoteMethod('download',{
     accepts: [
       {arg: 'id', type: 'string', required: true},
-      {arg: 'requestedPath', type: 'string', required: true},
+      {arg: 'requestedPath', type: 'string', required: false},
       {arg: 'req', type: 'object', 'http': {source: 'req'}},
       {arg: 'res', type: 'object', 'http': {source: 'res'}}
 
     ],
-    http: {
+    http: [{
       path: '/:id/download/:requestedPath',
       verb: 'get'
-    }
+    },{
+      path: '/:id/download',
+      verb: 'get'
+    },{
+      path: '/:id/open/:requestedPath',
+      verb: 'get'
+    }]
   });
 
   Segment.ply=function(id, req, res, callback) {
     var ply;
     Segment.getFilePath(id,'viewer/doxel.json')
     .then(function(pathname){
-      try { delete require.cache[require.resolve(pathname)] } catch(e) {} 
+      // clear the cache
+      try { delete require.cache[require.resolve(pathname)] } catch(e) {}
       var data=require(pathname);
       ply=data.ply;
     })
@@ -1756,6 +1843,13 @@
       }
     })
     .then(function(segment){
+      return segment.jobs.findOne({order: 'completed DESC'}).then(function(job){
+        segment.job=job;
+        segment.jobId=job.id;
+        return segment;
+      })
+    })
+    .then(function(segment){
       console.log(JSON.stringify(segment));
       var html=[];
 
@@ -1766,8 +1860,17 @@
           var href=replace('https://doxel.org/api/segments/viewer/:id/:timestamp/viewer.html',segment);
           html.push('<div>View pointcloud: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
+          href=replace('https://doxel.org/api/segments/:id/ply',segment);
+          html.push('<div>You can download the PLY(s) here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
           href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>View pictures: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          var href=replace('https://doxel.org/api/segments/:id/open/job%2F:jobId%2FLOG.txt',segment);
+          html.push('<div>You can download the job log here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          href=replace('https://doxel.org/api/segments/:id/open/job%2F:jobId%2Fscript.sh',segment);
+          html.push('<div>You can download the job script here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
           href=replace('https://doxel.org/segment/:id/files',segment);
           html.push('<div>Browse and download files: <a href="'+href+'">'+href+'</a></div>');
@@ -1821,10 +1924,13 @@
           html.push('<div>The processing of segment '+segment.id+' uploaded by '+user.username+' ('+user.email+') did fail.</div>');
           html.push('<br />');
           var href=replace('https://doxel.org/segment/:id/joblogs',segment);
-          html.push('<div>You can view the log here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<div>You can view the log history here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
-          var href=replace('https://doxel.org/api/segments/:id/download/LOG',segment);
-          html.push('<div>You can download the full log here: <a href="'+href+'">'+href+'</a></div>');
+          var href=replace('https://doxel.org/api/segments/:id/open/job%2F:jobId%2FLOG.txt',segment);
+          html.push('<div>You can download the job log here: <a href="'+href+'">'+href+'</a></div>');
+          html.push('<br />');
+          href=replace('https://doxel.org/api/segments/:id/open/job%2F:jobId%2Fscript.sh',segment);
+          html.push('<div>You can download the job script here: <a href="'+href+'">'+href+'</a></div>');
           html.push('<br />');
           var href=replace('https://doxel.org/segment/:id/pictures',segment);
           html.push('<div>You can view the pictures here: <a href="'+href+'">'+href+'</a></div>');
@@ -1843,5 +1949,34 @@
       }
     });
   }
+
+  Segment.setJobConfig=function(id,jobConfig,res,req,callback){
+    Segment.findById(id,function(err,segment){
+      if (err) return callback(err);
+      segment.params.jobConfig=jobConfig;
+      Q(segment.save())
+      .then(function(){
+        callback(null);
+      })
+      .catch(function(err){
+        console.trace(err);
+        callback(err);
+      });
+    });
+  }
+  Segment.remoteMethod('setJobConfig',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'jobConfig', type: 'object', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    http: {
+      path: '/:id/setJobConfig',
+      verb: 'post'
+    }
+  });
+
 
 };

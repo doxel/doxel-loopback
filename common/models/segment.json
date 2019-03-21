@@ -14,7 +14,8 @@
     "SetupRemoteMethods": {
       "disableAllExcept": [
         "find",
-        "findById"
+        "findById",
+        "setJobConfig"
       ]
     }
   },
@@ -232,6 +233,20 @@
       "principalType": "ROLE",
       "principalId": "admin",
       "permission": "ALLOW",
+      "property": "setJobConfig"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "foreman",
+      "permission": "ALLOW",
+      "property": "setJobConfig"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
       "property": "__get__pictures"
     },
     {
@@ -315,6 +330,13 @@
       "principalId": "admin",
       "permission": "ALLOW",
       "property": "removePointcloud"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "getOrUpdateStatus"
     },
     {
       "accessType": "*",

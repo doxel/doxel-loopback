@@ -178,6 +178,39 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED="0";
         res.redirect('/app/#!/processing');
   });
 
+  app.get('/job-config.json', function(req,res,next){
+    var q=Q.defer();
+
+    var filename=path.join(__dirname,'..','job-config.json');
+    fs.stat(filename,function(err,stats){
+      if (err) {
+        return q.reject(err);
+      }
+
+      res
+        .set('Content-Type','application/json')
+        .set('Content-Transfer-Encoding','utf8')
+        .set('Cache-Control','public, max-age=0')
+        .set('Content-Size', stats.size);
+
+      fs.createReadStream(filename)
+      .on('end',function(){
+        q.resolve();
+      })
+      .on('error',function(err){
+        q.reject(err);
+      })
+      .pipe(res);
+
+    });
+
+    return q.promise.catch(function(err){
+      console.log(err);
+      res.status(500).end(err.message);
+    });
+
+  });
+
   app.use(function(req,res,next){
     var staticServe=loopback.static(
       path.resolve(
