@@ -1796,7 +1796,7 @@
     Segment.getFilePath(id,'viewer/doxel.json')
     .then(function(pathname){
       // clear the cache
-      try { delete require.cache[require.resolve(pathname)] } catch(e) {} 
+      try { delete require.cache[require.resolve(pathname)] } catch(e) {}
       var data=require(pathname);
       ply=data.ply;
     })
@@ -1949,5 +1949,34 @@
       }
     });
   }
+
+  Segment.setJobConfig=function(id,jobConfig,res,req,callback){
+    Segment.findById(id,function(err,segment){
+      if (err) return callback(err);
+      segment.params.jobConfig=jobConfig;
+      Q(segment.save())
+      .then(function(){
+        callback(null);
+      })
+      .catch(function(err){
+        console.trace(err);
+        callback(err);
+      });
+    });
+  }
+  Segment.remoteMethod('setJobConfig',{
+    accepts: [
+      {arg: 'id', type: 'string', required: true},
+      {arg: 'jobConfig', type: 'object', required: true},
+      {arg: 'req', type: 'object', 'http': {source: 'req'}},
+      {arg: 'res', type: 'object', 'http': {source: 'res'}}
+
+    ],
+    http: {
+      path: '/:id/setJobConfig',
+      verb: 'post'
+    }
+  });
+
 
 };

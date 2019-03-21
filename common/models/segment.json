@@ -14,7 +14,8 @@
     "SetupRemoteMethods": {
       "disableAllExcept": [
         "find",
-        "findById"
+        "findById",
+        "setJobConfig"
       ]
     }
   },
@@ -226,6 +227,20 @@
       "principalId": "foreman",
       "permission": "ALLOW",
       "property": "__get__jobs"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "admin",
+      "permission": "ALLOW",
+      "property": "setJobConfig"
+    },
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "foreman",
+      "permission": "ALLOW",
+      "property": "setJobConfig"
     },
     {
       "accessType": "*",
