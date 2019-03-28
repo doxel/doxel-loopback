@@ -6,6 +6,17 @@ module.exports = function(Job) {
   var extend=require('extend');
   var ObjectID = require('mongodb').ObjectID;
 
+  function noNullProp(obj){
+    for (var prop in obj) {
+      if (!obj.hasOwnProperty(prop)) continue;
+      if ('object'==typeof obj[prop]) {
+        obj[prop]=noNullProp(obj[prop]);
+        if (obj[prop]===null || !Object.keys(obj[prop]).length) delete obj[prop];
+      } else if (obj[prop]===null) delete obj[prop];
+    }
+    return obj
+  }
+
   // return a previously job not completed by the requesting user,
   // or assign him a new job
   Job.get=function(req, res, callback) {
@@ -63,7 +74,7 @@ module.exports = function(Job) {
         assigned: Date.now(),
         userId: req.accessToken.userId,
         segmentId: segment.id,
-        config: (segment.params && segment.params.jobConfig && extend(true,{},jobConfig.defaults,segment.params.jobConfig)) || jobConfig.defaults
+        config: noNullProp((segment.params && segment.params.jobConfig && extend(true,{},jobConfig.defaults,segment.params.jobConfig)) || jobConfig.defaults)
       }));
     }
 
@@ -131,6 +142,34 @@ module.exports = function(Job) {
       returns: {arg: 'result', type: 'object'},
       http: {
         path: '/get',
+        verb: 'get'
+      }
+    }
+  );
+
+  // get clean job config (non null parameters)
+  Job.getConfig=function(jobId, req, res, callback) {
+    return Q(Job.findById(jobId))
+    .then(function(job){
+      return { config: noNullProp(job.config) };
+    })
+    .catch(function(err){
+      console.log(err);
+      throw err;
+    });
+  };
+
+  Job.remoteMethod(
+    'getConfig',
+    {
+      accepts: [
+        {arg: 'jobId', type: 'string', required: true},
+        {arg: 'req', type: 'object', 'http': {source: 'req'}},
+        {arg: 'res', type: 'object', 'http': {source: 'res'}},
+      ],
+      returns: {type: 'object', root: true},
+      http: {
+        path: '/:jobId/getConfig',
         verb: 'get'
       }
     }
