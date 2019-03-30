@@ -227,12 +227,12 @@
               "nearest_matching_method": {
                 "title": "nearest matching method",
                 "type": "string",
-                "eval": ["AUTO", "BRUTEFORCEL2", "ANNL2", "CASCADEHASHINGL2", "FASTCASCADEHASHINGL2", "BRUTEFORCEHAMMING"],
+                "enum": ["AUTO", "BRUTEFORCEL2", "ANNL2", "CASCADEHASHINGL2", "FASTCASCADEHASHINGL2", "BRUTEFORCEHAMMING"],
                 "default": "FASTCASCADEHASHINGL2"
               },
               "guided_matching": {
                 "type": "number",
-                "eval": [0, 1],
+                "enum": [0, 1],
                 "title": "guided matching",
                 "description": "Use the found model to improve the pairwise correspondences.",
                 "x-schema-form": {
@@ -286,7 +286,7 @@
               },
               "prior_usage": {
                 "type": "number",
-                "eval": [0, 1],
+                "enum": [0, 1],
                 "default": 0,
                 "title": "prior usage",
                 "description": "Enable usage of motion priors (ie: GPS positions).",
@@ -332,7 +332,7 @@
               },
               "use_vis_data": {
                 "type": "number",
-                "eval": [0,1],
+                "enum": [0,1],
                 "default": 0,
                 "x-schema-form": {
                   "type": "radiobuttons",
