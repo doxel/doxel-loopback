@@ -5,17 +5,7 @@ module.exports = function(Job) {
   var Q=require('q');
   var extend=require('extend');
   var ObjectID = require('mongodb').ObjectID;
-
-  function noNullProp(obj){
-    for (var prop in obj) {
-      if (!obj.hasOwnProperty(prop)) continue;
-      if ('object'==typeof obj[prop]) {
-        obj[prop]=noNullProp(obj[prop]);
-        if (obj[prop]===null || !Object.keys(obj[prop]).length) delete obj[prop];
-      } else if (obj[prop]===null) delete obj[prop];
-    }
-    return obj
-  }
+  var noNullProp=require('no-null-prop');
 
   // return a previously job not completed by the requesting user,
   // or assign him a new job

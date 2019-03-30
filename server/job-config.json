@@ -1,90 +1,103 @@
 {
   "defaults": {
     "densification_method": "smvs",
-    "sfm_imagelisting": {
-      "focal": null,
-      "intrinsics": null,
-      "camera_model": null,
-      "group_camera_model": null,
-      "use_pose_prior": null,
-      "prior_weights": null,
-      "gps_to_xyz_method": null
+    "openmvg": {
+      "sfm_imagelisting": {
+        "focal": null,
+        "intrinsics": null,
+        "camera_model": null,
+        "group_camera_model": null,
+        "use_pose_prior": null,
+        "prior_weights": null,
+        "gps_to_xyz_method": null
+      },
+      "computefeatures": {
+        "describer_method": "SIFT",
+        "upright": null,
+        "describer_preset": "HIGH",
+        "threads": null
+      },
+      "computematches": {
+        "ratio": null,
+        "geometric_model": "e",
+        "video_mode_matching": 12,
+        "nearest_matching_method": null,
+        "guided_matching": null,
+        "cache_size": null
+      },
+      "globalsfm": {
+        "rotation_averaging": null,
+        "translation_averaging": null,
+        "refine_intrinsics": null
+      },
+      "compute_structure_from_known_poses": {
+        "bundle_adjustment": null,
+        "residual_threshold": null,
+        "cache_size": null
+      },
+      "openmvg2pmvs": {
+        "resolution": null,
+        "use_vis_data": null,
+        "cpu": null
+      }
     },
-    "computefeatures": {
-      "describer_method": "SIFT",
-      "upright": null,
-      "describer_preset": "HIGH",
-      "threads": null
+    "cmvspmvs": {
+      "cmvs": {
+        "max_image": 80,
+        "cpu": null
+      },
+      "pmvs": {
+        "level": 1,
+        "csize": 2,
+        "threshold": 0.7,
+        "wsize": 7,
+        "min_image_num": 3,
+        "cpu": null
+      }
     },
-    "computematches": {
-      "ratio": null,
-      "geometric_model": "e",
-      "video_mode_matching": 12,
-      "nearest_matching_method": null,
-      "guided_matching": null,
-      "cache_size": null
-    },
-    "globalsfm": {
-      "rotation_averaging": null,
-      "translation_averaging": null,
-      "refine_intrinsics": null
-    },
-    "compute_structure_from_known_poses": {
-      "bundle_adjustment": null,
-      "residual_threshold": null,
-      "cache_size": null
-    },
-    "openmvg2pmvs": {
-      "resolution": null,
-      "use_vis_data": null,
-      "cpu": null
-    },
-    "cmvs": {
-      "max_image": 80,
-      "cpu": null
-    },
-    "pmvs": {
-      "level": 1,
-      "csize": 2,
-      "threshold": 0.7,
-      "wsize": 7,
-      "min_image_num": 3,
-      "cpu": null
-    },
-    "smvsrecon": {
-      "alpha": null,
-      "scale": null,
-      "output_scale": null,
-      "threads": null,
-      "shading": null,
-      "no_cut": null,
-      "neighbors": null,
-      "min_neighbors": null,
-      "no_sgm": null,
-      "force_sgm": null,
-      "sgm_scale": null,
-      "full_opt": null
-    },
-    "fssrecon":  {
-      "scale_factor": null,
-      "refine_octree": null,
-      "min_scale": null,
-      "max_scale": null,
-      "interpolation": null
-    },
-    "meshclean": {
-      "threshold": null,
-      "percentile": null,
-      "component_size": null,
-      "no_clean": null
+    "smvs": {
+      "smvsrecon": {
+        "alpha": null,
+        "scale": null,
+        "output_scale": null,
+        "threads": null,
+        "shading": null,
+        "no_cut": null,
+        "neighbors": null,
+        "min_neighbors": null,
+        "no_sgm": null,
+        "force_sgm": null,
+        "sgm_scale": null,
+        "full_opt": null
+      },
+      "fssrecon":  {
+        "scale_factor": null,
+        "refine_octree": null,
+        "min_scale": null,
+        "max_scale": null,
+        "interpolation": null
+      },
+      "meshclean": {
+        "threshold": null,
+        "percentile": null,
+        "component_size": null,
+        "no_clean": null
+      }
     }
   },
 
   "schema": {
     "type": "object",
     "properties": {
-      "openMVG": {
+      "densification_method": {
+        "type": "string",
+        "title": "Densification Method",
+        "enum": ["pmvs", "smvs"],
+        "default": "smvs"
+      },
+      "openmvg": {
         "type": "object",
+        "title": "openMVG",
         "properties": {
           "sfm_imagelisting": {
             "title": "openMVG_SfMInit_ImageListing",
@@ -238,7 +251,7 @@
           },
           "globalsfm": {
             "type": "object",
-            "title": "openMVG_main_GloblSfM",
+            "title": "openMVG_main_GlobalSfM",
             "properties": {
               "rotation_averaging": {
                 "type": "number",
