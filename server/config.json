@@ -68,7 +68,7 @@
   "upload": {
     "REMARK": "The upload property in config.local.json or config.production.json is IGNORED !",
     "maxDiskUsage": 0.95,
-    "directory": "/mnt/upload",
+    "directory": "/home/doxel/doxel-loopback/server/upload_dev",
     "imagesDir": "original_images",
     "imageExtension": "jpeg",
     "cleanupTmpDir": true,
