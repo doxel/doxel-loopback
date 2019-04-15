@@ -672,13 +672,13 @@
           return Q.reject(new Error('pointcloud segmentId ('+pointCloud.segmentId+') does not match segment.id ('+segmentId+') !'));
         }
         // destroy pointcloud poses
-        return Q(app.models.Pose.destroyAll({pointCloudId: pointCloud.id},function(err,info,count){
+        return Q(app.models.Pose.destroyAll({pointCloudId: pointCloud.id},function(err,info){
           if (err) return Q.reject(err);
-          console.log(info,'segment '+segmentId+' pointCloud '+pointCloud+': '+count+' poses destroyed');
+          console.log(info,'segment '+segmentId+' pointCloud '+pointCloud+': '+info.count+' poses destroyed');
           return Q.resolve();
         }))
         // destroy pointcloud
-        .then(Q(app.models.PointCloud.destroyById(pointCloudId,function(err){
+        .then(Q(app.models.PointCloud.destroyById(pointCloud.id,function(err){
           if (err) return Q.reject(err);
           console.log(info,'segment '+segmentId+' pointCloud '+pointCloud+' destroyed');
           return Q.resolve();
@@ -697,17 +697,17 @@
       // TODO: destroy segment pictureTags (rebuild tags with server/scripts/segment-tag in the meanwhile)
 
       // destroy segment pictures
-      return Q(app.models.Picture.destroyAll({segmentId: segmentId},function(err,info,count){
+      return Q(app.models.Picture.destroyAll({segmentId: segmentId},function(err,info){
         if (err) return Q.reject(err);
-        console.log(info,'segment '+segmentId+': '+count+' pictures destroyed');
+        console.log(info,'segment '+segmentId+': '+info.count+' pictures destroyed');
         return Q.resolve();
       }));
     })
     .then(function(){
       // destroy segment tags
-      return Q(app.models.SegmentTag.destroyAll({segmentId: segmentId},function(err,info,count){
+      return Q(app.models.SegmentTag.destroyAll({segmentId: segmentId},function(err,info){
         if (err) return Q.reject(err);
-        console.log(info,'segment '+segmentId+': '+count+' segmentTags destroyed');
+        console.log(info,'segment '+segmentId+': '+info.count+' segmentTags destroyed');
         return Q.resolve();
       }));
     })
