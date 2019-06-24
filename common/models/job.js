@@ -57,14 +57,19 @@ module.exports = function(Job) {
       return q.promise;
     }
 
-    function assignTheJob(segment){
+    function getJobConfig(segment) {
       var jobConfig=require('../../server/job-config.json');
+      var config=noNullProp((segment.params && segment.params.jobConfig && extend(true,{},jobConfig.defaults,segment.params.jobConfig)) || jobConfig.defaults)
+      return config;
+    }
+
+    function assignTheJob(segment){
       // create and assign the job
       return Q(Job.create({
         assigned: Date.now(),
         userId: req.accessToken.userId,
         segmentId: segment.id,
-        config: noNullProp((segment.params && segment.params.jobConfig && extend(true,{},jobConfig.defaults,segment.params.jobConfig)) || jobConfig.defaults)
+        config: getJobConfig(segment)
       }));
     }
 
