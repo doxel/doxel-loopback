@@ -156,7 +156,7 @@ module.exports = function(User) {
       'You have requested to change your password for user '+info.user.username+' on DOXEL.org.<br />',
       'Click <a href="' + url + '/' + info.accessToken.id + '">here</a> to reset your password.<br />',
       'If you did not request a change of password, please ignore this message.<br />'
-    ].join();
+    ].join('');
 
     app.models.Email.send({
       to: info.email,
