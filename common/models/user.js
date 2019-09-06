@@ -149,9 +149,14 @@ module.exports = function(User) {
 
   //send password reset link when password reset requested
   User.on('resetPasswordRequest', function(info) {
+  console.log(info)
     var app=User.app;
     var url = 'http' + (app.get('httpOnly')? '' : 's') + '://' + app.get('host') + (app.get('reverseProxy')?'':':'+app.get('port')) + '/reset-password-form';
-    var html = 'Click <a href="' + url + '/' + info.accessToken.id + '">here</a> to reset your password.';
+    var html = [
+      'You have requested to change your password for user '+info.user.username+' on DOXEL.org.<br />',
+      'Click <a href="' + url + '/' + info.accessToken.id + '">here</a> to reset your password.<br />',
+      'If you did not request a change of password, please ignore this message.<br />'
+    ].join();
 
     app.models.Email.send({
       to: info.email,
