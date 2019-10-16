@@ -3,6 +3,7 @@
   "remoting": {
     "context": false,
     "rest": {
+      "handleErrors": false,
       "normalizeHttpPath": false,
       "xml": false
     },
