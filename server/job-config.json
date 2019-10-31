@@ -255,12 +255,13 @@
             "properties": {
               "rotation_averaging": {
                 "type": "number",
-                "enum": [1,2],
+                "enum": [1,2,3],
                 "x-schema-form": {
                   "type": "radiobuttons",
                   "titleMap": [
                     { "name": "L1 minimization", "value": 1},
-                    { "name": "L2 minimization", "value": 2}
+                    { "name": "L2 minimization", "value": 2},
+                    { "name": "SoftL1 minimization", "value": 3}
                   ]
                 }
               },
