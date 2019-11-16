@@ -15,7 +15,7 @@
         "describer_method": "SIFT",
         "upright": null,
         "describer_preset": "HIGH",
-        "threads": null
+        "numThreads": null
       },
       "listmatchingpairs": {
         "mode": "exhaustive_mode",
@@ -41,7 +41,7 @@
       "openmvg2pmvs": {
         "resolution": null,
         "use_vis_data": null,
-        "cpu": null
+        "nb_core": null
       }
     },
     "cmvspmvs": {
@@ -122,7 +122,7 @@
               "camera_model": {
                 "title": "camera model",
                 "type": "number",
-                "enum": [1, 2, 3, 4, 5],
+                "enum": [1, 2, 3, 4, 5, 7],
                 "default": 3,
                 "x-schema-form": {
                   "type": "select",
@@ -131,7 +131,8 @@
                     { "name": "Pinhole radial 1", "value": 2},
                     { "name": "Pinhole radial 3", "value": 3},
                     { "name": "Pinhole brown 2", "value": 4},
-                    { "name": "Pinhole with a simple Fish-eye", "value": 5}
+                    { "name": "Pinhole with a simple Fish-eye", "value": 5},
+                    { "name": "Spherical camera", "value": 7}
                   ]
                 }
               },
@@ -203,6 +204,10 @@
                 "type": "string",
                 "enum": ["NORMAL", "HIGH", "ULTRA"],
                 "default": "NORMAL"
+              },
+              "numThreads": {
+                "title": "number of parallel computations",
+                "type": "integer"
               }
             }
           },
@@ -246,14 +251,16 @@
               "geometric_model": {
                 "title": "geometric model",
                 "type": "string",
-                "enum": ["e","f","h"],
+                "enum": ["e","f","h","a","o"],
                 "default": "e",
                 "x-schema-form": {
-                  "type": "radiobuttons",
+                  "type": "select",
                   "titleMap": [
                     { "name": "Fundamental matrix", "value": "f"},
                     { "name": "Essential matrix", "value": "e"},
-                    { "name": "Homography matrix", "value": "h"}
+                    { "name": "Homography matrix", "value": "h"},
+                    { "name": "Essential matrix with an angular parametrization", "value": "a"},
+                    { "name": "Orthographic essential matrix", "value": "o"}
                   ]
                 }
               },
@@ -288,6 +295,17 @@
             "properties": {
               "rotation_averaging": {
                 "type": "number",
+                "enum": [1,2],
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    { "name": "L1 minimization", "value": 1},
+                    { "name": "L2 minimization", "value": 2}
+                  ]
+                }
+              },
+              "translation_averaging": {
+                "type": "number",
                 "enum": [1,2,3],
                 "x-schema-form": {
                   "type": "radiobuttons",
@@ -295,17 +313,6 @@
                     { "name": "L1 minimization", "value": 1},
                     { "name": "L2 minimization", "value": 2},
                     { "name": "SoftL1 minimization", "value": 3}
-                  ]
-                }
-              },
-              "translation_averaging": {
-                "type": "number",
-                "enum": [1,2],
-                "x-schema-form": {
-                  "type": "radiobuttons",
-                  "titleMap": [
-                    { "name": "L1 minimization", "value": 1},
-                    { "name": "L2 minimization", "value": 2}
                   ]
                 }
               },
@@ -339,14 +346,14 @@
             "title": "openMVG_main_ComputeStructureFromKnownPoses",
             "properties": {
               "bundle_adjustment": {
-                "title": "perform a bundle adjustment on the scene",
+                "title": "perform a bundle adjustment on the scene [off]",
                 "type": "boolean",
                 "default": false
               },
               "residual_threshold": {
                 "type": "number",
                 "title": "residual threshold",
-                "description": "maximal pixels reprojection error that will be considered for triangulations",
+                "description": "maximal pixels reprojection error that will be considered for triangulations [4.0]",
                 "default": 4.0
               },
               "cache_size": {
@@ -376,9 +383,9 @@
                   ]
                 }
               },
-              "cpu": {
+              "nb_core": {
                 "type": "number",
-                "description": "max threads"
+                "description": "cpus"
               }
             }
           }
