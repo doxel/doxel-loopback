@@ -1,7 +1,7 @@
 {
   "name": "doxel-loopback",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.3",
   "main": "server/server.js",
   "scripts": {
     "pretest": "jshint ."
