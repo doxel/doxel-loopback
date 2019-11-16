@@ -19,12 +19,11 @@
       },
       "listmatchingpairs": {
         "mode": "exhaustive_mode",
-	"neighbor_count": null
+        "neighbor_count": null
       },
       "computematches": {
         "ratio": null,
         "geometric_model": "e",
-        "video_mode_matching": 12,
         "nearest_matching_method": null,
         "guided_matching": null,
         "cache_size": null
@@ -202,12 +201,12 @@
           },
           "listmatchingpairs": {
             "type": "object",
-	    "title": "openMVG_main_ListMatchingPairs",
-	    "properties": {
+            "title": "openMVG_main_ListMatchingPairs",
+            "properties": {
               "mode": {
                 "title": "Matching pair mode",
                 "type": "string",
-		"enum": ["exhaustive_mode","video_mode","gps_mode"],
+                "enum": ["exhaustive_mode","video_mode","gps_mode"],
                 "default": "exhaustive_mode",
                 "x-schema-form": {
                   "type": "radiobuttons",
@@ -217,12 +216,16 @@
                     {"name": "GPS", "value": "gps_mode"}
                   ]
                 }
-	      },
+              },
               "neighbor_count": {
                 "title": "neighbor count",
-                "type": "integer"
+                "description": "maximum number of neighbor",
+                "type": "integer",
+                "x-schema-form": {
+                  "condition": "model.openmvg.listmatchingpairs.mode!='exhaustive_mode'"
+                }
               }
-	    }
+            }
           },
           "computematches": {
             "type": "object",
@@ -246,11 +249,6 @@
                     { "name": "Homography matrix", "value": "h"}
                   ]
                 }
-              },
-              "video_mode_matching": {
-                "title": "video mode matching",
-                "description": "Image overlap count",
-                "type": "number"
               },
               "nearest_matching_method": {
                 "title": "nearest matching method",
