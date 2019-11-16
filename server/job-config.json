@@ -17,6 +17,10 @@
         "describer_preset": "HIGH",
         "threads": null
       },
+      "listmatchingpairs": {
+        "mode": "exhaustive_mode",
+	"neighbor_count": null
+      },
       "computematches": {
         "ratio": null,
         "geometric_model": "e",
@@ -195,6 +199,30 @@
                 "default": "NORMAL"
               }
             }
+          },
+          "listmatchingpairs": {
+            "type": "object",
+	    "title": "openMVG_main_ListMatchingPairs",
+	    "properties": {
+              "mode": {
+                "title": "Matching pair mode",
+                "type": "string",
+		"enum": ["exhaustive_mode","video_mode","gps_mode"],
+                "default": "exhaustive_mode",
+                "x-schema-form": {
+                  "type": "radiobuttons",
+                  "titleMap": [
+                    {"name": "Exhaustive", "value": "exhaustive_mode"},
+                    {"name": "Video", "value": "video_mode"},
+                    {"name": "GPS", "value": "gps_mode"}
+                  ]
+                }
+	      },
+              "neighbor_count": {
+                "title": "neighbor count",
+                "type": "integer"
+              }
+	    }
           },
           "computematches": {
             "type": "object",
