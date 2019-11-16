@@ -96,7 +96,14 @@
         "type": "string",
         "title": "Densification Method",
         "enum": ["pmvs", "smvs"],
-        "default": "smvs"
+        "default": "smvs",
+        "x-schema-form": {
+          "type": "radiobuttons",
+          "titleMap": [
+            { "name": "PMVS", "value": "pmvs"},
+            { "name": "SMVS", "value": "smvs"}
+          ]
+        }
       },
       "openmvg": {
         "type": "object",
@@ -378,10 +385,12 @@
         }
       },
       "cmvspmvs": {
+        "x-schema-form": {
+          "condition": "model.densification_method=='pmvs'"
+        },
         "type": "object",
         "title": "CMVSPMVS",
         "properties": {
-
           "cmvs": {
             "type": "object",
             "title": "CMVS",
@@ -430,6 +439,9 @@
         }
       },
       "smvs": {
+        "x-schema-form": {
+          "condition": "model.densification_method=='smvs'"
+        },
         "type": "object",
         "title": "SMVS",
         "properties": {
