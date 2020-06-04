@@ -678,7 +678,7 @@
           return Q.resolve();
         }))
         // destroy pointcloud
-        .then(Q(app.models.PointCloud.destroyById(pointCloud.id,function(err){
+        .then(Q(app.models.PointCloud.destroyById(pointCloud.id,function(err,info){
           if (err) return Q.reject(err);
           console.log(info,'segment '+segmentId+' pointCloud '+pointCloud+' destroyed');
           return Q.resolve();
