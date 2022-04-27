@@ -23,7 +23,7 @@
     "extend": "^3.0.1",
     "geoip-middleware": "file:geoip-middleware",
     "geolib": "^2.0.22",
-    "grunt": "^1.0.1",
+    "grunt": "^1.5.2",
     "gulp": "^3.9.1",
     "har-schema": "^2.0.0",
     "helmet": "^3.8.1",
