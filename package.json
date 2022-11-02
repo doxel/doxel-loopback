@@ -24,7 +24,7 @@
     "geoip-middleware": "file:geoip-middleware",
     "geolib": "^2.0.22",
     "grunt": "^1.0.1",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.2",
     "har-schema": "^2.0.0",
     "helmet": "^3.8.1",
     "hoek": "^4.2.1",
